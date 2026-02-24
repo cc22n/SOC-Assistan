@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SOC Agent{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Styles -->
+    <style>
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar-collapsed {
+            transform: translateX(-100%);
+        }
+
+        @media (min-width: 768px) {
+            .sidebar-collapsed {
+                transform: translateX(0);
+            }
+        }
+
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .risk-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .risk-critical { background: #fee; color: #c00; }
+        .risk-high { background: #ffd7cc; color: #d63; }
+        .risk-medium { background: #fff3cd; color: #856404; }
+        .risk-low { background: #d1ecf1; color: #0c5460; }
+        .risk-clean { background: #d4edda; color: #155724; }
+
+        .loading {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .toast-error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .toast-warning { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
+        .toast-info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navbar -->
+    <nav class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <button id="sidebar-toggle" class="md:hidden mr-4">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-shield-alt text-2xl"></i>
+                        <span class="text-xl font-bold">SOC Agent</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-6">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.profile') }}" class="hidden md:flex items-center space-x-4 hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded transition">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <div>
+                                <div class="text-sm font-medium">{{ current_user.username }}</div>
+                                <div class="text-xs opacity-75">{{ current_user.role|title }}</div>
+                            </div>
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded transition">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Salir
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded transition">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        {% if current_user.is_authenticated %}
+        <aside id="sidebar" class="sidebar bg-white w-64 min-h-screen shadow-lg">
+            <nav class="mt-6">
+                <a href="{{ url_for('main.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.dashboard' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-chart-line w-5 mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('main.analyze_page') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.analyze_page' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-search w-5 mr-3"></i>
+                    Análisis
+                </a>
+                <a href="{{ url_for('main.chat') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.chat' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-comments w-5 mr-3"></i>
+                    Chat IA
+                </a>
+                <a href="{{ url_for('main.history') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.history' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-history w-5 mr-3"></i>
+                    Historial
+                </a>
+                <a href="{{ url_for('main.incidents') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.incidents' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-exclamation-triangle w-5 mr-3"></i>
+                    Incidentes
+                </a>
+                <a href="{{ url_for('main.api_stats') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.api_stats' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-database w-5 mr-3"></i>
+                    APIs
+                </a>
+
+                <hr class="my-4">
+
+                <div class="px-6 py-2 text-xs uppercase text-gray-500 font-semibold">
+                    Recursos
+                </div>
+                <a href="https://attack.mitre.org" target="_blank" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                    <i class="fas fa-external-link-alt w-5 mr-3"></i>
+                    MITRE ATT&CK
+                </a>
+                <a href="{{ url_for('main.about') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.about' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-info-circle w-5 mr-3"></i>
+                    Acerca de
+                </a>
+            </nav>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="toast toast-{{ category }}" id="toast-{{ loop.index }}">
+                            <div class="flex items-center justify-between">
+                                <span>{{ message }}</span>
+                                <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('sidebar-collapsed');
+            });
+        }
+
+        // Auto-hide toasts
+        document.querySelectorAll('.toast').forEach((toast, index) => {
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000 + (index * 500));
+        });
+
+        // Utility functions
+        function showLoading(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.innerHTML = '<div class="flex justify-center items-center py-8"><div class="loading"></div></div>';
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

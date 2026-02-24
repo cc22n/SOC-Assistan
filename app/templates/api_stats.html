@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Estado APIs - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Estado de APIs</h1>
+        <p class="text-gray-600">Monitoreo y estadísticas de uso de threat intelligence APIs</p>
+    </div>
+
+    <!-- Overall Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {% for api_name, stats in usage.items() %}
+        {% set is_unlimited = (stats.limit == 'unlimited' or stats.remaining == 'unlimited') %}
+        {% set safe_limit = 0 if is_unlimited else stats.limit %}
+        {% set safe_remaining = safe_limit if is_unlimited else stats.remaining %}
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-3 rounded-full {% if is_unlimited or safe_remaining > safe_limit * 0.5 %}bg-green-100{% elif safe_remaining > safe_limit * 0.2 %}bg-yellow-100{% else %}bg-red-100{% endif %}">
+                        <i class="fas fa-{% if api_name == 'virustotal' %}shield-virus{% elif api_name == 'abuseipdb' %}exclamation-triangle{% elif api_name == 'shodan' %}server{% elif api_name == 'otx' %}globe{% else %}robot{% endif %} text-2xl {% if is_unlimited or safe_remaining > safe_limit * 0.5 %}text-green-600{% elif safe_remaining > safe_limit * 0.2 %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">{{ api_name|upper }}</h3>
+                        <p class="text-xs text-gray-500">API Status</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Progress Bar -->
+            <div class="mb-3">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">Uso diario</span>
+                    <span class="font-semibold text-gray-800">{{ stats.used }}/{{ stats.limit }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    {% set percentage = 0 if is_unlimited else ((stats.used / stats.limit * 100) if stats.limit > 0 else 0) %}
+                    <div class="h-3 rounded-full transition-all duration-500 {% if percentage < 50 %}bg-green-500{% elif percentage < 80 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+                         style="width: {{ percentage }}%"></div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="text-center p-2 bg-gray-50 rounded">
+                    <div class="text-lg font-bold text-green-600">{{ stats.remaining }}</div>
+                    <div class="text-xs text-gray-600">Restantes</div>
+                </div>
+                <div class="text-center p-2 bg-gray-50 rounded">
+                    <div class="text-lg font-bold text-red-600">{{ stats.get('errors', 0) }}</div>
+                    <div class="text-xs text-gray-600">Errores</div>
+                </div>
+            </div>
+
+            <!-- Status Badge -->
+            <div class="mt-3 text-center">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full {% if is_unlimited or safe_remaining > safe_limit * 0.2 %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    {% if is_unlimited or safe_remaining > safe_limit * 0.2 %}
+                        <i class="fas fa-check-circle mr-1"></i>Operativo
+                    {% else %}
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Límite Bajo
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- API Details Tabs -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="border-b border-gray-200">
+            <nav class="flex">
+                {% for api_name in usage.keys() %}
+                <button
+                    onclick="showApiTab('{{ api_name }}')"
+                    id="tab-btn-{{ api_name }}"
+                    class="flex-1 px-6 py-4 text-sm font-medium transition {% if loop.first %}bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600{% else %}text-gray-600 hover:text-gray-800 hover:bg-gray-50{% endif %}"
+                >
+                    {{ api_name|upper }}
+                </button>
+                {% endfor %}
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            {% for api_name, stats in usage.items() %}
+            {# Redefinir variables para cada iteración del loop #}
+            {% set is_unlimited = (stats.limit == 'unlimited' or stats.remaining == 'unlimited') %}
+            {% set safe_limit = 0 if is_unlimited else stats.limit %}
+            {% set safe_remaining = safe_limit if is_unlimited else stats.remaining %}
+
+            <div id="tab-content-{{ api_name }}" class="tab-content {% if not loop.first %}hidden{% endif %}">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Left Column: Info -->
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-info-circle mr-2 text-indigo-600"></i>
+                                Información
+                            </h3>
+                            <div class="space-y-3">
+                                {% if api_name == 'virustotal' %}
+                                <div class="p-4 bg-blue-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">VirusTotal</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Servicio de análisis de malware con más de 70 antivirus.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Análisis de hashes, URLs, dominios e IPs</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Detección de familias de malware</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Ratio de detección multi-engine</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'abuseipdb' %}
+                                <div class="p-4 bg-orange-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">AbuseIPDB</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Base de datos colaborativa de IPs maliciosas reportadas.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Reputación de IPs con abuse score</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Historial de reportes de abuso</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Información de ISP y geolocalización</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'shodan' %}
+                                <div class="p-4 bg-purple-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Shodan</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Motor de búsqueda para dispositivos conectados a Internet.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Puertos abiertos y servicios expuestos</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Detección de vulnerabilidades conocidas</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Información de infraestructura</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'otx' %}
+                                <div class="p-4 bg-green-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">AlienVault OTX</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Plataforma colaborativa de threat intelligence.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Pulsos de amenazas en tiempo real</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Correlación con campañas conocidas</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Indicadores de compromiso compartidos</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'greynoise' %}
+                                <div class="p-4 bg-gray-100 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">GreyNoise</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Distingue entre escaneo benigno y actividad maliciosa.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Clasificación RIOT (benigno) vs NOISE</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Identificación de escáneres conocidos</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Reducción de falsos positivos</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'urlhaus' %}
+                                <div class="p-4 bg-red-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">URLhaus (abuse.ch)</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Base de datos de URLs maliciosas y distribución de malware.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>URLs de distribución de malware</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Payloads y familias de malware</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Estado online/offline de amenazas</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'threatfox' %}
+                                <div class="p-4 bg-yellow-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">ThreatFox (abuse.ch)</h4>
+                                    <p class="text-sm text-gray-700 mb-2">IOCs de malware activo y servidores C2.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Servidores Command & Control</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>IOCs de campañas activas</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Familias de malware asociadas</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'malwarebazaar' %}
+                                <div class="p-4 bg-pink-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">MalwareBazaar (abuse.ch)</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Repositorio de muestras de malware para investigación.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Hashes de malware conocido</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Firmas y detecciones AV</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Tags y clasificación de familias</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'criminal_ip' %}
+                                <div class="p-4 bg-indigo-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Criminal IP</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Inteligencia de amenazas con detección de C2 y phishing.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Detección de C2 y phishing</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Análisis de puertos y servicios</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>VPN/Proxy/Tor detection</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'pulsedive' %}
+                                <div class="p-4 bg-cyan-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Pulsedive</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Enriquecimiento de IOCs y correlación de amenazas.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Risk score y clasificación</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Feeds y amenazas relacionadas</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Historial de actividad</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'urlscan' %}
+                                <div class="p-4 bg-teal-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">URLScan.io</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Análisis visual y sandbox de URLs sospechosas.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Screenshots de páginas</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Análisis DOM y recursos</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Detección de redirecciones</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'shodan_internetdb' %}
+                                <div class="p-4 bg-violet-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Shodan InternetDB</h4>
+                                    <p class="text-sm text-gray-700 mb-2">API gratuita de Shodan para consultas rápidas de puertos.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Sin API key requerida</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Puertos abiertos básicos</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>CVEs conocidas</li>
+                                    </ul>
+                                </div>
+                                {% elif api_name == 'ip_api' %}
+                                <div class="p-4 bg-emerald-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">IP-API</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Geolocalización gratuita de direcciones IP.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Sin API key requerida</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>País, ciudad, ISP</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Coordenadas geográficas</li>
+                                    </ul>
+                                </div>
+                                {% else %}
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h4 class="font-semibold text-gray-800 mb-2">{{ api_name|upper }}</h4>
+                                    <p class="text-sm text-gray-700 mb-2">Servicio de threat intelligence.</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Análisis de IOCs</li>
+                                        <li><i class="fas fa-check text-green-600 mr-1"></i>Enriquecimiento de datos</li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Current Usage Stats -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-tachometer-alt mr-2 text-indigo-600"></i>
+                                Uso Actual
+                            </h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">{{ stats.used }}</div>
+                                    <div class="text-xs text-gray-600">Requests Hoy</div>
+                                </div>
+                                <div class="text-center p-4 bg-green-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">{{ stats.remaining }}</div>
+                                    <div class="text-xs text-gray-600">Restantes</div>
+                                </div>
+                                <div class="text-center p-4 bg-red-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-red-600">{{ stats.get('errors', 0) }}</div>
+                                    <div class="text-xs text-gray-600">Errores</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Chart -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-chart-line mr-2 text-indigo-600"></i>
+                            Uso en el Tiempo
+                        </h3>
+                        <canvas id="chart-{{ api_name }}" height="300"></canvas>
+
+                        <!-- Health Status -->
+                        <div class="mt-6 p-4 {% if is_unlimited or safe_remaining > safe_limit * 0.5 %}bg-green-50 border-l-4 border-green-500{% elif safe_remaining > safe_limit * 0.2 %}bg-yellow-50 border-l-4 border-yellow-500{% else %}bg-red-50 border-l-4 border-red-500{% endif %} rounded">
+                            <div class="flex items-start">
+                                <i class="fas fa-{% if is_unlimited or safe_remaining > safe_limit * 0.5 %}check-circle text-green-600{% elif safe_remaining > safe_limit * 0.2 %}exclamation-triangle text-yellow-600{% else %}times-circle text-red-600{% endif %} text-2xl mr-3"></i>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800 mb-1">
+                                        {% if is_unlimited or safe_remaining > safe_limit * 0.5 %}
+                                            Estado Óptimo
+                                        {% elif safe_remaining > safe_limit * 0.2 %}
+                                            Precaución
+                                        {% else %}
+                                            Límite Crítico
+                                        {% endif %}
+                                    </h4>
+                                    <p class="text-sm text-gray-700">
+                                        {% if is_unlimited %}
+                                            API sin límite de uso. Capacidad ilimitada.
+                                        {% elif safe_remaining > safe_limit * 0.5 %}
+                                            Capacidad disponible suficiente para operaciones normales.
+                                        {% elif safe_remaining > safe_limit * 0.2 %}
+                                            Considera reducir el uso o esperar al próximo ciclo.
+                                        {% else %}
+                                            Límite casi alcanzado. Espera al próximo día para reset.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="mt-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+        <h3 class="text-xl font-bold mb-4">
+            <i class="fas fa-lightbulb mr-2"></i>
+            Consejos para Optimizar el Uso de APIs
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                <i class="fas fa-clock text-2xl mb-2"></i>
+                <h4 class="font-semibold mb-2">Cache Inteligente</h4>
+                <p class="text-sm opacity-90">Los resultados se cachean por 1 hora para reducir llamadas duplicadas.</p>
+            </div>
+            <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                <i class="fas fa-layer-group text-2xl mb-2"></i>
+                <h4 class="font-semibold mb-2">Análisis Batch</h4>
+                <p class="text-sm opacity-90">Agrupa múltiples IOCs para analizar más eficientemente.</p>
+            </div>
+            <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                <i class="fas fa-history text-2xl mb-2"></i>
+                <h4 class="font-semibold mb-2">Historial</h4>
+                <p class="text-sm opacity-90">Revisa análisis previos antes de re-analizar el mismo IOC.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tab switching
+function showApiTab(apiName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+
+    // Reset all buttons
+    document.querySelectorAll('[id^="tab-btn-"]').forEach(btn => {
+        btn.className = 'flex-1 px-6 py-4 text-sm font-medium transition text-gray-600 hover:text-gray-800 hover:bg-gray-50';
+    });
+
+    // Show selected tab
+    document.getElementById(`tab-content-${apiName}`).classList.remove('hidden');
+
+    // Activate button
+    document.getElementById(`tab-btn-${apiName}`).className = 'flex-1 px-6 py-4 text-sm font-medium transition bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600';
+}
+
+// Create charts for each API
+const apiData = {{ usage|tojson }};
+
+Object.keys(apiData).forEach(apiName => {
+    const stats = apiData[apiName];
+    const ctx = document.getElementById(`chart-${apiName}`);
+
+    if (ctx) {
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                datasets: [{
+                    label: 'Requests',
+                    data: generateDummyData(stats.used), // Generar datos de ejemplo
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: stats.limit === 'unlimited' ? 100 : stats.limit / 7
+                    }
+                }
+            }
+        });
+    }
+});
+
+// Helper to generate dummy historical data
+function generateDummyData(current) {
+    const data = [];
+    for (let i = 0; i < 6; i++) {
+        data.push(Math.floor(Math.random() * current));
+    }
+    data.push(current);
+    return data;
+}
+
+// Auto-refresh every 60 seconds
+setTimeout(() => location.reload(), 60000);
+</script>
+{% endblock %}

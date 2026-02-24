@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - SOC Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .register-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 440px;
+        }
+        .logo { text-align: center; margin-bottom: 25px; }
+        .logo h1 { color: #667eea; font-size: 28px; margin-bottom: 5px; }
+        .logo p { color: #666; font-size: 14px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 14px; }
+        .form-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .form-group .hint { font-size: 12px; color: #999; margin-top: 4px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-register {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 8px;
+        }
+        .btn-register:hover { transform: translateY(-2px); }
+        .btn-register:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .alert {
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .alert-error { background: #fee; color: #c33; border: 1px solid #fcc; }
+        .alert-success { background: #efe; color: #3a3; border: 1px solid #cfc; }
+        .login-link { text-align: center; margin-top: 18px; }
+        .login-link a { color: #667eea; text-decoration: none; font-size: 14px; }
+        .login-link a:hover { text-decoration: underline; }
+        .footer { text-align: center; margin-top: 16px; font-size: 12px; color: #999; }
+        .password-strength { height: 4px; border-radius: 2px; margin-top: 6px; transition: all 0.3s; }
+        .strength-weak { background: #ef4444; width: 33%; }
+        .strength-medium { background: #f59e0b; width: 66%; }
+        .strength-strong { background: #22c55e; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="logo">
+            <h1>SOC Agent</h1>
+            <p>Crear nueva cuenta</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.register') }}" id="registerForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="form-group">
+                <label for="username">Nombre de usuario</label>
+                <input type="text" id="username" name="username" placeholder="ej: analista_soc" required autofocus
+                       pattern="[a-zA-Z0-9_]{3,30}" title="3-30 caracteres, solo letras, numeros y guion bajo">
+                <p class="hint">3-30 caracteres, solo letras, numeros y _</p>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Correo electronico</label>
+                <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="password">Contrasena</label>
+                    <input type="password" id="password" name="password" placeholder="Min. 8 caracteres" required minlength="8" oninput="checkStrength()">
+                    <div class="password-strength" id="strengthBar"></div>
+                </div>
+                <div class="form-group">
+                    <label for="password2">Confirmar</label>
+                    <input type="password" id="password2" name="password2" placeholder="Repetir" required minlength="8" oninput="checkMatch()">
+                    <p class="hint" id="matchHint"></p>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-register" id="submitBtn">Crear Cuenta</button>
+        </form>
+
+        <div class="login-link">
+            <a href="{{ url_for('auth.login') }}">Ya tengo cuenta - Iniciar sesion</a>
+        </div>
+
+        <div class="footer">
+            &copy; 2026 SOC Agent | Threat Intelligence Platform
+        </div>
+    </div>
+
+    <script>
+    function checkStrength() {
+        const pw = document.getElementById('password').value;
+        const bar = document.getElementById('strengthBar');
+        let score = 0;
+        if (pw.length >= 8) score++;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+
+        bar.className = 'password-strength';
+        if (score >= 3) bar.classList.add('strength-strong');
+        else if (score >= 2) bar.classList.add('strength-medium');
+        else if (pw.length > 0) bar.classList.add('strength-weak');
+        checkMatch();
+    }
+
+    function checkMatch() {
+        const pw = document.getElementById('password').value;
+        const pw2 = document.getElementById('password2').value;
+        const hint = document.getElementById('matchHint');
+        if (pw2.length === 0) { hint.textContent = ''; return; }
+        if (pw === pw2) { hint.textContent = 'Coinciden'; hint.style.color = '#22c55e'; }
+        else { hint.textContent = 'No coinciden'; hint.style.color = '#ef4444'; }
+    }
+    </script>
+</body>
+</html>

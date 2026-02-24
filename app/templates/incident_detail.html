@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Incidente - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <!-- Loading -->
+    <div id="loading" class="text-center py-20">
+        <div class="loading mx-auto mb-4"></div>
+        <p class="text-gray-600">Cargando incidente...</p>
+    </div>
+
+    <!-- Content (hidden until loaded) -->
+    <div id="incidentContent" class="hidden">
+        <!-- Back + Header -->
+        <div class="mb-6">
+            <a href="{{ url_for('main.incidents') }}" class="text-sm text-indigo-600 hover:text-indigo-800 mb-3 inline-block">
+                <i class="fas fa-arrow-left mr-1"></i> Volver a Incidentes
+            </a>
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <span class="text-sm font-mono text-gray-400" id="ticketId"></span>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full" id="severityBadge"></span>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full" id="statusBadge"></span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800" id="incidentTitle"></h1>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="changeStatusModal()" class="px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                        <i class="fas fa-exchange-alt mr-1"></i>Cambiar Estado
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content (2/3) -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Descripcion -->
+                <div class="bg-white rounded-lg shadow p-5">
+                    <h3 class="font-semibold text-gray-800 mb-2"><i class="fas fa-align-left mr-2 text-indigo-600"></i>Descripcion</h3>
+                    <p class="text-gray-700 whitespace-pre-wrap" id="incidentDesc">Sin descripcion</p>
+                </div>
+
+                <!-- IOCs vinculados -->
+                <div class="bg-white rounded-lg shadow p-5">
+                    <h3 class="font-semibold text-gray-800 mb-3"><i class="fas fa-link mr-2 text-red-600"></i>IOCs Vinculados</h3>
+                    <div id="iocsList" class="space-y-2">
+                        <div class="text-gray-400 text-sm">Sin IOCs vinculados</div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-white rounded-lg shadow p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-800"><i class="fas fa-stream mr-2 text-purple-600"></i>Timeline</h3>
+                        <span class="text-xs text-gray-400" id="timelineCount">0 eventos</span>
+                    </div>
+                    
+                    <!-- Add Note -->
+                    <div class="mb-4 flex gap-2">
+                        <input type="text" id="noteInput" placeholder="Agregar nota..." 
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            onkeypress="if(event.key==='Enter')addNote()">
+                        <select id="noteType" class="text-sm border rounded-lg px-2">
+                            <option value="note">Nota</option>
+                            <option value="finding">Hallazgo</option>
+                            <option value="action">Accion</option>
+                        </select>
+                        <button onclick="addNote()" class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div id="timelineList" class="space-y-3">
+                        <div class="text-center text-gray-400 text-sm py-4">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar (1/3) -->
+            <div class="space-y-4">
+                <!-- Metadata -->
+                <div class="bg-white rounded-lg shadow p-5">
+                    <h3 class="font-semibold text-gray-800 mb-3">Detalles</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Creado por</span>
+                            <span class="font-medium" id="metaCreatedBy">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Asignado a</span>
+                            <span class="font-medium" id="metaAssigned">Sin asignar</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Creado</span>
+                            <span class="font-medium" id="metaCreated">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Actualizado</span>
+                            <span class="font-medium" id="metaUpdated">-</span>
+                        </div>
+                        <div class="flex justify-between" id="metaResolvedRow" style="display:none">
+                            <span class="text-gray-500">Resuelto</span>
+                            <span class="font-medium text-green-600" id="metaResolved">-</span>
+                        </div>
+                        <div class="flex justify-between" id="metaSessionRow" style="display:none">
+                            <span class="text-gray-500">Sesion</span>
+                            <a href="#" class="text-indigo-600 hover:underline" id="metaSession">-</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow p-5">
+                    <h3 class="font-semibold text-gray-800 mb-3">Acciones</h3>
+                    <div class="space-y-2">
+                        <button onclick="changeStatus('investigating')" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-yellow-50 text-yellow-700 transition">
+                            <i class="fas fa-search w-5 mr-2"></i>Marcar en curso
+                        </button>
+                        <button onclick="changeStatus('resolved')" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-green-50 text-green-700 transition">
+                            <i class="fas fa-check w-5 mr-2"></i>Marcar resuelto
+                        </button>
+                        <button onclick="changeStatus('closed')" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 text-gray-600 transition">
+                            <i class="fas fa-archive w-5 mr-2"></i>Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Cambiar Estado -->
+<div id="status-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-5">
+        <h3 class="font-bold text-gray-800 mb-3">Cambiar Estado</h3>
+        <select id="newStatus" class="w-full px-3 py-2 border rounded-lg mb-3">
+            <option value="open">Abierto</option>
+            <option value="investigating">En Curso</option>
+            <option value="resolved">Resuelto</option>
+            <option value="closed">Cerrado</option>
+        </select>
+        <input type="text" id="statusReason" placeholder="Razon del cambio (opcional)" class="w-full px-3 py-2 border rounded-lg mb-3 text-sm">
+        <div class="flex justify-end gap-2">
+            <button onclick="document.getElementById('status-modal').classList.add('hidden')" class="px-3 py-2 bg-gray-200 rounded-lg text-sm">Cancelar</button>
+            <button onclick="submitStatusChange()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Confirmar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentIncident = null;
+const incidentId = window.location.pathname.split('/').pop();
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadIncident();
+});
+
+async function loadIncident() {
+    try {
+        const response = await fetch(`/api/v2/incidents/${incidentId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            showToast('Incidente no encontrado', 'error');
+            return;
+        }
+        
+        currentIncident = data.incident;
+        renderIncident(currentIncident);
+        loadTimeline();
+        
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('incidentContent').classList.remove('hidden');
+    } catch (e) {
+        console.error('Error:', e);
+        showToast('Error cargando incidente', 'error');
+    }
+}
+
+function renderIncident(inc) {
+    document.getElementById('ticketId').textContent = inc.ticket_id;
+    document.getElementById('incidentTitle').textContent = inc.title;
+    document.getElementById('incidentDesc').textContent = inc.description || 'Sin descripcion';
+    
+    // Severity badge
+    const sevEl = document.getElementById('severityBadge');
+    const sevStyles = {
+        P1: 'bg-red-100 text-red-700', P2: 'bg-orange-100 text-orange-700',
+        P3: 'bg-yellow-100 text-yellow-700', P4: 'bg-blue-100 text-blue-700'
+    };
+    sevEl.className = `text-xs font-bold px-2.5 py-1 rounded-full ${sevStyles[inc.severity] || 'bg-gray-100'}`;
+    sevEl.textContent = inc.severity;
+    
+    // Status badge
+    const statEl = document.getElementById('statusBadge');
+    const statStyles = {
+        open: 'bg-red-100 text-red-700', investigating: 'bg-yellow-100 text-yellow-700',
+        resolved: 'bg-green-100 text-green-700', closed: 'bg-gray-200 text-gray-600'
+    };
+    const statLabels = { open: 'Abierto', investigating: 'En curso', resolved: 'Resuelto', closed: 'Cerrado' };
+    statEl.className = `text-xs font-bold px-2.5 py-1 rounded-full ${statStyles[inc.status] || 'bg-gray-100'}`;
+    statEl.textContent = statLabels[inc.status] || inc.status;
+    
+    // Metadata
+    document.getElementById('metaCreatedBy').textContent = inc.created_by || '-';
+    document.getElementById('metaAssigned').textContent = inc.assigned_to || 'Sin asignar';
+    document.getElementById('metaCreated').textContent = formatDate(inc.created_at);
+    document.getElementById('metaUpdated').textContent = formatDate(inc.updated_at);
+    
+    if (inc.resolved_at) {
+        document.getElementById('metaResolvedRow').style.display = 'flex';
+        document.getElementById('metaResolved').textContent = formatDate(inc.resolved_at);
+    }
+    if (inc.session_id) {
+        document.getElementById('metaSessionRow').style.display = 'flex';
+        document.getElementById('metaSession').textContent = `Sesion #${inc.session_id}`;
+    }
+    
+    // IOCs
+    if (inc.linked_iocs && inc.linked_iocs.length > 0) {
+        document.getElementById('iocsList').innerHTML = inc.linked_iocs.map(ioc => {
+            const riskClass = { 'CRITICO': 'risk-critical', 'ALTO': 'risk-high', 'MEDIO': 'risk-medium', 'BAJO': 'risk-low', 'LIMPIO': 'risk-clean' };
+            return `
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div class="flex items-center gap-2">
+                        <span class="risk-badge ${riskClass[ioc.risk_level] || ''} text-xs">${ioc.risk_level || 'N/A'}</span>
+                        <span class="font-mono text-sm">${ioc.ioc_value || 'N/A'}</span>
+                        <span class="text-xs text-gray-400">${(ioc.ioc_type || '').toUpperCase()}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">${ioc.confidence_score || '-'}/100</span>
+                        <span class="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded">${ioc.role}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+async function loadTimeline() {
+    try {
+        const response = await fetch(`/api/v2/incidents/${incidentId}/timeline`);
+        const data = await response.json();
+        
+        if (!data.success) return;
+        
+        const timeline = data.timeline;
+        document.getElementById('timelineCount').textContent = `${timeline.length} eventos`;
+        
+        if (timeline.length === 0) {
+            document.getElementById('timelineList').innerHTML = '<div class="text-center text-gray-400 text-sm py-4">Sin eventos</div>';
+            return;
+        }
+        
+        document.getElementById('timelineList').innerHTML = timeline.map(event => {
+            const icons = {
+                created: 'fas fa-plus-circle text-green-500',
+                status_changed: 'fas fa-exchange-alt text-indigo-500',
+                ioc_linked: 'fas fa-link text-red-500',
+                ioc_unlinked: 'fas fa-unlink text-gray-500',
+                note: 'fas fa-sticky-note text-yellow-500',
+                finding: 'fas fa-search text-blue-500',
+                action: 'fas fa-bolt text-orange-500',
+                updated: 'fas fa-edit text-purple-500',
+                chat_message: 'fas fa-comment text-teal-500'
+            };
+            const icon = icons[event.type] || 'fas fa-circle text-gray-400';
+            const time = event.timestamp ? formatDate(event.timestamp) : '';
+            const source = event.source === 'session' ? '<span class="text-xs bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded ml-2">Chat</span>' : '';
+            
+            return `
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 mt-1"><i class="${icon} text-sm"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-800">${event.description}${source}</p>
+                        <div class="text-xs text-gray-400 mt-0.5">
+                            ${event.user ? event.user + ' · ' : ''}${time}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading timeline:', e);
+    }
+}
+
+async function addNote() {
+    const content = document.getElementById('noteInput').value.trim();
+    if (!content) return;
+    
+    const type = document.getElementById('noteType').value;
+    
+    try {
+        const response = await fetch(`/api/v2/incidents/${incidentId}/notes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, type })
+        });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('noteInput').value = '';
+            loadTimeline();
+            showToast('Nota agregada', 'success');
+        }
+    } catch (e) {
+        showToast('Error agregando nota', 'error');
+    }
+}
+
+async function changeStatus(status) {
+    try {
+        const response = await fetch(`/api/v2/incidents/${incidentId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Estado cambiado a ${status}`, 'success');
+            loadIncident();
+        }
+    } catch (e) {
+        showToast('Error cambiando estado', 'error');
+    }
+}
+
+function changeStatusModal() {
+    document.getElementById('status-modal').classList.remove('hidden');
+    if (currentIncident) document.getElementById('newStatus').value = currentIncident.status;
+}
+
+async function submitStatusChange() {
+    const status = document.getElementById('newStatus').value;
+    const reason = document.getElementById('statusReason').value.trim();
+    
+    try {
+        const response = await fetch(`/api/v2/incidents/${incidentId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, reason })
+        });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('status-modal').classList.add('hidden');
+            showToast('Estado actualizado', 'success');
+            loadIncident();
+        }
+    } catch (e) {
+        showToast('Error', 'error');
+    }
+}
+
+function formatDate(iso) {
+    if (!iso) return '-';
+    let str = iso;
+    if (!str.endsWith('Z') && !str.includes('+') && !str.includes('-', 10)) str += 'Z';
+    str = str.replace(/\+00:00$/, 'Z');
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+</script>
+{% endblock %}

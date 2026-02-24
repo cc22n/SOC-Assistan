@@ -1,0 +1,595 @@
+{% extends "base.html" %}
+{% block title %}Chat Analyst - SOC Agent{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-comments text-indigo-600 mr-2"></i>Chat Analyst</h1>
+                    <p class="text-gray-600 mt-1">Analiza IOCs con IA experta en threat intelligence</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportSession()" class="btn btn-outline" id="btn-export" disabled><i class="fas fa-download mr-2"></i>Exportar</button>
+                    <button onclick="showSessionsModal()" class="btn btn-outline"><i class="fas fa-history mr-2"></i>Sesiones</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Bar -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-3">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-gray-500">Sesión:</span>
+                        <span id="session-title" class="font-semibold text-indigo-800 cursor-pointer" onclick="editSessionTitle()">Cargando...</span>
+                        <button onclick="editSessionTitle()" class="text-gray-400 hover:text-indigo-600"><i class="fas fa-pencil-alt text-xs"></i></button>
+                    </div>
+                    <div class="flex items-center gap-4 text-sm">
+                        <span><i class="fas fa-crosshairs text-red-500 mr-1"></i><span id="session-iocs-count">0</span> IOCs</span>
+                        <span><i class="fas fa-comments text-blue-500 mr-1"></i><span id="session-messages-count">0</span> msgs</span>
+                        <span id="session-risk-badge" class="hidden px-2 py-1 rounded text-xs font-bold"></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="createNewSession()" class="btn btn-sm btn-outline"><i class="fas fa-plus mr-1"></i>Nueva</button>
+                        <button onclick="closeCurrentSession()" class="btn btn-sm btn-outline text-red-600"><i class="fas fa-times-circle"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LLM Selector -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="bg-white border rounded-lg p-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-gray-600">Modelo:</span>
+                    <select id="llm-selector" class="px-3 py-1.5 border rounded-lg text-sm" onchange="changeLLMProvider()"><option disabled>Cargando...</option></select>
+                    <span id="llm-speed-badge" class="px-2 py-1 rounded text-xs font-bold"></span>
+                </div>
+                <span class="text-sm text-gray-500">APIs: <span id="apis-count" class="font-bold text-indigo-600">0/12</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Chat -->
+        <div class="col-lg-8">
+            <div class="bg-white rounded-lg shadow-md" style="height: calc(100vh - 380px);">
+                <div id="chat-messages" class="p-4 overflow-y-auto" style="height: calc(100% - 80px);">
+                    <div id="welcome-message" class="mb-4">
+                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border-l-4 border-indigo-500">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-robot text-3xl text-indigo-600"></i>
+                                <div>
+                                    <h3 class="font-bold text-gray-800 mb-2">¡Hola! Soy tu Analista SOC IA</h3>
+                                    <ul class="list-disc list-inside text-gray-600 text-sm space-y-1">
+                                        <li>Analizar IPs, dominios, URLs y hashes</li>
+                                        <li>Mantener contexto de la investigación</li>
+                                        <li>Correlacionar múltiples IOCs</li>
+                                    </ul>
+                                    <p class="mt-2 text-sm text-gray-500">💡 Puedo recordar IOCs anteriores</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t p-4">
+                    <form id="chat-form" class="flex gap-2">
+                        <input type="text" id="chat-input" class="flex-1 px-4 py-2 border rounded-lg" placeholder="IOC o pregunta..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary px-6"><i class="fas fa-paper-plane mr-2"></i>Enviar</button>
+                    </form>
+                    <div class="mt-2 flex justify-between text-xs text-gray-500">
+                        <span><i class="fas fa-microchip mr-1"></i>Modelo: <span id="current-model">-</span></span>
+                        <span id="session-id-display">Sesión: -</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="font-bold text-sm"><i class="fas fa-crosshairs text-red-500 mr-2"></i>IOCs en sesión</h3></div>
+                <div class="card-body p-2">
+                    <div id="session-iocs-list" class="space-y-2 max-h-48 overflow-y-auto">
+                        <p class="text-gray-400 text-sm text-center py-4">Analiza un IOC para comenzar</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="font-bold text-sm"><i class="fas fa-bolt text-yellow-500 mr-2"></i>Acciones</h3></div>
+                <div class="card-body p-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="quickAnalyze('ip')" class="btn btn-sm btn-outline text-xs"><i class="fas fa-network-wired mr-1"></i>IP</button>
+                        <button onclick="quickAnalyze('domain')" class="btn btn-sm btn-outline text-xs"><i class="fas fa-globe mr-1"></i>Dominio</button>
+                        <button onclick="quickAnalyze('url')" class="btn btn-sm btn-outline text-xs"><i class="fas fa-link mr-1"></i>URL</button>
+                        <button onclick="quickAnalyze('hash')" class="btn btn-sm btn-outline text-xs"><i class="fas fa-hashtag mr-1"></i>Hash</button>
+                    </div>
+                    <button onclick="askContext()" class="btn btn-sm btn-outline w-full mt-2 text-xs"><i class="fas fa-brain mr-1"></i>Correlacionar IOCs</button>
+                    <button onclick="createIncidentFromChat()" class="btn btn-sm w-full mt-2 text-xs bg-red-600 text-white hover:bg-red-700"><i class="fas fa-exclamation-triangle mr-1"></i>Crear Incidente</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3 class="font-bold text-sm"><i class="fas fa-server text-green-500 mr-2"></i>APIs</h3></div>
+                <div class="card-body p-2"><div id="api-status-compact" class="grid grid-cols-6 gap-1"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="sessions-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+        <div class="p-4 border-b flex justify-between"><h3 class="text-lg font-bold">Sesiones</h3><button onclick="hideModal('sessions-modal')" class="text-gray-500"><i class="fas fa-times"></i></button></div>
+        <div class="p-4 overflow-y-auto" style="max-height:60vh"><div id="sessions-list">Cargando...</div></div>
+        <div class="p-4 border-t"><button onclick="createNewSession();hideModal('sessions-modal')" class="btn btn-primary w-full"><i class="fas fa-plus mr-2"></i>Nueva Sesión</button></div>
+    </div>
+</div>
+
+<div id="edit-title-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-4 border-b"><h3 class="font-bold">Editar Título</h3></div>
+        <div class="p-4"><input type="text" id="edit-title-input" class="w-full px-4 py-2 border rounded-lg" placeholder="Título..."></div>
+        <div class="p-4 border-t flex justify-end gap-2"><button onclick="hideModal('edit-title-modal')" class="btn btn-outline">Cancelar</button><button onclick="saveSessionTitle()" class="btn btn-primary">Guardar</button></div>
+    </div>
+</div>
+
+<div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+        <div class="p-4 border-b"><h3 class="font-bold">Exportar Sesion</h3></div>
+        <div class="p-4 space-y-2">
+            <button onclick="doExport('json')" class="btn btn-outline w-full"><i class="fas fa-code mr-2 text-blue-500"></i>JSON</button>
+            <button onclick="doExport('markdown')" class="btn btn-outline w-full"><i class="fas fa-file-alt mr-2 text-green-500"></i>Markdown</button>
+            <button onclick="doExport('pdf')" class="btn btn-outline w-full"><i class="fas fa-file-pdf mr-2 text-red-500"></i>PDF</button>
+            <button onclick="doExport('docx')" class="btn btn-outline w-full"><i class="fas fa-file-word mr-2 text-indigo-500"></i>DOCX</button>
+        </div>
+        <div class="p-4 border-t"><button onclick="hideModal('export-modal')" class="btn btn-outline w-full">Cancelar</button></div>
+    </div>
+</div>
+
+<style>
+.message-user .bubble, .message-assistant .bubble { padding: 0.75rem 1rem; border-radius: 1rem; max-width: 85%; }
+.message-user .bubble { background: linear-gradient(135deg, #667eea, #764ba2); color: white; margin-left: auto; border-bottom-right-radius: 0.25rem; }
+.message-assistant .bubble { background: #f3f4f6; border-bottom-left-radius: 0.25rem; }
+.typing-indicator { display: flex; gap: 4px; padding: 8px; }
+.typing-indicator span { width: 8px; height: 8px; background: #6366f1; border-radius: 50%; animation: typing 1.4s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.risk-badge { padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: bold; }
+.risk-critico { background: #fee2e2; color: #dc2626; }
+.risk-alto { background: #ffedd5; color: #ea580c; }
+.risk-medio { background: #fef9c3; color: #ca8a04; }
+.risk-bajo { background: #d1fae5; color: #059669; }
+.risk-limpio { background: #dbeafe; color: #2563eb; }
+.speed-very_fast { background: #d1fae5; color: #059669; }
+.speed-fast { background: #dbeafe; color: #2563eb; }
+.speed-medium { background: #fef9c3; color: #ca8a04; }
+.analysis-card { background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #86efac; border-radius: 0.5rem; padding: 0.75rem; margin-top: 0.5rem; }
+.ioc-item { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem; cursor: pointer; }
+.ioc-item:hover { background: #f3f4f6; }
+.api-dot { width: 8px; height: 8px; border-radius: 50%; }
+.api-dot.healthy { background: #22c55e; }
+.api-dot.warning { background: #f59e0b; }
+.api-dot.error { background: #ef4444; }
+.api-dot.disabled { background: #9ca3af; }
+.card { background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.card-header { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; }
+.card-body { padding: 0.75rem; }
+</style>
+
+<script>
+let currentSession = null, selectedProvider = null, availableProviders = {};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadLLMProviders();
+    await loadActiveSession();
+    await loadAPIStatus();
+});
+
+async function loadActiveSession() {
+    try {
+        const r = await fetch('/api/v2/sessions/active');
+        const d = await r.json();
+        if (d.success && d.session) {
+            currentSession = d.session;
+            updateSessionUI(d.session);
+            if (d.session.total_messages > 0) await loadSessionMessages(d.session.id);
+            if (d.session.total_iocs > 0) await loadSessionIOCs(d.session.id);
+        } else {
+            await createNewSession(false);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function updateSessionUI(s) {
+    document.getElementById('session-title').textContent = s.title || 'Sin título';
+    document.getElementById('session-iocs-count').textContent = s.total_iocs || 0;
+    document.getElementById('session-messages-count').textContent = s.total_messages || 0;
+    document.getElementById('session-id-display').textContent = `Sesión: ${s.id}`;
+    document.getElementById('btn-export').disabled = false;
+    const rb = document.getElementById('session-risk-badge');
+    if (s.highest_risk_level) {
+        rb.textContent = s.highest_risk_level;
+        rb.className = `px-2 py-1 rounded text-xs font-bold risk-${s.highest_risk_level.toLowerCase().replace('í','i')}`;
+        rb.classList.remove('hidden');
+    } else rb.classList.add('hidden');
+}
+
+async function loadSessionMessages(id) {
+    try {
+        const r = await fetch(`/api/v2/sessions/${id}/messages?limit=50`);
+        const d = await r.json();
+        if (d.success && d.messages.length > 0) {
+            document.getElementById('welcome-message')?.remove();
+            const c = document.getElementById('chat-messages');
+            c.innerHTML = '';
+            d.messages.filter(m => !m.is_summary).forEach(m => addMessageToUI(m.role, m.content));
+            c.scrollTop = c.scrollHeight;
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadSessionIOCs(id) {
+    try {
+        const r = await fetch(`/api/v2/sessions/${id}/iocs`);
+        const d = await r.json();
+        if (d.success) updateIOCsList(d.iocs.map(i => ({ value: i.ioc_value, type: i.ioc_type, risk: i.risk_level })));
+    } catch (e) { console.error(e); }
+}
+
+function updateIOCsList(iocs) {
+    const c = document.getElementById('session-iocs-list');
+    if (!iocs?.length) { c.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Analiza un IOC</p>'; return; }
+    c.innerHTML = iocs.map(i => {
+        const icon = { ip: 'fa-network-wired', domain: 'fa-globe', url: 'fa-link', hash: 'fa-hashtag' }[i.type] || 'fa-question';
+        const val = i.value.length > 20 ? i.value.slice(0,20)+'...' : i.value;
+        return `<div class="ioc-item" onclick="askAboutIOC('${escapeHtml(i.value)}')">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-mono"><i class="fas ${icon} text-gray-400 mr-1"></i>${escapeHtml(val)}</span>
+                <span class="risk-badge risk-${(i.risk||'medio').toLowerCase().replace('í','i')}">${i.risk||'N/A'}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function createNewSession(confirm = true) {
+    if (confirm && currentSession?.total_messages > 0 && !window.confirm('¿Crear nueva sesión?')) return;
+    try {
+        const r = await fetch('/api/v2/sessions', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({close_existing:true}) });
+        const d = await r.json();
+        if (d.success) {
+            currentSession = d.session;
+            updateSessionUI(d.session);
+            document.getElementById('chat-messages').innerHTML = '<div id="welcome-message" class="mb-4"><div class="bg-green-50 rounded-lg p-4 border-l-4 border-green-500"><i class="fas fa-check-circle text-green-600 mr-2"></i>Nueva sesión creada</div></div>';
+            updateIOCsList([]);
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function closeCurrentSession() {
+    if (!currentSession || !window.confirm('¿Cerrar sesión?')) return;
+    await fetch(`/api/v2/sessions/${currentSession.id}/close`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({conclusion: 'Cerrada manualmente'}) });
+    await createNewSession(false);
+}
+
+function showSessionsModal() { document.getElementById('sessions-modal').classList.remove('hidden'); loadSessionsList(); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function loadSessionsList() {
+    try {
+        const r = await fetch('/api/v2/sessions?limit=20');
+        const d = await r.json();
+        const c = document.getElementById('sessions-list');
+        if (d.success && d.sessions.length) {
+            c.innerHTML = d.sessions.map(s => {
+                const curr = currentSession?.id === s.id;
+                const dt = s.created_at ? formatLocalDate(s.created_at) : 'N/A';
+                return `<div class="p-3 mb-2 rounded-lg border ${curr?'border-indigo-500 bg-indigo-50':'border-gray-200 hover:bg-gray-50'} cursor-pointer" onclick="switchSession(${s.id})">
+                    <div class="font-semibold">${escapeHtml(s.title||'Sin título')} ${curr?'<span class="text-xs bg-indigo-600 text-white px-2 rounded">Actual</span>':''}</div>
+                    <div class="text-xs text-gray-500">${dt} • ${s.total_iocs} IOCs • ${s.status}</div>
+                </div>`;
+            }).join('');
+        } else c.innerHTML = '<p class="text-center text-gray-500">No hay sesiones</p>';
+    } catch (e) { console.error(e); }
+}
+
+async function switchSession(id) {
+    if (currentSession?.id === id) { hideModal('sessions-modal'); return; }
+    try {
+        const r = await fetch(`/api/v2/sessions/${id}`);
+        const d = await r.json();
+        if (d.success) {
+            currentSession = d.session;
+            updateSessionUI(d.session);
+            document.getElementById('chat-messages').innerHTML = '';
+            if (d.session.total_messages) await loadSessionMessages(id);
+            await loadSessionIOCs(id);
+            hideModal('sessions-modal');
+        }
+    } catch (e) { console.error(e); }
+}
+
+function editSessionTitle() {
+    if (!currentSession) return;
+    document.getElementById('edit-title-input').value = currentSession.title || '';
+    document.getElementById('edit-title-modal').classList.remove('hidden');
+}
+
+async function saveSessionTitle() {
+    const t = document.getElementById('edit-title-input').value.trim();
+    if (!t || !currentSession) return;
+    try {
+        const r = await fetch(`/api/v2/sessions/${currentSession.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title:t}) });
+        if ((await r.json()).success) {
+            currentSession.title = t;
+            document.getElementById('session-title').textContent = t;
+            hideModal('edit-title-modal');
+        }
+    } catch (e) { console.error(e); }
+}
+
+function exportSession() { if (currentSession) document.getElementById('export-modal').classList.remove('hidden'); }
+
+async function doExport(fmt) {
+    if (!currentSession) return;
+    hideModal('export-modal');
+    try {
+        const url = `/api/v2/sessions/${currentSession.id}/export?format=${fmt}`;
+
+        if (fmt === 'pdf' || fmt === 'docx') {
+            // Descarga binaria
+            const r = await fetch(url);
+            if (!r.ok) {
+                const err = await r.json().catch(() => ({}));
+                showToast(err.error || 'Error exportando', 'error');
+                return;
+            }
+            const blob = await r.blob();
+            const ext = fmt === 'pdf' ? 'pdf' : 'docx';
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `session_${currentSession.id}.${ext}`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        } else {
+            // JSON o Markdown (texto)
+            const r = await fetch(url);
+            if (!r.ok) {
+                const err = await r.json().catch(() => ({}));
+                showToast(err.error || 'Error exportando', 'error');
+                return;
+            }
+            let content, ext, mime;
+            if (fmt === 'markdown') {
+                content = await r.text();
+                ext = 'md';
+                mime = 'text/markdown';
+            } else {
+                content = JSON.stringify(await r.json(), null, 2);
+                ext = 'json';
+                mime = 'application/json';
+            }
+            const blob = new Blob([content], { type: mime });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `session_${currentSession.id}.${ext}`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        showToast(`Exportado como ${fmt.toUpperCase()}`, 'success');
+    } catch (e) {
+        console.error('Export error:', e);
+        showToast('Error exportando', 'error');
+    }
+}
+
+async function loadLLMProviders() {
+    try {
+        const r = await fetch('/api/v2/llm/providers');
+        const d = await r.json();
+        if (d.success) {
+            availableProviders = d.providers;
+            selectedProvider = d.default_provider;
+            const sel = document.getElementById('llm-selector');
+            const meta = { xai:{icon:'🚀',label:'xAI',speed:'very_fast',sl:'⚡'}, openai:{icon:'🧠',label:'GPT-4',speed:'fast',sl:'🔵'}, groq:{icon:'⚡',label:'Groq',speed:'very_fast',sl:'⚡'}, gemini:{icon:'💎',label:'Gemini',speed:'medium',sl:'🟡'} };
+            sel.innerHTML = Object.entries(d.providers).map(([n,i]) => {
+                const m = meta[n]||{icon:'🤖',label:n};
+                return `<option value="${n}" ${!i.available?'disabled':''} ${n===d.default_provider?'selected':''}>${m.icon} ${m.label} ${i.available?(i.cost==='free'?'✓':'$'):'✗'}</option>`;
+            }).join('');
+            if (d.default_provider && meta[d.default_provider]) {
+                document.getElementById('llm-speed-badge').className = `px-2 py-1 rounded text-xs font-bold speed-${meta[d.default_provider].speed}`;
+                document.getElementById('llm-speed-badge').textContent = meta[d.default_provider].sl;
+                document.getElementById('current-model').textContent = d.providers[d.default_provider]?.model || d.default_provider;
+            }
+        }
+    } catch (e) { console.error(e); }
+}
+
+function changeLLMProvider() {
+    selectedProvider = document.getElementById('llm-selector').value;
+    const meta = { xai:{speed:'very_fast',sl:'⚡'}, openai:{speed:'fast',sl:'🔵'}, groq:{speed:'very_fast',sl:'⚡'}, gemini:{speed:'medium',sl:'🟡'} };
+    const m = meta[selectedProvider]||{};
+    document.getElementById('llm-speed-badge').className = `px-2 py-1 rounded text-xs font-bold speed-${m.speed||'medium'}`;
+    document.getElementById('llm-speed-badge').textContent = m.sl||'';
+    document.getElementById('current-model').textContent = availableProviders[selectedProvider]?.model || selectedProvider;
+}
+
+async function loadAPIStatus() {
+    try {
+        const r = await fetch('/api/v2/apis/status');
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('apis-count').textContent = `${d.healthy_apis}/${d.total_apis}`;
+            const apis = ['virustotal','greynoise','abuseipdb','shodan','otx','threatfox'];
+            document.getElementById('api-status-compact').innerHTML = apis.map(n => {
+                const a = d.apis[n];
+                const cls = !a?.is_configured?'disabled':a.health==='healthy'?'healthy':a.health==='warning'?'warning':'error';
+                return `<div class="flex items-center justify-center p-1" title="${n}"><div class="api-dot ${cls}"></div></div>`;
+            }).join('');
+        }
+    } catch (e) { console.error(e); }
+}
+
+document.getElementById('chat-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    document.getElementById('welcome-message')?.remove();
+    addMessageToUI('user', msg);
+    input.value = '';
+    showTyping();
+    try {
+        const r = await fetch('/api/v2/chat/message', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg,session_id:currentSession?.id,llm_provider:selectedProvider}) });
+        const d = await r.json();
+        removeTyping();
+        if (d.success) {
+            addMessageToUI('assistant', d.response, d.analysis_data);
+            if (d.analysis_data && currentSession) {
+                await loadSessionIOCs(currentSession.id);
+                document.getElementById('session-iocs-count').textContent = parseInt(document.getElementById('session-iocs-count').textContent) + 1;
+                updateRisk(d.analysis_data.risk_level);
+            }
+        } else addMessageToUI('system', 'Error: ' + (d.error||''));
+    } catch (e) { removeTyping(); addMessageToUI('system', 'Error: ' + e.message); }
+});
+
+function addMessageToUI(role, content, analysis = null) {
+    const div = document.createElement('div');
+    div.className = `message-${role} mb-4`;
+    if (role === 'user') {
+        div.innerHTML = `<div class="flex justify-end"><div class="bubble">${escapeHtml(content)}</div></div>`;
+    } else if (role === 'assistant') {
+        let html = `<div class="flex items-start gap-3"><i class="fas fa-robot text-2xl text-indigo-600"></i><div class="flex-1"><div class="bubble">${formatMd(content)}</div>`;
+        if (analysis) {
+            html += `<div class="analysis-card"><div class="flex justify-between mb-1"><span class="font-semibold text-sm">Análisis</span><span class="risk-badge risk-${(analysis.risk_level||'medio').toLowerCase().replace('í','i')}">${analysis.risk_level||'N/A'}</span></div>
+            <div class="text-xs text-gray-600"><p><b>IOC:</b> <code class="bg-gray-200 px-1 rounded">${analysis.ioc}</code></p><p><b>Score:</b> ${analysis.confidence_score}/100</p></div></div>`;
+        }
+        html += '</div></div>';
+        div.innerHTML = html;
+    } else {
+        div.innerHTML = `<div class="text-center"><span class="text-sm text-red-500 bg-red-50 px-3 py-1 rounded">${escapeHtml(content)}</span></div>`;
+    }
+    const c = document.getElementById('chat-messages');
+    c.appendChild(div);
+    c.scrollTop = c.scrollHeight;
+}
+
+function showTyping() {
+    const div = document.createElement('div');
+    div.id = 'typing';
+    div.className = 'message-assistant mb-4';
+    div.innerHTML = '<div class="flex items-start gap-3"><i class="fas fa-robot text-2xl text-indigo-600 animate-pulse"></i><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>';
+    const c = document.getElementById('chat-messages');
+    c.appendChild(div);
+    c.scrollTop = c.scrollHeight;
+}
+
+function removeTyping() { document.getElementById('typing')?.remove(); }
+
+function updateRisk(risk) {
+    const order = ['LIMPIO','BAJO','MEDIO','ALTO','CRÍTICO'];
+    const curr = currentSession?.highest_risk_level;
+    if (!curr || order.indexOf(risk) > order.indexOf(curr)) {
+        const b = document.getElementById('session-risk-badge');
+        b.textContent = risk;
+        b.className = `px-2 py-1 rounded text-xs font-bold risk-${risk.toLowerCase().replace('í','i')}`;
+        b.classList.remove('hidden');
+        if (currentSession) currentSession.highest_risk_level = risk;
+    }
+}
+
+function quickAnalyze(type) {
+    const ioc = prompt(`Ingresa ${type}:`);
+    if (ioc?.trim()) {
+        document.getElementById('chat-input').value = `Analiza este ${type}: ${ioc.trim()}`;
+        document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+    }
+}
+
+function askAboutIOC(v) { document.getElementById('chat-input').value = `Más detalles sobre ${v}`; document.getElementById('chat-input').focus(); }
+
+function askContext() {
+    document.getElementById('chat-input').value = '¿Hay relación entre los IOCs analizados en esta sesión?';
+    document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+}
+
+async function createIncidentFromChat() {
+    if (!currentSession) { showToast('No hay sesion activa', 'error'); return; }
+
+    // Recopilar IOC ids de la sesion
+    let iocIds = [], iocDetails = [];
+    try {
+        const r = await fetch(`/api/v2/sessions/${currentSession.id}/iocs`);
+        const d = await r.json();
+        if (d.success && d.iocs.length > 0) {
+            iocIds = d.iocs.map(i => i.ioc_id);
+            iocDetails = d.iocs.map(i => ({
+                value: i.ioc_value || 'N/A',
+                risk_level: i.risk_level
+            }));
+        }
+    } catch(e) { console.error(e); }
+
+    // Mapear riesgo a severidad
+    const riskToSev = { 'CRITICO': 'P1', 'CRÍTICO': 'P1', 'ALTO': 'P2', 'MEDIO': 'P3', 'BAJO': 'P4', 'LIMPIO': 'P4' };
+    const sev = riskToSev[currentSession.highest_risk_level] || 'P3';
+
+    // Abrir modal (definido en incidents.html o inline)
+    if (typeof showCreateModal === 'function') {
+        showCreateModal({
+            title: currentSession.title || 'Incidente desde chat',
+            severity: sev,
+            description: `Incidente generado desde sesion de chat #${currentSession.id}\nRiesgo maximo detectado: ${currentSession.highest_risk_level || 'N/A'}\nIOCs analizados: ${iocIds.length}`,
+            session_id: currentSession.id,
+            ioc_ids: iocIds,
+            ioc_details: iocDetails
+        });
+    } else {
+        // Fallback: crear directamente via API
+        if (!window.confirm(`Crear incidente ${sev} con ${iocIds.length} IOC(s)?`)) return;
+        try {
+            const r = await fetch('/api/v2/incidents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: currentSession.title || 'Incidente desde chat',
+                    severity: sev,
+                    description: `Incidente desde sesion #${currentSession.id}`,
+                    session_id: currentSession.id,
+                    ioc_ids: iocIds,
+                    primary_ioc_id: iocIds[0] || null
+                })
+            });
+            const d = await r.json();
+            if (d.success) {
+                showToast(`Incidente ${d.incident.ticket_id} creado`, 'success');
+                if (window.confirm('¿Ir al incidente?')) window.location.href = `/incident/${d.incident.id}`;
+            } else showToast(d.error || 'Error', 'error');
+        } catch(e) { showToast('Error de conexion', 'error'); }
+    }
+}
+
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+function formatMd(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code class="bg-gray-200 px-1 rounded">$1</code>').replace(/\n/g,'<br>'); }
+
+function formatLocalDate(iso) {
+    if (!iso) return '-';
+    // Asegurar que JS interprete como UTC si no tiene zona
+    let str = iso;
+    if (!str.endsWith('Z') && !str.includes('+') && !str.includes('-', 10)) str += 'Z';
+    // Reemplazar +00:00 por Z para consistencia
+    str = str.replace(/\+00:00$/, 'Z');
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+</script>
+{% endblock %}

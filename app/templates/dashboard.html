@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SOC Agent{% endblock %}
+
+{% block head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Leaflet para mapas (CDN permitido por CSP) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+    .stat-card {
+        @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700;
+    }
+    .stat-value {
+        @apply text-3xl font-bold text-gray-900 dark:text-white;
+    }
+    .stat-label {
+        @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+    }
+    .stat-icon {
+        @apply w-12 h-12 rounded-lg flex items-center justify-center;
+    }
+    .chart-container {
+        @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700;
+    }
+    .risk-badge {
+        @apply px-2 py-1 rounded-full text-xs font-semibold;
+    }
+    .risk-critico { @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200; }
+    .risk-alto { @apply bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200; }
+    .risk-medio { @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200; }
+    .risk-bajo { @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200; }
+    .risk-limpio { @apply bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200; }
+    #threatMap { height: 300px; border-radius: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-shield-alt text-indigo-600 mr-2"></i>
+                        Dashboard SOC Agent
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Threat Intelligence Overview
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Selector de período -->
+                    <select id="periodSelector" class="bg-gray-100 dark:bg-gray-700 border-0 rounded-lg px-4 py-2 text-sm">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                    </select>
+                    <!-- Toggle user only -->
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="userOnlyToggle" class="sr-only peer">
+                        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Solo mis datos</span>
+                    </label>
+                    <!-- Refresh -->
+                    <button onclick="loadAllStats()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <!-- Total Análisis -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="stat-value" id="totalAnalyses">-</p>
+                        <p class="stat-label">Análisis Totales</p>
+                    </div>
+                    <div class="stat-icon bg-indigo-100 dark:bg-indigo-900">
+                        <i class="fas fa-search text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Críticos -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="stat-value text-red-600" id="criticalCount">-</p>
+                        <p class="stat-label">Amenazas Críticas</p>
+                    </div>
+                    <div class="stat-icon bg-red-100 dark:bg-red-900">
+                        <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IOCs Únicos -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="stat-value" id="uniqueIocs">-</p>
+                        <p class="stat-label">IOCs Únicos</p>
+                    </div>
+                    <div class="stat-icon bg-purple-100 dark:bg-purple-900">
+                        <i class="fas fa-fingerprint text-purple-600 dark:text-purple-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sesiones Activas -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="stat-value" id="activeSessions">-</p>
+                        <p class="stat-label">Sesiones Activas</p>
+                    </div>
+                    <div class="stat-icon bg-green-100 dark:bg-green-900">
+                        <i class="fas fa-comments text-green-600 dark:text-green-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Promedio -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="stat-value" id="avgConfidence">-</p>
+                        <p class="stat-label">Score Promedio</p>
+                    </div>
+                    <div class="stat-icon bg-yellow-100 dark:bg-yellow-900">
+                        <i class="fas fa-chart-line text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Risk Distribution (Pie) -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-chart-pie text-indigo-500 mr-2"></i>
+                    Distribución por Nivel de Riesgo
+                </h3>
+                <div class="h-64">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <!-- API Usage (Bar) -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-server text-green-500 mr-2"></i>
+                    Uso de APIs de Threat Intelligence
+                </h3>
+                <div class="h-64">
+                    <canvas id="apiChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Timeline (Line) -->
+            <div class="chart-container lg:col-span-2">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                    Timeline de Análisis
+                </h3>
+                <div class="h-64">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Threats -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-skull-crossbones text-red-500 mr-2"></i>
+                    Top Amenazas
+                </h3>
+                <div class="space-y-3" id="topThreats">
+                    <div class="text-gray-500 text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 3 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Threat Map -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-globe text-teal-500 mr-2"></i>
+                    Mapa de Amenazas
+                </h3>
+                <div id="threatMap"></div>
+                <div class="mt-4 grid grid-cols-5 gap-2 text-xs" id="countryStats">
+                    <!-- Se llena con JS -->
+                </div>
+            </div>
+
+            <!-- Recent Analyses -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <i class="fas fa-history text-purple-500 mr-2"></i>
+                    Análisis Recientes
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="text-left text-xs text-gray-500 uppercase">
+                                <th class="pb-2">IOC</th>
+                                <th class="pb-2">Tipo</th>
+                                <th class="pb-2">Riesgo</th>
+                                <th class="pb-2">Score</th>
+                                <th class="pb-2">Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTable" class="text-sm">
+                            <tr>
+                                <td colspan="5" class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin"></i> Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Health -->
+        <div class="chart-container">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-heartbeat text-pink-500 mr-2"></i>
+                Estado de APIs (Tasa de Éxito)
+            </h3>
+            <div class="h-48">
+                <canvas id="apiHealthChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales para charts
+let riskChart, apiChart, timelineChart, apiHealthChart, threatMap;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    initMap();
+    loadAllStats();
+
+    // Event listeners
+    document.getElementById('periodSelector').addEventListener('change', loadAllStats);
+    document.getElementById('userOnlyToggle').addEventListener('change', loadAllStats);
+});
+
+function initCharts() {
+    const darkMode = document.documentElement.classList.contains('dark');
+    const textColor = darkMode ? '#9ca3af' : '#6b7280';
+    const gridColor = darkMode ? '#374151' : '#e5e7eb';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+
+    // Risk Distribution (Doughnut)
+    riskChart = new Chart(document.getElementById('riskChart'), {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { padding: 20, usePointStyle: true }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+
+    // API Usage (Horizontal Bar)
+    apiChart = new Chart(document.getElementById('apiChart'), {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Requests',
+                data: [],
+                backgroundColor: '#6366f1',
+                borderRadius: 4
+            }, {
+                label: 'Errores',
+                data: [],
+                backgroundColor: '#ef4444',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                x: { stacked: false, grid: { display: false } },
+                y: { stacked: false }
+            }
+        }
+    });
+
+    // Timeline (Line)
+    timelineChart = new Chart(document.getElementById('timelineChart'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Total',
+                data: [],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Crítico',
+                data: [],
+                borderColor: '#dc2626',
+                backgroundColor: 'transparent',
+                borderDash: [5, 5],
+                tension: 0.3
+            }, {
+                label: 'Alto',
+                data: [],
+                borderColor: '#ea580c',
+                backgroundColor: 'transparent',
+                borderDash: [5, 5],
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // API Health (Bar - Success Rate)
+    apiHealthChart = new Chart(document.getElementById('apiHealthChart'), {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Tasa de Éxito (%)',
+                data: [],
+                backgroundColor: [],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+}
+
+function initMap() {
+    threatMap = L.map('threatMap').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(threatMap);
+}
+
+async function loadAllStats() {
+    const days = document.getElementById('periodSelector').value;
+    const userOnly = document.getElementById('userOnlyToggle').checked;
+
+    try {
+        const response = await fetch(`/dashboard/api/stats?days=${days}&user_only=${userOnly}`);
+        const data = await response.json();
+
+        if (data.success) {
+            try { updateSummaryCards(data.stats.summary); } catch(e) { console.error('Summary error:', e); }
+            try { updateRiskChart(data.stats.risk_distribution); } catch(e) { console.error('Risk chart error:', e); }
+            try { updateApiChart(data.stats.api_usage); } catch(e) { console.error('API chart error:', e); }
+            try { updateTimeline(data.stats.timeline); } catch(e) { console.error('Timeline error:', e); }
+            try { updateTopThreats(data.stats.top_threats); } catch(e) { console.error('Top threats error:', e); }
+            try { updateRecentTable(data.stats.recent_analyses); } catch(e) { console.error('Recent table error:', e); }
+            try { updateGeoMap(data.stats.geo_threats); } catch(e) { console.error('Geo map error:', e); }
+            try { updateApiHealth(data.stats.api_usage); } catch(e) { console.error('API health error:', e); }
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+function updateSummaryCards(summary) {
+    document.getElementById('totalAnalyses').textContent = summary.total_analyses.toLocaleString();
+    document.getElementById('criticalCount').textContent = summary.critical_count.toLocaleString();
+    document.getElementById('uniqueIocs').textContent = summary.unique_iocs.toLocaleString();
+    document.getElementById('activeSessions').textContent = summary.active_sessions.toLocaleString();
+    document.getElementById('avgConfidence').textContent = summary.avg_confidence + '%';
+}
+
+function updateRiskChart(data) {
+    riskChart.data.labels = data.labels;
+    riskChart.data.datasets[0].data = data.data;
+    riskChart.data.datasets[0].backgroundColor = data.colors;
+    riskChart.update();
+}
+
+function updateApiChart(data) {
+    apiChart.data.labels = data.labels.slice(0, 10);
+    apiChart.data.datasets[0].data = data.requests.slice(0, 10);
+    apiChart.data.datasets[1].data = data.errors.slice(0, 10);
+    apiChart.update();
+}
+
+function updateTimeline(data) {
+    // Formatear fechas
+    const labels = data.labels.map(d => {
+        const date = new Date(d);
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    });
+
+    timelineChart.data.labels = labels;
+    timelineChart.data.datasets[0].data = data.datasets.total || [];
+    timelineChart.data.datasets[1].data = data.datasets.critico || [];
+    timelineChart.data.datasets[2].data = data.datasets.alto || [];
+    timelineChart.update();
+}
+
+function updateTopThreats(threats) {
+    const container = document.getElementById('topThreats');
+
+    if (!threats || threats.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay amenazas críticas</p>';
+        return;
+    }
+
+    container.innerHTML = threats.map(t => `
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${t.ioc}</p>
+                <p class="text-xs text-gray-500">${t.ioc_type}</p>
+            </div>
+            <div class="ml-4 flex items-center space-x-2">
+                <span class="risk-badge risk-${t.risk_level.toLowerCase()}">${t.risk_level}</span>
+                <span class="text-sm font-semibold">${t.confidence}%</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateRecentTable(analyses) {
+    const tbody = document.getElementById('recentTable');
+
+    if (!analyses || analyses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No hay análisis recientes</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = analyses.map(a => `
+        <tr class="border-t border-gray-200 dark:border-gray-700">
+            <td class="py-2 font-mono text-xs truncate max-w-[150px]" title="${a.ioc}">${a.ioc}</td>
+            <td class="py-2">${a.ioc_type}</td>
+            <td class="py-2"><span class="risk-badge risk-${a.risk_level.toLowerCase()}">${a.risk_level}</span></td>
+            <td class="py-2">${a.confidence}%</td>
+            <td class="py-2 text-gray-500">${new Date(a.created_at).toLocaleDateString()}</td>
+        </tr>
+    `).join('');
+}
+
+function updateGeoMap(geoData) {
+    // Limpiar marcadores existentes
+    threatMap.eachLayer(layer => {
+        if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+            threatMap.removeLayer(layer);
+        }
+    });
+
+    // Agregar nuevos marcadores
+    if (geoData.markers) {
+        geoData.markers.forEach(m => {
+            const color = m.risk === 'CRÍTICO' ? '#dc2626' : m.risk === 'ALTO' ? '#ea580c' : '#ca8a04';
+
+            L.circleMarker([m.lat, m.lon], {
+                radius: 6,
+                fillColor: color,
+                color: '#fff',
+                weight: 1,
+                fillOpacity: 0.8
+            }).addTo(threatMap)
+              .bindPopup(`<b>${m.ioc}</b><br>${m.city || ''}, ${m.country}<br>Riesgo: ${m.risk}`);
+        });
+    }
+
+    // Actualizar estadísticas de países
+    const countryStats = document.getElementById('countryStats');
+    if (geoData.countries) {
+        const entries = Object.entries(geoData.countries).slice(0, 5);
+        countryStats.innerHTML = entries.map(([country, stats]) => `
+            <div class="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-center">
+                <div class="font-semibold">${country}</div>
+                <div class="text-gray-500">${stats.count}</div>
+            </div>
+        `).join('');
+    }
+}
+
+function updateApiHealth(data) {
+    const colors = data.success_rate.map(rate =>
+        rate >= 95 ? '#16a34a' : rate >= 80 ? '#ca8a04' : '#dc2626'
+    );
+
+    apiHealthChart.data.labels = data.labels;
+    apiHealthChart.data.datasets[0].data = data.success_rate;
+    apiHealthChart.data.datasets[0].backgroundColor = colors;
+    apiHealthChart.update();
+}
+</script>
+{% endblock %}

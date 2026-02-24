@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Historial - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Historial de Análisis</h1>
+        <p class="text-gray-600">Consulta y filtra todos los análisis realizados</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <form method="GET" action="{{ url_for('main.history') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Risk Level Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nivel de Riesgo</label>
+                <select name="risk_level" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Todos</option>
+                    <option value="CRÍTICO" {% if request.args.get('risk_level') == 'CRÍTICO' %}selected{% endif %}>Crítico</option>
+                    <option value="ALTO" {% if request.args.get('risk_level') == 'ALTO' %}selected{% endif %}>Alto</option>
+                    <option value="MEDIO" {% if request.args.get('risk_level') == 'MEDIO' %}selected{% endif %}>Medio</option>
+                    <option value="BAJO" {% if request.args.get('risk_level') == 'BAJO' %}selected{% endif %}>Bajo</option>
+                    <option value="LIMPIO" {% if request.args.get('risk_level') == 'LIMPIO' %}selected{% endif %}>Limpio</option>
+                </select>
+            </div>
+
+            <!-- IOC Type Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de IOC</label>
+                <select name="ioc_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Todos</option>
+                    <option value="ip" {% if request.args.get('ioc_type') == 'ip' %}selected{% endif %}>IP</option>
+                    <option value="domain" {% if request.args.get('ioc_type') == 'domain' %}selected{% endif %}>Dominio</option>
+                    <option value="hash" {% if request.args.get('ioc_type') == 'hash' %}selected{% endif %}>Hash</option>
+                    <option value="url" {% if request.args.get('ioc_type') == 'url' %}selected{% endif %}>URL</option>
+                </select>
+            </div>
+
+            <!-- Date From -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Desde</label>
+                <input type="date" name="date_from" value="{{ request.args.get('date_from', '') }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- Date To -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
+                <input type="date" name="date_to" value="{{ request.args.get('date_to', '') }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- Buttons -->
+            <div class="md:col-span-4 flex gap-2">
+                <button type="submit" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                    <i class="fas fa-filter mr-2"></i>Aplicar Filtros
+                </button>
+                <a href="{{ url_for('main.history') }}" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-center">
+                    <i class="fas fa-times mr-2"></i>Limpiar
+                </a>
+                <button type="button" onclick="exportHistory()" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-file-excel mr-2"></i>Exportar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-gray-800">{{ pagination.total }}</div>
+            <div class="text-xs text-gray-600">Total</div>
+        </div>
+        <div class="bg-red-50 rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-red-600">
+                {{ analyses|selectattr('risk_level', 'equalto', 'CRÍTICO')|list|length }}
+            </div>
+            <div class="text-xs text-gray-600">Crítico</div>
+        </div>
+        <div class="bg-orange-50 rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-orange-600">
+                {{ analyses|selectattr('risk_level', 'equalto', 'ALTO')|list|length }}
+            </div>
+            <div class="text-xs text-gray-600">Alto</div>
+        </div>
+        <div class="bg-yellow-50 rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-yellow-600">
+                {{ analyses|selectattr('risk_level', 'equalto', 'MEDIO')|list|length }}
+            </div>
+            <div class="text-xs text-gray-600">Medio</div>
+        </div>
+        <div class="bg-green-50 rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">
+                {{ analyses|selectattr('risk_level', 'equalto', 'LIMPIO')|list|length }}
+            </div>
+            <div class="text-xs text-gray-600">Limpio</div>
+        </div>
+    </div>
+
+    <!-- Analyses Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            IOC
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tipo
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Riesgo
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Score
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Analista
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fecha
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% if analyses %}
+                        {% for analysis in analyses %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-indigo-100">
+                                        <i class="fas fa-{{ 'globe' if analysis.ioc.ioc_type == 'domain' else 'network-wired' if analysis.ioc.ioc_type == 'ip' else 'hashtag' if analysis.ioc.ioc_type == 'hash' else 'link' }} text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900 font-mono">
+                                            {{ analysis.ioc.value[:40] }}{% if analysis.ioc.value|length > 40 %}...{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ analysis.ioc.ioc_type.upper() }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="risk-badge risk-{{ analysis.risk_level|lower }}">
+                                    {{ analysis.risk_level }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="h-2 rounded-full {% if analysis.confidence_score >= 70 %}bg-red-600{% elif analysis.confidence_score >= 50 %}bg-orange-500{% elif analysis.confidence_score >= 30 %}bg-yellow-500{% else %}bg-green-500{% endif %}"
+                                             style="width: {{ analysis.confidence_score }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-900">{{ analysis.confidence_score }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <i class="far fa-user mr-1"></i>
+                                {{ analysis.analyst.username if analysis.analyst else 'Sistema' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <i class="far fa-clock mr-1"></i>
+                                {{ analysis.created_at.strftime('%d/%m/%Y %H:%M') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="viewDetails({{ analysis.id }})" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="reanalyze('{{ analysis.ioc.value }}', '{{ analysis.ioc.ioc_type }}')" class="text-green-600 hover:text-green-900 mr-3" title="Re-analizar">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button onclick="exportSingle({{ analysis.id }})" class="text-blue-600 hover:text-blue-900" title="Exportar">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-2"></i>
+                                <p>No se encontraron análisis con los filtros aplicados</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('main.history', page=pagination.prev_num, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Anterior
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('main.history', page=pagination.next_num, **request.args) }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Siguiente
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Mostrando
+                        <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+                        a
+                        <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span>
+                        de
+                        <span class="font-medium">{{ pagination.total }}</span>
+                        resultados
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('main.history', page=pagination.prev_num, **request.args) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        {% endif %}
+
+                        {% for page in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page %}
+                                <a href="{{ url_for('main.history', page=page, **request.args) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium {% if page == pagination.page %}text-indigo-600 bg-indigo-50{% else %}text-gray-700 hover:bg-gray-50{% endif %}">
+                                    {{ page }}
+                                </a>
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                    ...
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('main.history', page=pagination.next_num, **request.args) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Detalles del Análisis</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div id="modalContent" class="mt-4">
+            <!-- Content loaded by JS -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewDetails(analysisId) {
+    fetch(`/api/analysis/${analysisId}`)
+        .then(res => res.json())
+        .then(data => {
+            const content = `
+                <div class="space-y-4">
+                    <div class="border-b pb-3">
+                        <h4 class="font-semibold text-gray-800 mb-2">IOC</h4>
+                        <p class="font-mono text-sm">${data.ioc_value}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Riesgo</h4>
+                            <span class="risk-badge risk-${data.risk_level.toLowerCase()}">${data.risk_level}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Confidence</h4>
+                            <p>${data.confidence_score}/100</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Recomendación</h4>
+                        <p class="text-sm text-gray-700 whitespace-pre-wrap">${data.recommendation}</p>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="exportAnalysis(${analysisId})" class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            <i class="fas fa-download mr-2"></i>Exportar
+                        </button>
+                        <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('detailsModal').classList.remove('hidden');
+        })
+        .catch(err => {
+            showToast('Error al cargar detalles', 'error');
+        });
+}
+
+function closeModal() {
+    document.getElementById('detailsModal').classList.add('hidden');
+}
+
+function reanalyze(ioc, type) {
+    window.location.href = `/analyze?ioc=${encodeURIComponent(ioc)}&type=${type}`;
+}
+
+function exportSingle(analysisId) {
+    fetch(`/api/analysis/${analysisId}`)
+        .then(res => res.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analysis-${analysisId}.json`;
+            a.click();
+            showToast('Análisis exportado', 'success');
+        });
+}
+
+function exportHistory() {
+    showToast('Generando exportación...', 'info');
+    // Implementar exportación masiva
+}
+</script>
+{% endblock %}

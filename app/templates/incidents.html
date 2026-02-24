@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+
+{% block title %}Incidentes - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-1">Incidentes de Seguridad</h1>
+            <p class="text-gray-600">Gestion de incidentes detectados durante investigaciones</p>
+        </div>
+        <button onclick="showCreateModal()" class="bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:from-red-700 hover:to-orange-700 transition shadow-lg">
+            <i class="fas fa-plus mr-2"></i>Nuevo Incidente
+        </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-gray-800" id="stat-total">0</div>
+            <div class="text-xs text-gray-500 uppercase">Total</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center border-l-4 border-red-500">
+            <div class="text-2xl font-bold text-red-600" id="stat-open">0</div>
+            <div class="text-xs text-gray-500 uppercase">Abiertos</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center border-l-4 border-yellow-500">
+            <div class="text-2xl font-bold text-yellow-600" id="stat-investigating">0</div>
+            <div class="text-xs text-gray-500 uppercase">En curso</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center border-l-4 border-green-500">
+            <div class="text-2xl font-bold text-green-600" id="stat-resolved">0</div>
+            <div class="text-xs text-gray-500 uppercase">Resueltos</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center border-l-4 border-gray-400">
+            <div class="text-2xl font-bold text-gray-600" id="stat-closed">0</div>
+            <div class="text-xs text-gray-500 uppercase">Cerrados</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-4 flex items-center gap-3">
+        <label class="flex items-center gap-2 text-sm text-gray-600">
+            <input type="checkbox" id="filterMyOnly" class="rounded" onchange="loadIncidents()">
+            Solo mis incidentes
+        </label>
+        <select id="filterSeverity" onchange="loadIncidents()" class="text-sm border rounded px-2 py-1">
+            <option value="">Todas las severidades</option>
+            <option value="P1">P1 - Critica</option>
+            <option value="P2">P2 - Alta</option>
+            <option value="P3">P3 - Media</option>
+            <option value="P4">P4 - Baja</option>
+        </select>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kanbanBoard">
+        <!-- Open -->
+        <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-red-700 uppercase flex items-center gap-2">
+                    <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                    Abiertos
+                </h3>
+                <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full" id="count-open">0</span>
+            </div>
+            <div class="space-y-3" id="col-open">
+                <div class="text-center text-gray-400 text-sm py-6">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investigating -->
+        <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-yellow-700 uppercase flex items-center gap-2">
+                    <span class="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                    En Curso
+                </h3>
+                <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full" id="count-investigating">0</span>
+            </div>
+            <div class="space-y-3" id="col-investigating">
+                <div class="text-center text-gray-400 text-sm py-6">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resolved -->
+        <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-green-700 uppercase flex items-center gap-2">
+                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                    Resueltos
+                </h3>
+                <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full" id="count-resolved">0</span>
+            </div>
+            <div class="space-y-3" id="col-resolved">
+                <div class="text-center text-gray-400 text-sm py-6">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Closed -->
+        <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-gray-600 uppercase flex items-center gap-2">
+                    <span class="w-3 h-3 bg-gray-400 rounded-full"></span>
+                    Cerrados
+                </h3>
+                <span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full" id="count-closed">0</span>
+            </div>
+            <div class="space-y-3" id="col-closed">
+                <div class="text-center text-gray-400 text-sm py-6">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- MODAL: Crear Incidente (reutilizable desde analisis y chat)       -->
+<!-- ================================================================= -->
+<div id="create-incident-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-4 border-b flex justify-between items-center bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-t-lg">
+            <h3 class="text-lg font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Nuevo Incidente</h3>
+            <button onclick="hideCreateModal()" class="text-white hover:text-gray-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-5 space-y-4">
+            <!-- Titulo -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Titulo *</label>
+                <input type="text" id="incident-title" placeholder="Ej: Amenaza critica detectada en IP 185.x.x.x"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" required>
+            </div>
+
+            <!-- Severidad -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Severidad *</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="severity" value="P1" class="hidden peer">
+                        <div class="text-center py-2 rounded-lg border-2 border-gray-200 peer-checked:border-red-500 peer-checked:bg-red-50 transition">
+                            <div class="font-bold text-red-600">P1</div>
+                            <div class="text-xs text-gray-500">Critica</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="severity" value="P2" class="hidden peer">
+                        <div class="text-center py-2 rounded-lg border-2 border-gray-200 peer-checked:border-orange-500 peer-checked:bg-orange-50 transition">
+                            <div class="font-bold text-orange-600">P2</div>
+                            <div class="text-xs text-gray-500">Alta</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="severity" value="P3" class="hidden peer" checked>
+                        <div class="text-center py-2 rounded-lg border-2 border-gray-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 transition">
+                            <div class="font-bold text-yellow-600">P3</div>
+                            <div class="text-xs text-gray-500">Media</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="severity" value="P4" class="hidden peer">
+                        <div class="text-center py-2 rounded-lg border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition">
+                            <div class="font-bold text-blue-600">P4</div>
+                            <div class="text-xs text-gray-500">Baja</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Descripcion -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                <textarea id="incident-description" rows="3" placeholder="Detalle del incidente..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"></textarea>
+            </div>
+
+            <!-- Campos ocultos para auto-fill -->
+            <input type="hidden" id="incident-session-id" value="">
+            <input type="hidden" id="incident-analysis-id" value="">
+            <input type="hidden" id="incident-ioc-ids" value="">
+
+            <!-- IOCs vinculados (se muestra si hay) -->
+            <div id="incident-iocs-section" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">IOCs vinculados</label>
+                <div id="incident-iocs-list" class="space-y-1 text-sm"></div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+            <button onclick="hideCreateModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+            <button onclick="submitIncident()" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
+                <i class="fas fa-check mr-2"></i>Crear Incidente
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ================================================================
+// KANBAN - Cargar y renderizar incidentes
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadIncidents();
+    loadStats();
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/v2/incidents/stats');
+        const data = await response.json();
+        if (data.success) {
+            const s = data.stats;
+            document.getElementById('stat-total').textContent = s.total;
+            document.getElementById('stat-open').textContent = s.open;
+            document.getElementById('stat-investigating').textContent = s.investigating;
+            document.getElementById('stat-resolved').textContent = s.resolved;
+            document.getElementById('stat-closed').textContent = s.closed;
+        }
+    } catch (e) { console.error('Error loading stats:', e); }
+}
+
+async function loadIncidents() {
+    try {
+        const myOnly = document.getElementById('filterMyOnly').checked;
+        const severity = document.getElementById('filterSeverity').value;
+        
+        let url = '/api/v2/incidents?limit=100';
+        if (myOnly) url += '&my_only=true';
+        if (severity) url += `&severity=${severity}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!data.success) return;
+        
+        // Agrupar por status
+        const groups = { open: [], investigating: [], resolved: [], closed: [] };
+        for (const inc of data.incidents) {
+            if (groups[inc.status]) groups[inc.status].push(inc);
+        }
+        
+        // Renderizar cada columna
+        for (const [status, items] of Object.entries(groups)) {
+            const col = document.getElementById(`col-${status}`);
+            const countEl = document.getElementById(`count-${status}`);
+            countEl.textContent = items.length;
+            
+            if (items.length === 0) {
+                col.innerHTML = '<div class="text-center text-gray-400 text-sm py-6">Sin incidentes</div>';
+                continue;
+            }
+            
+            col.innerHTML = items.map(inc => renderCard(inc)).join('');
+        }
+    } catch (e) {
+        console.error('Error loading incidents:', e);
+    }
+}
+
+function renderCard(inc) {
+    const sevColors = {
+        P1: 'bg-red-100 text-red-700 border-red-300',
+        P2: 'bg-orange-100 text-orange-700 border-orange-300',
+        P3: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+        P4: 'bg-blue-100 text-blue-700 border-blue-300'
+    };
+    const sevClass = sevColors[inc.severity] || 'bg-gray-100 text-gray-700';
+    
+    const timeAgo = getTimeAgo(inc.created_at);
+    
+    return `
+        <a href="/incident/${inc.id}" class="block bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md hover:border-indigo-300 transition cursor-pointer">
+            <div class="flex items-start justify-between mb-2">
+                <span class="text-xs font-mono text-gray-400">${inc.ticket_id}</span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full border ${sevClass}">${inc.severity}</span>
+            </div>
+            <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">${inc.title}</h4>
+            <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
+                <span>${inc.assigned_to ? '<i class="fas fa-user mr-1"></i>' + inc.assigned_to : '<span class="text-gray-400">Sin asignar</span>'}</span>
+                <span>${timeAgo}</span>
+            </div>
+            ${inc.ioc_count > 0 ? `<div class="mt-2 text-xs text-indigo-600"><i class="fas fa-link mr-1"></i>${inc.ioc_count} IOC(s)</div>` : ''}
+        </a>
+    `;
+}
+
+function getTimeAgo(isoDate) {
+    if (!isoDate) return '';
+    let str = isoDate;
+    if (!str.endsWith('Z') && !str.includes('+') && !str.includes('-', 10)) str += 'Z';
+    str = str.replace(/\+00:00$/, 'Z');
+    const diff = Date.now() - new Date(str).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'ahora';
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d`;
+}
+
+// ================================================================
+// MODAL - Crear Incidente
+// ================================================================
+
+function showCreateModal(options = {}) {
+    document.getElementById('create-incident-modal').classList.remove('hidden');
+    
+    // Auto-fill si viene de analisis o chat
+    if (options.title) document.getElementById('incident-title').value = options.title;
+    if (options.description) document.getElementById('incident-description').value = options.description;
+    if (options.session_id) document.getElementById('incident-session-id').value = options.session_id;
+    if (options.analysis_id) document.getElementById('incident-analysis-id').value = options.analysis_id;
+    
+    if (options.severity) {
+        const radio = document.querySelector(`input[name="severity"][value="${options.severity}"]`);
+        if (radio) radio.checked = true;
+    }
+    
+    // IOCs
+    if (options.ioc_ids && options.ioc_ids.length > 0) {
+        document.getElementById('incident-ioc-ids').value = JSON.stringify(options.ioc_ids);
+        const section = document.getElementById('incident-iocs-section');
+        const list = document.getElementById('incident-iocs-list');
+        section.classList.remove('hidden');
+        
+        if (options.ioc_details) {
+            list.innerHTML = options.ioc_details.map(ioc => `
+                <div class="flex items-center gap-2 p-1.5 bg-gray-50 rounded">
+                    <span class="risk-badge risk-${(ioc.risk_level || 'bajo').toLowerCase()} text-xs">${ioc.risk_level || 'N/A'}</span>
+                    <span class="font-mono text-xs">${ioc.value}</span>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = `<div class="text-xs text-gray-500">${options.ioc_ids.length} IOC(s) vinculados</div>`;
+        }
+    }
+}
+
+function hideCreateModal() {
+    document.getElementById('create-incident-modal').classList.add('hidden');
+    // Reset form
+    document.getElementById('incident-title').value = '';
+    document.getElementById('incident-description').value = '';
+    document.getElementById('incident-session-id').value = '';
+    document.getElementById('incident-analysis-id').value = '';
+    document.getElementById('incident-ioc-ids').value = '';
+    document.getElementById('incident-iocs-section').classList.add('hidden');
+    document.querySelector('input[name="severity"][value="P3"]').checked = true;
+}
+
+async function submitIncident() {
+    const title = document.getElementById('incident-title').value.trim();
+    if (!title) {
+        showToast('El titulo es requerido', 'error');
+        return;
+    }
+    
+    const severity = document.querySelector('input[name="severity"]:checked')?.value || 'P3';
+    const description = document.getElementById('incident-description').value.trim();
+    const session_id = document.getElementById('incident-session-id').value || null;
+    const analysis_id = document.getElementById('incident-analysis-id').value || null;
+    
+    let ioc_ids = [];
+    try {
+        const raw = document.getElementById('incident-ioc-ids').value;
+        if (raw) ioc_ids = JSON.parse(raw);
+    } catch(e) {}
+    
+    try {
+        const response = await fetch('/api/v2/incidents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                severity,
+                description,
+                session_id: session_id ? parseInt(session_id) : null,
+                analysis_id: analysis_id ? parseInt(analysis_id) : null,
+                ioc_ids: ioc_ids,
+                primary_ioc_id: ioc_ids[0] || null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`Incidente ${data.incident.ticket_id} creado`, 'success');
+            hideCreateModal();
+            loadIncidents();
+            loadStats();
+        } else {
+            showToast(data.error || 'Error creando incidente', 'error');
+        }
+    } catch (e) {
+        console.error('Error:', e);
+        showToast('Error de conexion', 'error');
+    }
+}
+
+// Exponer globalmente para uso desde otros templates
+window.showCreateModal = showCreateModal;
+window.hideCreateModal = hideCreateModal;
+</script>
+{% endblock %}

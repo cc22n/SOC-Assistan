@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Mi Perfil</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Info -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span class="text-3xl font-bold text-white">{{ user.username[0]|upper }}</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800">{{ user.username }}</h2>
+                <span class="text-xs px-3 py-1 rounded-full 
+                    {% if user.role == 'admin' %}bg-red-100 text-red-700
+                    {% elif user.role == 'analyst' %}bg-indigo-100 text-indigo-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {{ user.role|title }}
+                </span>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-500">Email</span>
+                    <span class="font-medium">{{ user.email }}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-500">Miembro desde</span>
+                    <span class="font-medium">{{ user.created_at.strftime('%d %b %Y') if user.created_at else 'N/A' }}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-500">Ultimo acceso</span>
+                    <span class="font-medium">{{ user.last_login.strftime('%d %b %Y %H:%M') if user.last_login else 'N/A' }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span class="text-gray-500">Estado</span>
+                    <span class="font-medium {% if user.is_active %}text-green-600{% else %}text-red-600{% endif %}">
+                        {{ 'Activo' if user.is_active else 'Inactivo' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-key mr-2 text-yellow-500"></i>Cambiar Contrasena</h3>
+            <form method="POST" action="{{ url_for('auth.change_password') }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contrasena actual</label>
+                    <input type="password" name="current_password" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nueva contrasena</label>
+                    <input type="password" name="new_password" required minlength="8" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirmar nueva</label>
+                    <input type="password" name="new_password2" required minlength="8" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition font-semibold">
+                    <i class="fas fa-save mr-2"></i>Actualizar Contrasena
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Mi Actividad</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-3 bg-indigo-50 rounded-lg">
+                <div class="text-2xl font-bold text-indigo-600" id="stat-analyses">-</div>
+                <div class="text-xs text-gray-500">Analisis</div>
+            </div>
+            <div class="text-center p-3 bg-red-50 rounded-lg">
+                <div class="text-2xl font-bold text-red-600" id="stat-incidents">-</div>
+                <div class="text-xs text-gray-500">Incidentes</div>
+            </div>
+            <div class="text-center p-3 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600" id="stat-sessions">-</div>
+                <div class="text-xs text-gray-500">Sesiones</div>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600" id="stat-iocs">-</div>
+                <div class="text-xs text-gray-500">IOCs unicos</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const r = await fetch('/dashboard/api/stats?days=365&user_only=true');
+        const d = await r.json();
+        if (d.success && d.stats) {
+            document.getElementById('stat-analyses').textContent = d.stats.summary?.total_analyses || 0;
+            document.getElementById('stat-incidents').textContent = d.stats.summary?.open_incidents || 0;
+            document.getElementById('stat-sessions').textContent = d.stats.summary?.active_sessions || 0;
+            document.getElementById('stat-iocs').textContent = d.stats.summary?.unique_iocs || 0;
+        }
+    } catch(e) { console.error(e); }
+});
+</script>
+{% endblock %}
