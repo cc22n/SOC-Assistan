@@ -65,7 +65,7 @@ def get_session_manager():
 @login_required
 @require_json
 def analyze_enhanced():
-    """Análisis mejorado con LLM Orchestrator"""
+    """Análisis mejorado con LLM Orchestrator y caché inteligente"""
     try:
         data = request.get_json()
         if not data or 'ioc' not in data:
@@ -76,6 +76,7 @@ def analyze_enhanced():
         user_context = data.get('context', '')
         use_llm_planning = data.get('use_llm_planning', True)
         session_id = data.get('session_id')
+        force_refresh = data.get('force_refresh', False)
 
         if not ioc_type:
             from app.utils.validators import detect_ioc_type
@@ -87,6 +88,46 @@ def analyze_enhanced():
         if not is_valid:
             return jsonify({'error': error_msg}), 400
 
+        # === CACHE CHECK ===
+        if not force_refresh:
+            from app.services.ioc_cache import get_cached_analysis
+            cached = get_cached_analysis(ioc_value, ioc_type)
+            if cached:
+                # Si hay sesion, vincular el IOC existente
+                if session_id:
+                    try:
+                        sm = get_session_manager()
+                        ioc_obj = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type).first()
+                        if ioc_obj:
+                            sm.add_ioc_to_session(
+                                session_id=session_id,
+                                ioc_id=ioc_obj.id,
+                                analysis_id=cached['analysis_id'],
+                                role='analyzed'
+                            )
+                            db.session.commit()
+                    except Exception as e:
+                        logger.error(f"Error linking cached IOC to session: {e}")
+
+                return jsonify({
+                    'success': True,
+                    'cached': True,
+                    'cache_age_minutes': cached['cache_age_minutes'],
+                    'analysis_id': cached['analysis_id'],
+                    'ioc': cached['ioc'],
+                    'type': cached['type'],
+                    'confidence_score': cached['confidence_score'],
+                    'risk_level': cached['risk_level'],
+                    'llm_analysis': cached.get('llm_analysis'),
+                    'sources_used': cached.get('sources_used', []),
+                    'api_results': cached.get('api_results', {}),
+                    'mitre_techniques': cached.get('mitre_techniques', []),
+                    'processing_time': cached.get('processing_time', 0),
+                    'session_id': session_id,
+                    'timestamp': cached.get('timestamp')
+                }), 200
+
+        # === FRESH ANALYSIS ===
         orch = get_orchestrator()
         sm = get_session_manager()
 

@@ -99,7 +99,6 @@ def create_app(config_name='default'):
 def register_blueprints(app):
     """Registra todos los blueprints de la aplicación"""
     from app.routes.main import main_bp
-    from app.routes.api import api_bp
     from app.routes.auth import auth_bp
     from app.routes.api_v2_routes import bp as api_v2_bp
     from app.routes.report_routes import bp as reports_bp
@@ -107,7 +106,6 @@ def register_blueprints(app):
     from app.routes.incident_routes import bp as incidents_api_bp
 
     app.register_blueprint(main_bp)
-    app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(api_v2_bp, url_prefix='/api/v2')
     app.register_blueprint(reports_bp)
@@ -115,7 +113,6 @@ def register_blueprints(app):
     app.register_blueprint(incidents_api_bp)
 
     # Eximir API blueprints de CSRF (usan autenticacion por sesion/token, no formularios)
-    csrf.exempt(api_bp)
     csrf.exempt(api_v2_bp)
     csrf.exempt(reports_bp)
     csrf.exempt(incidents_api_bp)

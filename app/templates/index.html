@@ -1,240 +1,752 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOC Agent - Threat Intelligence Platform</title>
+    <title>SOC Agent - AI-Powered Threat Intelligence Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2332;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #1e293b;
+            --border-glow: rgba(99, 102, 241, 0.15);
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            overflow-x: hidden;
         }
 
-        .navbar {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+        /* ===== BACKGROUND GRID ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== NAV ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
         }
 
-        .navbar h1 {
-            color: white;
-            font-size: 1.5rem;
+        .nav-brand {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-        }
-
-        .navbar nav a {
-            color: white;
+            gap: 0.75rem;
             text-decoration: none;
-            margin-left: 2rem;
-            transition: opacity 0.3s;
+            color: var(--text-primary);
         }
 
-        .navbar nav a:hover {
-            opacity: 0.8;
+        .nav-brand .shield {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
         }
 
+        .nav-brand span {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links { display: flex; gap: 0.5rem; }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-links a:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+        .nav-links .btn-login {
+            background: var(--accent);
+            color: white;
+        }
+
+        .nav-links .btn-login:hover {
+            background: #5558e6;
+            color: white;
+        }
+
+        /* ===== HERO ===== */
         .hero {
-            flex: 1;
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 2rem;
-            color: white;
+            padding: 8rem 2rem 4rem;
         }
 
-        .hero h2 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .hero p {
-            font-size: 1.25rem;
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            color: #a5b4fc;
+            font-size: 0.8rem;
+            font-weight: 500;
             margin-bottom: 2rem;
-            opacity: 0.9;
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        .cta-buttons {
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -2px;
+        }
+
+        .hero h1 .gradient {
+            background: linear-gradient(135deg, #a5b4fc, var(--accent), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+        }
+
+        .hero-actions {
             display: flex;
             gap: 1rem;
+            margin-bottom: 4rem;
         }
 
-        .btn {
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: transform 0.2s, box-shadow 0.2s;
+        .btn-hero {
+            padding: 0.85rem 2rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
             font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .btn-primary {
-            background: white;
-            color: #667eea;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
+        .btn-hero-primary {
+            background: var(--accent);
             color: white;
-            border: 2px solid white;
+            box-shadow: 0 0 30px var(--accent-glow);
         }
 
-        .btn:hover {
+        .btn-hero-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 0 50px var(--accent-glow);
         }
 
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
+        .btn-hero-secondary {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-hero-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* ===== STATS ===== */
+        .stats-row {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+        }
+
+        .stat-number .accent { color: var(--accent); }
+        .stat-number .green { color: var(--accent-green); }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        /* ===== FEATURES ===== */
+        .features-section {
+            position: relative;
+            z-index: 1;
             max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem 6rem;
         }
 
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+        .section-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            font-weight: 300;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             padding: 2rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .feature h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .feature-card:hover::before { opacity: 1; }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .icon-indigo { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
+        .icon-green { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+        .icon-red { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+        .icon-amber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+        .icon-sky { background: rgba(14, 165, 233, 0.15); color: #7dd3fc; }
+        .icon-purple { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.15);
+        }
+
+        /* ===== APIS SECTION ===== */
+        .apis-section {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 2rem 6rem;
+        }
+
+        .api-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .api-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .api-chip:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .api-chip .dot-green { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); }
+        .api-chip .dot-blue { width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; }
+
+        /* ===== TERMINAL DEMO ===== */
+        .demo-section {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem 6rem;
+        }
+
+        .terminal {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .terminal-bar {
+            background: #161b22;
+            padding: 0.75rem 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .feature p {
-            opacity: 0.9;
-            font-size: 0.95rem;
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
         }
 
-        .stats {
-            display: flex;
-            gap: 2rem;
-            margin-top: 3rem;
+        .dot-r { background: #ff5f57; }
+        .dot-y { background: #febc2e; }
+        .dot-g { background: #28c840; }
+
+        .terminal-title {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            margin-left: 0.5rem;
         }
 
-        .stat {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            padding: 1.5rem 2rem;
-            border-radius: 12px;
+        .terminal-body {
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.8;
+            color: #c9d1d9;
+        }
+
+        .terminal-body .prompt { color: var(--accent-green); }
+        .terminal-body .cmd { color: var(--text-primary); }
+        .terminal-body .comment { color: var(--text-muted); }
+        .terminal-body .output { color: var(--text-secondary); }
+        .terminal-body .risk-crit { color: #ef4444; font-weight: 700; }
+        .terminal-body .risk-clean { color: var(--accent-green); }
+        .terminal-body .accent { color: #a5b4fc; }
+
+        /* ===== CTA ===== */
+        .cta-section {
+            position: relative;
+            z-index: 1;
             text-align: center;
+            padding: 4rem 2rem 5rem;
         }
 
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            display: block;
+        .cta-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
         }
 
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            margin-top: 0.25rem;
+        .cta-section p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-weight: 300;
         }
 
+        /* ===== FOOTER ===== */
         footer {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 1rem;
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid var(--border);
+            padding: 2rem;
             text-align: center;
-            color: white;
-            opacity: 0.8;
+            color: var(--text-muted);
+            font-size: 0.8rem;
         }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        footer a:hover { color: var(--accent); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            nav { padding: 0.75rem 1rem; }
+            .nav-links a { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+            .hero { padding: 7rem 1.5rem 3rem; }
+            .hero-actions { flex-direction: column; width: 100%; max-width: 300px; }
+            .btn-hero { justify-content: center; }
+            .stats-row { gap: 1.5rem; }
+            .stat-number { font-size: 2rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .terminal-body { font-size: 0.7rem; }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate { opacity: 0; animation: fadeUp 0.7s ease forwards; }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .delay-6 { animation-delay: 0.6s; }
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h1>🛡️ SOC Agent</h1>
-        <nav>
-            <a href="/">Inicio</a>
-            <a href="/auth/login">Login</a>
-            <a href="/auth/register">Registro</a>
-        </nav>
-    </div>
 
-    <div class="hero">
-        <h2>Threat Intelligence Platform</h2>
-        <p>Análisis automatizado de IOCs con múltiples fuentes de threat intelligence</p>
+    <!-- NAV -->
+    <nav>
+        <a href="/" class="nav-brand">
+            <div class="shield"><i class="fas fa-shield-alt"></i></div>
+            <span>SOC Agent</span>
+        </a>
+        <div class="nav-links">
+            <a href="https://github.com/tu-usuario/soc-agent" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="/auth/register">Register</a>
+            <a href="/auth/login" class="btn-login">Log In</a>
+        </div>
+    </nav>
 
-        <div class="cta-buttons">
-            <a href="/auth/login" class="btn btn-primary">Comenzar Ahora</a>
-            <a href="/about" class="btn btn-secondary">Saber Más</a>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge animate delay-1">
+            <span class="dot"></span>
+            v1.0 &mdash; Open Source
         </div>
 
-        <div class="stats">
-            <div class="stat">
-                <span class="stat-number">5+</span>
-                <span class="stat-label">Fuentes de Intel</span>
-            </div>
-            <div class="stat">
-                <span class="stat-number">100K+</span>
-                <span class="stat-label">IOCs Analizados</span>
-            </div>
-            <div class="stat">
-                <span class="stat-number">24/7</span>
-                <span class="stat-label">Disponibilidad</span>
-            </div>
+        <h1 class="animate delay-2">
+            Threat Intelligence<br>
+            <span class="gradient">Powered by AI</span>
+        </h1>
+
+        <p class="hero-sub animate delay-3">
+            Analyze IPs, domains, hashes & URLs against 19 threat intel sources.
+            Get AI-powered verdicts, MITRE ATT&CK mapping, and professional reports &mdash; all from one platform.
+        </p>
+
+        <div class="hero-actions animate delay-4">
+            <a href="/auth/register" class="btn-hero btn-hero-primary">
+                <i class="fas fa-rocket"></i> Get Started
+            </a>
+            <a href="https://github.com/tu-usuario/soc-agent" target="_blank" class="btn-hero btn-hero-secondary">
+                <i class="fab fa-github"></i> View Source
+            </a>
         </div>
 
-        <div class="features">
-            <div class="feature">
-                <h3>🔍 Multi-Source Analysis</h3>
-                <p>Integración con VirusTotal, AbuseIPDB, Shodan, y AlienVault OTX</p>
+        <div class="stats-row animate delay-5">
+            <div class="stat-item">
+                <span class="stat-number"><span class="accent">19</span></span>
+                <span class="stat-label">Threat Intel APIs</span>
             </div>
-
-            <div class="feature">
-                <h3>🤖 AI-Powered</h3>
-                <p>Análisis contextual con LLMs para decisiones más inteligentes</p>
+            <div class="stat-item">
+                <span class="stat-number"><span class="green">4</span></span>
+                <span class="stat-label">LLM Providers</span>
             </div>
-
-            <div class="feature">
-                <h3>⚡ Tiempo Real</h3>
-                <p>Análisis instantáneo de IPs, dominios, hashes y URLs</p>
+            <div class="stat-item">
+                <span class="stat-number">MITRE</span>
+                <span class="stat-label">ATT&CK Mapped</span>
             </div>
-
-            <div class="feature">
-                <h3>🎯 MITRE ATT&CK</h3>
-                <p>Mapeo automático de técnicas y tácticas de atacantes</p>
-            </div>
-
-            <div class="feature">
-                <h3>📊 Dashboard SOC</h3>
-                <p>Visualización clara de amenazas y tendencias</p>
-            </div>
-
-            <div class="feature">
-                <h3>🔐 API REST</h3>
-                <p>Integración fácil con tus sistemas existentes</p>
+            <div class="stat-item">
+                <span class="stat-number">PDF</span>
+                <span class="stat-label">& DOCX Reports</span>
             </div>
         </div>
-    </div>
+    </section>
 
+    <!-- FEATURES -->
+    <section class="features-section">
+        <div class="section-header animate">
+            <h2>Built for SOC Analysts</h2>
+            <p>Everything you need for threat investigation in one place</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card animate delay-1">
+                <div class="feature-icon icon-indigo"><i class="fas fa-crosshairs"></i></div>
+                <h3>Multi-Source IOC Analysis</h3>
+                <p>Query VirusTotal, AbuseIPDB, Shodan, GreyNoise, OTX, ThreatFox, URLhaus, and 12 more APIs simultaneously. Automatic IOC type detection and risk scoring.</p>
+                <span class="feature-tag">19 APIs</span>
+            </div>
+
+            <div class="feature-card animate delay-2">
+                <div class="feature-icon icon-green"><i class="fas fa-brain"></i></div>
+                <h3>AI-Powered Verdicts</h3>
+                <p>LLM Orchestrator selects the best APIs per IOC type and generates executive summaries, key findings, and actionable recommendations using AI.</p>
+                <span class="feature-tag">xAI / GPT-4 / Groq / Gemini</span>
+            </div>
+
+            <div class="feature-card animate delay-3">
+                <div class="feature-icon icon-red"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3>Incident Management</h3>
+                <p>Kanban board with drag-and-drop. Link multiple IOCs per incident. Auto-generated ticket IDs, timeline view, and quick creation from analysis.</p>
+                <span class="feature-tag">SOC-YYYYMMDD-NNN</span>
+            </div>
+
+            <div class="feature-card animate delay-4">
+                <div class="feature-icon icon-amber"><i class="fas fa-comments"></i></div>
+                <h3>AI SOC Chat</h3>
+                <p>Investigation assistant with persistent session context. Analyzes IOCs during conversation, correlates findings, and exports full sessions.</p>
+                <span class="feature-tag">Context-Aware</span>
+            </div>
+
+            <div class="feature-card animate delay-5">
+                <div class="feature-icon icon-sky"><i class="fas fa-shield-alt"></i></div>
+                <h3>MITRE ATT&CK Mapping</h3>
+                <p>Automatic technique detection from threat intelligence data. Visual badges for each detected technique with descriptions and references.</p>
+                <span class="feature-tag">Auto-Detection</span>
+            </div>
+
+            <div class="feature-card animate delay-6">
+                <div class="feature-icon icon-purple"><i class="fas fa-lock"></i></div>
+                <h3>Security Hardened</h3>
+                <p>Anti-injection middleware (SQLi, XSS, Command Injection, Path Traversal), CSRF protection, rate limiting, secure sessions, and CSP headers.</p>
+                <span class="feature-tag">OWASP Ready</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- APIs -->
+    <section class="apis-section">
+        <div class="section-header animate">
+            <h2>19 Intelligence Sources</h2>
+            <p>From reputation scoring to malware analysis and geolocation</p>
+        </div>
+
+        <div class="api-grid animate delay-2">
+            <span class="api-chip"><span class="dot-green"></span>VirusTotal</span>
+            <span class="api-chip"><span class="dot-green"></span>AbuseIPDB</span>
+            <span class="api-chip"><span class="dot-green"></span>Shodan</span>
+            <span class="api-chip"><span class="dot-green"></span>GreyNoise</span>
+            <span class="api-chip"><span class="dot-green"></span>AlienVault OTX</span>
+            <span class="api-chip"><span class="dot-green"></span>ThreatFox</span>
+            <span class="api-chip"><span class="dot-green"></span>URLhaus</span>
+            <span class="api-chip"><span class="dot-green"></span>MalwareBazaar</span>
+            <span class="api-chip"><span class="dot-green"></span>SecurityTrails</span>
+            <span class="api-chip"><span class="dot-green"></span>Hybrid Analysis</span>
+            <span class="api-chip"><span class="dot-green"></span>URLScan</span>
+            <span class="api-chip"><span class="dot-green"></span>Criminal IP</span>
+            <span class="api-chip"><span class="dot-green"></span>Pulsedive</span>
+            <span class="api-chip"><span class="dot-green"></span>Google Safe Browsing</span>
+            <span class="api-chip"><span class="dot-green"></span>Shodan InternetDB</span>
+            <span class="api-chip"><span class="dot-blue"></span>IP-API</span>
+            <span class="api-chip"><span class="dot-blue"></span>xAI Grok</span>
+            <span class="api-chip"><span class="dot-blue"></span>OpenAI GPT-4</span>
+            <span class="api-chip"><span class="dot-blue"></span>Groq LLaMA</span>
+            <span class="api-chip"><span class="dot-blue"></span>Google Gemini</span>
+        </div>
+    </section>
+
+    <!-- TERMINAL DEMO -->
+    <section class="demo-section">
+        <div class="section-header animate">
+            <h2>See It In Action</h2>
+            <p>Analyze any IOC and get results in seconds</p>
+        </div>
+
+        <div class="terminal animate delay-2">
+            <div class="terminal-bar">
+                <span class="terminal-dot dot-r"></span>
+                <span class="terminal-dot dot-y"></span>
+                <span class="terminal-dot dot-g"></span>
+                <span class="terminal-title">soc-agent &mdash; analysis</span>
+            </div>
+            <div class="terminal-body">
+                <span class="comment"># Analyze a suspicious IP</span><br>
+                <span class="prompt">$</span> <span class="cmd">analyze 185.220.101.34 --type ip</span><br><br>
+                <span class="output">[<span class="accent">VirusTotal</span>] 47/94 vendors flagged as malicious</span><br>
+                <span class="output">[<span class="accent">AbuseIPDB</span>] Confidence: 100% | Reports: 2,847</span><br>
+                <span class="output">[<span class="accent">GreyNoise</span>] Classification: malicious | Tor exit node</span><br>
+                <span class="output">[<span class="accent">Shodan</span>] Ports: 22, 80, 443 | OS: Linux</span><br>
+                <span class="output">[<span class="accent">ThreatFox</span>] Associated with Cobalt Strike C2</span><br>
+                <span class="output">[<span class="accent">OTX</span>] 12 pulses | Tags: apt, c2, botnet</span><br><br>
+                <span class="output">Risk Level: <span class="risk-crit">CRITICAL</span> | Score: 95/100</span><br>
+                <span class="output">MITRE: T1071 T1095 T1046 T1059</span><br>
+                <span class="output">Sources: 6/19 APIs queried in 2.3s</span><br><br>
+                <span class="comment"># AI generates executive summary + recommendations</span><br>
+                <span class="prompt">$</span> <span class="cmd">export --format pdf</span><br>
+                <span class="output"><span class="risk-clean">Report saved:</span> analysis_185.220.101.34.pdf</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2 class="animate">Ready to Investigate?</h2>
+        <p class="animate delay-1">Create a free account and start analyzing threats in minutes.</p>
+        <div class="animate delay-2">
+            <a href="/auth/register" class="btn-hero btn-hero-primary" style="margin-right: 1rem;">
+                <i class="fas fa-user-plus"></i> Create Account
+            </a>
+            <a href="https://github.com/tu-usuario/soc-agent" target="_blank" class="btn-hero btn-hero-secondary">
+                <i class="fab fa-github"></i> Star on GitHub
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
     <footer>
-        <p>&copy; 2024 SOC Agent | Threat Intelligence Platform v1.0.0</p>
+        <p>
+            SOC Agent &copy; 2026 &mdash; Open Source under
+            <a href="https://github.com/tu-usuario/soc-agent/blob/main/LICENSE">MIT License</a>
+            &mdash; Built with Flask, PostgreSQL & AI
+        </p>
     </footer>
+
+    <!-- Scroll animations -->
+    <script>
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animationPlayState = 'running';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.features-section .animate, .apis-section .animate, .demo-section .animate, .cta-section .animate').forEach(el => {
+        el.style.animationPlayState = 'paused';
+        observer.observe(el);
+    });
+    </script>
+
 </body>
 </html>

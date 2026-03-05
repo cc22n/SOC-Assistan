@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # SOC Agent - Flask App
+  # ===========================================
+  app:
+    build: .
+    container_name: soc-agent
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env.docker
+    environment:
+      - DATABASE_URL=postgresql://soc_admin:soc_secure_password@db:5432/soc_agent
+      - REDIS_URL=redis://redis:6379/0
+      - FLASK_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - soc-network
+
+  # ===========================================
+  # PostgreSQL
+  # ===========================================
+  db:
+    image: postgres:16-alpine
+    container_name: soc-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: soc_agent
+      POSTGRES_USER: soc_admin
+      POSTGRES_PASSWORD: soc_secure_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soc_admin -d soc_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - soc-network
+
+  # ===========================================
+  # Redis (Cache & Rate Limiting)
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: soc-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - soc-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_logs:
+
+networks:
+  soc-network:
+    driver: bridge

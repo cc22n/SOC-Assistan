@@ -66,7 +66,9 @@
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-semibold text-gray-800"><i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Resultados</h2>
                         <div class="flex items-center gap-2">
+                            <span id="cacheBadge" class="hidden text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-medium"><i class="fas fa-database mr-1"></i>Cache</span>
                             <span id="processingTime" class="text-xs text-gray-400"></span>
+                            <button id="reanalyzeBtn" onclick="reanalyze()" class="hidden text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200" title="Forzar re-analisis"><i class="fas fa-sync-alt mr-1"></i>Re-analizar</button>
                             <button onclick="clearResults()" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
                         </div>
                     </div>
@@ -292,12 +294,16 @@ function quickAnalyze(ioc, type) {
     analyzeIOC(ioc, type);
 }
 
-async function analyzeIOC(ioc, type) {
+async function analyzeIOC(ioc, type, forceRefresh = false) {
     // Show loading
     document.getElementById('resultsSection').classList.remove('hidden');
     document.getElementById('loadingState').classList.remove('hidden');
     document.getElementById('resultsContent').classList.add('hidden');
     document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+
+    // Hide cache badge
+    document.getElementById('cacheBadge').classList.add('hidden');
+    document.getElementById('reanalyzeBtn').classList.add('hidden');
 
     const btn = document.getElementById('analyzeBtn');
     btn.disabled = true;
@@ -307,6 +313,7 @@ async function analyzeIOC(ioc, type) {
         const body = { ioc };
         if (type) body.type = type;
         body.llm_provider = document.getElementById('llmSelector').value;
+        if (forceRefresh) body.force_refresh = true;
 
         const response = await fetch('/api/v2/analyze/enhanced', {
             method: 'POST',
@@ -328,9 +335,20 @@ async function analyzeIOC(ioc, type) {
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('resultsContent').classList.remove('hidden');
 
+        // Cache badge
+        if (data.cached) {
+            const badge = document.getElementById('cacheBadge');
+            badge.classList.remove('hidden');
+            badge.title = `Resultado en cache (hace ${data.cache_age_minutes} min)`;
+            badge.innerHTML = `<i class="fas fa-database mr-1"></i>Cache (${data.cache_age_minutes}m)`;
+            document.getElementById('reanalyzeBtn').classList.remove('hidden');
+            showToast(`Resultado desde cache (${data.cache_age_minutes} min)`, 'info');
+        } else {
+            showToast('Analisis completado', 'success');
+        }
+
         displayResults(data);
         addToRecentList(data);
-        showToast('Analisis completado', 'success');
 
     } catch (error) {
         console.error('Error:', error);
@@ -526,6 +544,11 @@ async function doExport(fmt) {
 // ================================================================
 // HELPERS
 // ================================================================
+function reanalyze() {
+    if (!currentResults) return;
+    analyzeIOC(currentResults.ioc, currentResults.type, true);
+}
+
 function clearResults() {
     document.getElementById('resultsSection').classList.add('hidden');
     document.getElementById('llmSection').classList.add('hidden');
