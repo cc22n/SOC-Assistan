@@ -131,7 +131,15 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% if analyses %}
                         {% for analysis in analyses %}
-                        <tr class="hover:bg-gray-50 transition">
+                        <tr class="hover:bg-gray-50 transition"
+                            data-analysis-id="{{ analysis.id }}"
+                            data-ioc="{{ analysis.ioc.value }}"
+                            data-type="{{ analysis.ioc.ioc_type }}"
+                            data-risk="{{ analysis.risk_level }}"
+                            data-score="{{ analysis.confidence_score }}"
+                            data-recommendation="{{ analysis.recommendation|join('. ') if analysis.recommendation is iterable and analysis.recommendation is not string else analysis.recommendation or '' }}"
+                            data-date="{{ analysis.created_at }}"
+                        >
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-indigo-100">
@@ -275,45 +283,69 @@
 {% block extra_js %}
 <script>
 function viewDetails(analysisId) {
-    fetch(`/api/analysis/${analysisId}`)
-        .then(res => res.json())
-        .then(data => {
-            const content = `
-                <div class="space-y-4">
-                    <div class="border-b pb-3">
-                        <h4 class="font-semibold text-gray-800 mb-2">IOC</h4>
-                        <p class="font-mono text-sm">${data.ioc_value}</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <h4 class="font-semibold text-gray-800 mb-2">Riesgo</h4>
-                            <span class="risk-badge risk-${data.risk_level.toLowerCase()}">${data.risk_level}</span>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800 mb-2">Confidence</h4>
-                            <p>${data.confidence_score}/100</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Recomendación</h4>
-                        <p class="text-sm text-gray-700 whitespace-pre-wrap">${data.recommendation}</p>
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                        <button onclick="exportAnalysis(${analysisId})" class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                            <i class="fas fa-download mr-2"></i>Exportar
-                        </button>
-                        <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
-                            Cerrar
-                        </button>
-                    </div>
+    // Buscar datos en la tabla del DOM (ya renderizados por Jinja)
+    const row = document.querySelector(`[data-analysis-id="${analysisId}"]`);
+    if (!row) {
+        // Fallback: intentar API v2
+        fetch(`/api/v2/analysis/${analysisId}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Not found');
+                return res.json();
+            })
+            .then(data => {
+                _showAnalysisModal(analysisId, data);
+            })
+            .catch(err => {
+                showToast('Error al cargar detalles', 'error');
+            });
+        return;
+    }
+
+    const data = {
+        ioc_value: row.dataset.ioc || '-',
+        ioc_type: row.dataset.type || '-',
+        risk_level: row.dataset.risk || '-',
+        confidence_score: row.dataset.score || '0',
+        recommendation: row.dataset.recommendation || 'Sin recomendacion disponible',
+        created_at: row.dataset.date || '-'
+    };
+    _showAnalysisModal(analysisId, data);
+}
+
+function _showAnalysisModal(analysisId, data) {
+    const riskClass = (data.risk_level || '').toLowerCase().replace('í','i');
+    const content = `
+        <div class="space-y-4">
+            <div class="border-b pb-3">
+                <h4 class="font-semibold text-gray-800 mb-2">IOC</h4>
+                <p class="font-mono text-sm">${data.ioc_value || data.ioc || '-'}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">Riesgo</h4>
+                    <span class="risk-badge risk-${riskClass}">${data.risk_level || '-'}</span>
                 </div>
-            `;
-            document.getElementById('modalContent').innerHTML = content;
-            document.getElementById('detailsModal').classList.remove('hidden');
-        })
-        .catch(err => {
-            showToast('Error al cargar detalles', 'error');
-        });
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">Confidence</h4>
+                    <p>${data.confidence_score || 0}/100</p>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-semibold text-gray-800 mb-2">Recomendacion</h4>
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">${data.recommendation || '-'}</p>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button onclick="exportAnalysis(${analysisId})" class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <i class="fas fa-download mr-2"></i>Exportar
+                </button>
+                <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('modalContent').innerHTML = content;
+    document.getElementById('detailsModal').classList.remove('hidden');
 }
 
 function closeModal() {
@@ -325,17 +357,39 @@ function reanalyze(ioc, type) {
 }
 
 function exportSingle(analysisId) {
-    fetch(`/api/analysis/${analysisId}`)
-        .then(res => res.json())
-        .then(data => {
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `analysis-${analysisId}.json`;
-            a.click();
-            showToast('Análisis exportado', 'success');
-        });
+    // Usar datos del DOM o API v2
+    const row = document.querySelector(`[data-analysis-id="${analysisId}"]`);
+    if (row) {
+        const data = {
+            id: analysisId,
+            ioc_value: row.dataset.ioc,
+            ioc_type: row.dataset.type,
+            risk_level: row.dataset.risk,
+            confidence_score: row.dataset.score,
+            recommendation: row.dataset.recommendation,
+            created_at: row.dataset.date
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `analysis-${analysisId}.json`;
+        a.click();
+        showToast('Analisis exportado', 'success');
+    } else {
+        fetch(`/api/v2/analysis/${analysisId}`)
+            .then(res => res.json())
+            .then(data => {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `analysis-${analysisId}.json`;
+                a.click();
+                showToast('Analisis exportado', 'success');
+            })
+            .catch(() => showToast('Error al exportar', 'error'));
+    }
 }
 
 function exportHistory() {

@@ -32,7 +32,12 @@ def create_app(config_name='default'):
 
     # Cargar configuración
     from app.config import config
-    app.config.from_object(config[config_name])
+    cfg = config[config_name]
+    app.config.from_object(cfg)
+
+    # Validar configuración (BUG-02 fix: init_app nunca se llamaba)
+    if hasattr(cfg, 'init_app'):
+        cfg.init_app(app)
 
     # Inicializar extensiones
     db.init_app(app)
@@ -86,7 +91,8 @@ def create_app(config_name='default'):
             sentry_sdk.init(
                 dsn=sentry_dsn,
                 integrations=[FlaskIntegration()],
-                traces_sample_rate=1.0
+                traces_sample_rate=0.05,
+                send_default_pii=False,
             )
             app.logger.info("Sentry initialized")
         except Exception as e:
@@ -104,6 +110,7 @@ def register_blueprints(app):
     from app.routes.report_routes import bp as reports_bp
     from app.routes.dashboard_routes import bp as dashboard_bp
     from app.routes.incident_routes import bp as incidents_api_bp
+    from app.docs.openapi import docs_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -111,11 +118,13 @@ def register_blueprints(app):
     app.register_blueprint(reports_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(incidents_api_bp)
+    app.register_blueprint(docs_bp)
 
     # Eximir API blueprints de CSRF (usan autenticacion por sesion/token, no formularios)
     csrf.exempt(api_v2_bp)
     csrf.exempt(reports_bp)
     csrf.exempt(incidents_api_bp)
+    csrf.exempt(docs_bp)
 
 
 def register_security_headers(app):
@@ -195,4 +204,4 @@ def load_user(user_id):
     """Carga el usuario desde la base de datos"""
     # Import aquí para evitar circular import
     from app.models.ioc import User
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))

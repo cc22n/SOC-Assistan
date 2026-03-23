@@ -20,6 +20,7 @@ class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL',
                                              'postgresql://soc_admin:soc_password@localhost:5432/soc_agent')
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
@@ -171,7 +172,10 @@ class ProductionConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        'TEST_DATABASE_URL',
+        'postgresql://soc_admin:1234@localhost:5432/soc_agent_test?client_encoding=utf8'
+    )
 
 
 config = {

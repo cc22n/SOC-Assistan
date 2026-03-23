@@ -13,6 +13,9 @@ from app.services.llm_orchestrator import LLMOrchestrator
 from app.services.session_manager import SessionManager
 from app.models.ioc import IOC, IOCAnalysis, db
 from app.utils.validators import validate_ioc, sanitize_chat_input
+from app.schemas.api import AnalyzeRequest, ChatMessageRequest
+from app.schemas.validator import validate_request
+from app import limiter
 import logging
 from datetime import datetime
 from functools import wraps
@@ -63,30 +66,24 @@ def get_session_manager():
 
 @bp.route('/analyze/enhanced', methods=['POST'])
 @login_required
-@require_json
-def analyze_enhanced():
+@limiter.limit("30 per hour")
+@limiter.limit("5 per minute")
+@validate_request(AnalyzeRequest)
+def analyze_enhanced(data: AnalyzeRequest):
     """Análisis mejorado con LLM Orchestrator y caché inteligente"""
     try:
-        data = request.get_json()
-        if not data or 'ioc' not in data:
-            return jsonify({'error': 'IOC es requerido'}), 400
-
-        ioc_value = data['ioc'].strip()
-        ioc_type = data.get('type')
-        user_context = data.get('context', '')
-        use_llm_planning = data.get('use_llm_planning', True)
-        session_id = data.get('session_id')
-        force_refresh = data.get('force_refresh', False)
+        ioc_value = data.ioc
+        ioc_type = data.type.value if data.type else None
+        user_context = data.context
+        use_llm_planning = data.use_llm_planning
+        session_id = data.session_id
+        force_refresh = data.force_refresh
 
         if not ioc_type:
             from app.utils.validators import detect_ioc_type
             ioc_type = detect_ioc_type(ioc_value)
             if not ioc_type:
                 return jsonify({'error': 'No se pudo detectar tipo de IOC'}), 400
-
-        is_valid, error_msg = validate_ioc(ioc_value, ioc_type)
-        if not is_valid:
-            return jsonify({'error': error_msg}), 400
 
         # === CACHE CHECK ===
         if not force_refresh:
@@ -217,22 +214,20 @@ def analyze_enhanced():
 
 @bp.route('/chat/message', methods=['POST'])
 @login_required
-@require_json
-def chat_message():
+@limiter.limit("60 per hour")
+@limiter.limit("10 per minute")
+@validate_request(ChatMessageRequest)
+def chat_message(data: ChatMessageRequest):
     """Chat interactivo con soporte de sesiones"""
     try:
-        data = request.get_json()
-        if not data or 'message' not in data:
-            return jsonify({'error': 'Mensaje es requerido'}), 400
-
-        # Sanitizar input del chat
-        message, was_truncated = sanitize_chat_input(data['message'])
+        # Sanitizar input del chat (doble capa: Pydantic + sanitize)
+        message, was_truncated = sanitize_chat_input(data.message)
         if not message:
             return jsonify({'error': 'Mensaje vacío o inválido'}), 400
 
-        session_id = data.get('session_id')
-        llm_provider = data.get('llm_provider')
-        history = data.get('history', [])
+        session_id = data.session_id
+        llm_provider = data.llm_provider
+        history = data.history
 
         orch = get_orchestrator()
         result = orch.chat_analysis(
@@ -712,7 +707,8 @@ def health_check():
         db.session.execute(db.text('SELECT 1'))
         db_status = 'healthy'
     except Exception as e:
-        db_status = f'error: {str(e)}'
+        logger.error(f"Health check DB error: {e}")
+        db_status = 'error'
 
     api_keys = current_app.config.get('API_KEYS', {})
     configured_apis = sum(1 for v in api_keys.values() if v)

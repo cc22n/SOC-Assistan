@@ -429,103 +429,21 @@ Responde SOLO con un array JSON: ["api1", "api2", ...]"""
         return self.strategies.get(ioc_type, [])
 
     def _execute_apis(self, ioc: str, ioc_type: str, selected_apis: List[str]) -> Dict:
-        """Ejecuta las APIs seleccionadas (ACTUALIZADO v5)"""
-        results = {}
+        """
+        Ejecuta las APIs seleccionadas EN PARALELO (v2 - async).
 
-        for api_name in selected_apis:
-            client = self.api_clients.get(api_name)
-            if not client:
-                continue
+        Usa asyncio + ThreadPoolExecutor para ejecutar todas las APIs
+        simultaneamente. ~19s -> ~3s para analisis completo.
+        """
+        from app.services.async_executor import execute_apis_parallel
 
-            try:
-                result = None
-
-                # APIs Principales (métodos de new_api_clients.py)
-                if api_name == 'virustotal':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                    elif ioc_type == 'domain':
-                        result = client.check_domain(ioc)
-                    elif ioc_type == 'hash':
-                        result = client.check_hash(ioc)
-                    elif ioc_type == 'url':
-                        result = client.check_domain(ioc)  # VT v3 no tiene check_url directo
-                elif api_name == 'abuseipdb':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                elif api_name == 'shodan':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                elif api_name == 'otx':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                    elif ioc_type == 'domain':
-                        result = client.check_domain(ioc)
-                    elif ioc_type == 'hash':
-                        result = client.check_hash(ioc)
-                elif api_name == 'greynoise':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-
-                # APIs abuse.ch
-                elif api_name == 'urlhaus':
-                    if ioc_type == 'url':
-                        result = client.check_url(ioc)
-                    elif ioc_type in ['domain', 'ip']:
-                        result = client.check_host(ioc)
-                elif api_name == 'threatfox':
-                    result = client.search_ioc(ioc)
-                elif api_name == 'malwarebazaar':
-                    if ioc_type == 'hash':
-                        result = client.query_hash(ioc)
-
-                # Otras APIs
-                elif api_name == 'google_safebrowsing':
-                    if ioc_type in ['url', 'domain']:
-                        url_to_check = ioc if ioc.startswith('http') else f'http://{ioc}'
-                        result = client.check_url(url_to_check)
-                elif api_name == 'securitytrails':
-                    if ioc_type == 'domain':
-                        result = client.get_domain_details(ioc)
-                elif api_name == 'hybrid_analysis':
-                    if ioc_type == 'hash':
-                        result = client.search_hash(ioc)
-
-                # NUEVAS APIs v3
-                elif api_name == 'criminal_ip':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                    elif ioc_type == 'domain':
-                        result = client.check_domain(ioc)
-                elif api_name == 'pulsedive':
-                    result = client.get_indicator(ioc)
-                elif api_name == 'urlscan':
-                    if ioc_type in ['url', 'domain']:
-                        query = f'url:"{ioc}"' if ioc_type == 'url' else f'domain:{ioc}'
-                        result = client.search(query)
-                elif api_name == 'shodan_internetdb':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                elif api_name == 'ip_api':
-                    if ioc_type == 'ip':
-                        result = client.get_geolocation(ioc)
-                elif api_name == 'censys':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-                elif api_name == 'ipinfo':
-                    if ioc_type == 'ip':
-                        result = client.check_ip(ioc)
-
-                if result:
-                    results[api_name] = result
-                    if 'error' not in result:
-                        logger.info(f"API {api_name} executed successfully")
-
-            except Exception as e:
-                logger.error(f"Error executing {api_name}: {e}")
-                results[api_name] = {'error': str(e)}
-
-        return results
+        return execute_apis_parallel(
+            ioc=ioc,
+            ioc_type=ioc_type,
+            selected_apis=selected_apis,
+            api_clients=self.api_clients,
+            timeout_per_api=30.0
+        )
 
     def _execute_additional_apis(self, ioc: str, ioc_type: str, apis_to_call: List[str],
                                  existing_results: Dict) -> Dict:
