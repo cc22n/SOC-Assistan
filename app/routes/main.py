@@ -86,7 +86,11 @@ def history():
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
 
-    query = IOCAnalysis.query
+    # Filtrar por usuario (admins ven todo el historial)
+    if current_user.role == 'admin':
+        query = IOCAnalysis.query
+    else:
+        query = IOCAnalysis.query.filter_by(user_id=current_user.id)
 
     if risk_level:
         query = query.filter_by(risk_level=risk_level)
@@ -215,12 +219,13 @@ def search():
     if not query_text:
         return render_template('search.html', results=None)
 
+    # autoescape=True escapa los metacaracteres LIKE (%, _) del input del usuario
     iocs = IOC.query.filter(
-        IOC.value.contains(query_text)
+        IOC.value.contains(query_text, autoescape=True)
     ).limit(50).all()
 
     analyses = IOCAnalysis.query.join(IOC).filter(
-        IOC.value.contains(query_text)
+        IOC.value.contains(query_text, autoescape=True)
     ).order_by(
         IOCAnalysis.created_at.desc()
     ).limit(20).all()

@@ -124,8 +124,8 @@ class LLMOrchestrator:
 
         try:
             self._initialize_clients()
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"CRITICAL: Failed to initialize API clients: {e}", exc_info=True)
 
     @property
     def session_manager(self):

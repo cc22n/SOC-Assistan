@@ -161,7 +161,8 @@ class ProductionConfig(Config):
     REMEMBER_COOKIE_SECURE = True
 
     @classmethod
-    def init_app(cls):
+    def init_app(cls, app=None):
+        """Valida configuracion critica antes de arrancar en produccion."""
         secret = os.environ.get('SECRET_KEY')
         if not secret or len(secret) < 32:
             raise RuntimeError(

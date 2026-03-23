@@ -10,6 +10,7 @@ Uso:
     app.register_blueprint(docs_bp)
 """
 from flask import Blueprint, jsonify, render_template_string
+from flask_login import login_required
 import logging
 
 logger = logging.getLogger(__name__)
@@ -615,6 +616,7 @@ def generate_openapi_spec():
 # =============================================================================
 
 @docs_bp.route('/openapi.json')
+@login_required
 def openapi_spec():
     """Retorna la especificación OpenAPI como JSON"""
     return jsonify(generate_openapi_spec())
@@ -622,6 +624,7 @@ def openapi_spec():
 
 @docs_bp.route('')
 @docs_bp.route('/')
+@login_required
 def swagger_ui():
     """Swagger UI embebida"""
     return render_template_string(SWAGGER_HTML)
