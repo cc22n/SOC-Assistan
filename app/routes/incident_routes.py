@@ -27,6 +27,26 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('incidents_api', __name__, url_prefix='/api/v2/incidents')
 
 
+def _safe_error(e, context=""):
+    """Retorna error sin exponer detalles internos (VULN-02 fix)"""
+    logger.error(f"{context}: {e}", exc_info=True)
+    from flask import current_app
+    if current_app.debug:
+        return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'Internal server error'}), 500
+
+
+def _check_incident_access(incident):
+    """Verifica que el usuario tenga acceso al incidente (VULN-01 fix)"""
+    if current_user.role == 'admin':
+        return True
+    if incident.created_by == current_user.id:
+        return True
+    if incident.assigned_to == current_user.id:
+        return True
+    return False
+
+
 # =============================================================================
 # CREAR INCIDENTE
 # =============================================================================
@@ -36,7 +56,7 @@ bp = Blueprint('incidents_api', __name__, url_prefix='/api/v2/incidents')
 def create_incident():
     """
     Crea un nuevo incidente.
-    
+
     Body JSON:
     {
         "title": "Amenaza critica detectada",
@@ -137,7 +157,7 @@ def create_incident():
 def list_incidents():
     """
     Lista incidentes con filtros.
-    
+
     Query params:
     - status: open, investigating, resolved, closed (puede ser CSV)
     - severity: P1, P2, P3, P4
@@ -181,7 +201,7 @@ def list_incidents():
 
     except Exception as e:
         logger.error(f"Error listing incidents: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error listing incidents")
 
 
 # =============================================================================
@@ -197,14 +217,16 @@ def get_incident(incident_id):
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
+
         return jsonify({
             'success': True,
             'incident': incident.to_dict(include_iocs=True)
         }), 200
 
     except Exception as e:
-        logger.error(f"Error getting incident: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error getting incident")
 
 
 # =============================================================================
@@ -216,7 +238,7 @@ def get_incident(incident_id):
 def update_incident(incident_id):
     """
     Actualiza campos de un incidente.
-    
+
     Body JSON:
     {
         "title": "Nuevo titulo",
@@ -230,6 +252,9 @@ def update_incident(incident_id):
         incident = Incident.query.get(incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
+
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
 
         data = request.get_json()
         if not data:
@@ -277,8 +302,7 @@ def update_incident(incident_id):
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error updating incident: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error updating incident")
 
 
 # =============================================================================
@@ -290,7 +314,7 @@ def update_incident(incident_id):
 def change_status(incident_id):
     """
     Cambia el estado de un incidente.
-    
+
     Body JSON:
     {
         "status": "investigating",     // open, investigating, resolved, closed
@@ -302,7 +326,13 @@ def change_status(incident_id):
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
+
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON requerido'}), 400
+
         new_status = data.get('status', '').strip()
         reason = data.get('reason', '')
 
@@ -335,8 +365,7 @@ def change_status(incident_id):
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error changing status: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error changing status")
 
 
 # =============================================================================
@@ -348,7 +377,7 @@ def change_status(incident_id):
 def add_note(incident_id):
     """
     Agrega una nota al timeline del incidente.
-    
+
     Body JSON:
     {
         "content": "Se confirmo que el C2 esta activo...",
@@ -360,7 +389,13 @@ def add_note(incident_id):
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
+
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON requerido'}), 400
+
         content = data.get('content', '').strip()
         if not content:
             return jsonify({'error': 'Contenido requerido'}), 400
@@ -384,8 +419,7 @@ def add_note(incident_id):
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error adding note: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error adding note")
 
 
 # =============================================================================
@@ -397,7 +431,7 @@ def add_note(incident_id):
 def link_iocs(incident_id):
     """
     Vincula IOC(s) a un incidente.
-    
+
     Body JSON:
     {
         "ioc_ids": [1, 2, 3],
@@ -410,7 +444,13 @@ def link_iocs(incident_id):
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
+
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON requerido'}), 400
+
         ioc_ids = data.get('ioc_ids', [])
         role = data.get('role', 'related')
         notes = data.get('notes')
@@ -458,8 +498,7 @@ def link_iocs(incident_id):
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error linking IOCs: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error linking IOCs")
 
 
 # =============================================================================
@@ -479,6 +518,10 @@ def unlink_ioc(incident_id, ioc_id):
             return jsonify({'error': 'Vinculo no encontrado'}), 404
 
         incident = Incident.query.get(incident_id)
+
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
+
         ioc = IOC.query.get(ioc_id)
 
         incident.add_timeline_event(
@@ -494,8 +537,7 @@ def unlink_ioc(incident_id, ioc_id):
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error unlinking IOC: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error unlinking IOC")
 
 
 # =============================================================================
@@ -513,6 +555,9 @@ def get_full_timeline(incident_id):
         incident = Incident.query.get(incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
+
+        if not _check_incident_access(incident):
+            return jsonify({'error': 'No autorizado'}), 403
 
         # Timeline propio del incidente
         timeline = list(incident.timeline or [])
@@ -547,8 +592,7 @@ def get_full_timeline(incident_id):
         }), 200
 
     except Exception as e:
-        logger.error(f"Error getting timeline: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error getting timeline")
 
 
 # =============================================================================
@@ -592,5 +636,4 @@ def get_stats():
         return jsonify({'success': True, 'stats': stats}), 200
 
     except Exception as e:
-        logger.error(f"Error getting incident stats: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error getting incident stats")

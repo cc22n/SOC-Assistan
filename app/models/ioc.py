@@ -333,7 +333,10 @@ class Incident(db.Model):
 
     @staticmethod
     def generate_ticket_id():
-        """Genera un ticket_id unico tipo SOC-20260220-001"""
+        """Genera un ticket_id unico tipo SOC-20260220-001 (thread-safe)"""
+        from sqlalchemy import text
+        # Advisory lock previene race condition en requests concurrentes
+        db.session.execute(text("SELECT pg_advisory_xact_lock(735201)"))
         today = datetime.utcnow().strftime('%Y%m%d')
         count = Incident.query.filter(
             Incident.ticket_id.like(f'SOC-{today}-%')
@@ -386,7 +389,7 @@ class APIUsage(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     api_name = db.Column(db.String(50), nullable=False, index=True)
-    date = db.Column(db.Date, default=datetime.utcnow().date, index=True)
+    date = db.Column(db.Date, default=lambda: datetime.utcnow().date(), index=True)
     requests_count = db.Column(db.Integer, default=0)
     errors_count = db.Column(db.Integer, default=0)
     last_request_at = db.Column(db.DateTime)

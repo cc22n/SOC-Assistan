@@ -44,9 +44,14 @@ def login():
         user.last_login = datetime.utcnow()
         db.session.commit()
 
-        # Redirect a la página solicitada o dashboard
+        # Redirect a la página solicitada o dashboard (VULN-03 fix)
         next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
+        if next_page:
+            parsed = urlparse(next_page)
+            # Rechazar URLs externas Y javascript: URIs
+            if parsed.netloc != '' or parsed.scheme not in ('', 'http', 'https'):
+                next_page = None
+        if not next_page:
             next_page = url_for('main.dashboard')
 
         flash(f'Bienvenido {user.username}!', 'success')
