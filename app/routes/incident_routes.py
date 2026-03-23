@@ -110,7 +110,7 @@ def create_incident():
         primary_ioc_id = data.get('primary_ioc_id')
 
         for ioc_id in ioc_ids:
-            ioc = IOC.query.get(ioc_id)
+            ioc = db.session.get(IOC, ioc_id)
             if ioc:
                 # Buscar el analisis mas reciente de este IOC
                 latest_analysis = IOCAnalysis.query.filter_by(
@@ -144,8 +144,7 @@ def create_incident():
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error creating incident: {e}")
-        return jsonify({'error': str(e)}), 500
+        return _safe_error(e, "Error creating incident")
 
 
 # =============================================================================
@@ -213,7 +212,7 @@ def list_incidents():
 def get_incident(incident_id):
     """Obtiene detalle completo de un incidente"""
     try:
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
@@ -249,7 +248,7 @@ def update_incident(incident_id):
     }
     """
     try:
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
@@ -279,7 +278,7 @@ def update_incident(incident_id):
         if 'assigned_to' in data:
             old_user = incident.assignee.username if incident.assignee else 'nadie'
             incident.assigned_to = data['assigned_to']
-            new_user = User.query.get(data['assigned_to'])
+            new_user = db.session.get(User, data['assigned_to'])
             new_name = new_user.username if new_user else 'nadie'
             changes.append(f'Asignado: {old_user} -> {new_name}')
 
@@ -322,7 +321,7 @@ def change_status(incident_id):
     }
     """
     try:
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
@@ -385,7 +384,7 @@ def add_note(incident_id):
     }
     """
     try:
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
@@ -440,7 +439,7 @@ def link_iocs(incident_id):
     }
     """
     try:
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
@@ -457,7 +456,7 @@ def link_iocs(incident_id):
 
         linked = []
         for ioc_id in ioc_ids:
-            ioc = IOC.query.get(ioc_id)
+            ioc = db.session.get(IOC, ioc_id)
             if not ioc:
                 continue
 
@@ -517,12 +516,14 @@ def unlink_ioc(incident_id, ioc_id):
         if not link:
             return jsonify({'error': 'Vinculo no encontrado'}), 404
 
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
+        if not incident:
+            return jsonify({'error': 'Incidente no encontrado'}), 404
 
         if not _check_incident_access(incident):
             return jsonify({'error': 'No autorizado'}), 403
 
-        ioc = IOC.query.get(ioc_id)
+        ioc = db.session.get(IOC, ioc_id)
 
         incident.add_timeline_event(
             'ioc_unlinked',
@@ -552,7 +553,7 @@ def get_full_timeline(incident_id):
     Incluye notas propias + mensajes del chat si hay sesion vinculada.
     """
     try:
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 

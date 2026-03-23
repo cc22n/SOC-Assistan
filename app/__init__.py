@@ -72,6 +72,10 @@ def create_app(config_name='default'):
     # Registrar blueprints
     register_blueprints(app)
 
+    # Registrar CLI commands
+    from app.cli import mitre_cli
+    app.cli.add_command(mitre_cli)
+
     # Registrar manejadores de errores
     register_error_handlers(app)
 
@@ -110,6 +114,7 @@ def register_blueprints(app):
     from app.routes.report_routes import bp as reports_bp
     from app.routes.dashboard_routes import bp as dashboard_bp
     from app.routes.incident_routes import bp as incidents_api_bp
+    from app.routes.mitre_stix_routes import bp as mitre_stix_bp
     from app.docs.openapi import docs_bp
 
     app.register_blueprint(main_bp)
@@ -118,12 +123,14 @@ def register_blueprints(app):
     app.register_blueprint(reports_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(incidents_api_bp)
+    app.register_blueprint(mitre_stix_bp)
     app.register_blueprint(docs_bp)
 
-    # Eximir API blueprints de CSRF (usan autenticacion por sesion/token, no formularios)
+    # Eximir API blueprints de CSRF
     csrf.exempt(api_v2_bp)
     csrf.exempt(reports_bp)
     csrf.exempt(incidents_api_bp)
+    csrf.exempt(mitre_stix_bp)
     csrf.exempt(docs_bp)
 
 

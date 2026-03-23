@@ -1,18 +1,20 @@
 """
 Servicio de Threat Intelligence - Orquesta todos los análisis
-ACTUALIZADO: Usa new_api_clients.py con las 17 APIs
+ACTUALIZADO: Usa new_api_clients.py con las 17 APIs y MITRE dinámico
 
 CAMBIOS:
 - Importa de new_api_clients (API v3 de VT, todas las APIs nuevas)
 - Usa UnifiedThreatIntelClient para consultas multi-fuente
-- Soporta: IP, Domain, Hash, URL con todas las fuentes disponibles
+- Integración con mitre_service.py (PostgreSQL) en lugar del diccionario estático
 - Score de confianza recalculado con todas las fuentes
 """
 from typing import Dict, List
 import logging
 from app.services.new_api_clients import UnifiedThreatIntelClient
 from app.services.llm_service import LLMService
-from app.models.mitre import MITRE_TECHNIQUES_DB, MALWARE_TO_TECHNIQUES
+
+# NUEVO: Importamos únicamente el servicio dinámico de la base de datos
+from app.services.mitre_service import get_technique_info, get_techniques_by_malware
 
 logger = logging.getLogger(__name__)
 
@@ -181,26 +183,25 @@ class ThreatIntelService:
         return cleaned
 
     def _correlate_mitre_techniques(self, malware_families: List[str]) -> List[Dict]:
-        """Correlaciona familias de malware con técnicas MITRE ATT&CK"""
+        """Correlaciona familias de malware con técnicas MITRE ATT&CK dinámicas desde la BD"""
         techniques = []
         seen_techniques = set()
 
         for family in malware_families:
-            family_lower = family.lower()
+            # 1. Disparamos la consulta a PostgreSQL usando el drop-in replacement
+            techs_found = get_techniques_by_malware(family)
 
-            for malware_key, tech_ids in MALWARE_TO_TECHNIQUES.items():
-                if malware_key in family_lower:
-                    for tech_id in tech_ids:
-                        if tech_id not in seen_techniques and tech_id in MITRE_TECHNIQUES_DB:
-                            technique_info = MITRE_TECHNIQUES_DB[tech_id]
-                            techniques.append({
-                                'id': tech_id,
-                                'name': technique_info['name'],
-                                'tactic': technique_info['tactic'],
-                                'malware_family': family
-                            })
-                            seen_techniques.add(tech_id)
-                    break
+            for tech in techs_found:
+                tech_id = tech.get('id')
+                if tech_id not in seen_techniques:
+                    # 2. Empaquetamos la información y agregamos el contexto de la familia
+                    techniques.append({
+                        'id': tech_id,
+                        'name': tech.get('name', 'Unknown'),
+                        'tactic': tech.get('tactic', 'Unknown'),
+                        'malware_family': family
+                    })
+                    seen_techniques.add(tech_id)
 
         return techniques
 
