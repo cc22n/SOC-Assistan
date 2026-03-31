@@ -8,7 +8,7 @@ CAMBIOS:
 - Integración con mitre_service.py (PostgreSQL) en lugar del diccionario estático
 - Score de confianza recalculado con todas las fuentes
 """
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 from app.services.new_api_clients import UnifiedThreatIntelClient
 from app.services.llm_service import LLMService
@@ -22,11 +22,11 @@ logger = logging.getLogger(__name__)
 class ThreatIntelService:
     """Servicio principal de análisis de threat intelligence"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.unified_client = UnifiedThreatIntelClient()
         self.llm_service = LLMService()
 
-    def analyze_ioc(self, ioc: str, ioc_type: str) -> Dict:
+    def analyze_ioc(self, ioc: str, ioc_type: str) -> Dict[str, Any]:
         """
         Análisis completo de un IOC con TODAS las fuentes disponibles
 
@@ -120,7 +120,7 @@ class ThreatIntelService:
 
         return results
 
-    def _extract_malware_families(self, results: Dict) -> List[str]:
+    def _extract_malware_families(self, results: Dict[str, Any]) -> List[str]:
         """Extrae familias de malware de TODOS los resultados"""
         families = []
         api_results = results.get('api_results', {})
@@ -182,7 +182,7 @@ class ThreatIntelService:
         cleaned = list(set([f.strip().lower() for f in families if f and len(f.strip()) > 1]))
         return cleaned
 
-    def _correlate_mitre_techniques(self, malware_families: List[str]) -> List[Dict]:
+    def _correlate_mitre_techniques(self, malware_families: List[str]) -> List[Dict[str, Any]]:
         """Correlaciona familias de malware con técnicas MITRE ATT&CK dinámicas desde la BD"""
         techniques = []
         seen_techniques = set()
@@ -205,30 +205,41 @@ class ThreatIntelService:
 
         return techniques
 
-    def _calculate_confidence_score(self, results: Dict) -> int:
+    def _calculate_confidence_score(self, results: Dict[str, Any]) -> int:
         """
         Calcula score de confianza basado en TODAS las fuentes.
         Máximo 100 puntos distribuidos proporcionalmente.
+        Las APIs principales (VT, AbuseIPDB, GreyNoise) son validadas con
+        Pydantic para detectar discrepancias de schema silenciosas.
         """
+        from app.schemas.api_responses import parse_virustotal, parse_abuseipdb, parse_greynoise
+
         score = 0
         api_results = results.get('api_results', {})
 
         # ── VirusTotal (hasta 25 puntos) ──
-        vt = api_results.get('virustotal', {})
-        if vt and isinstance(vt, dict) and not vt.get('error'):
-            malicious = vt.get('malicious', 0)
+        vt_raw = api_results.get('virustotal', {})
+        vt_parsed = parse_virustotal(vt_raw)
+        if vt_parsed:
+            if vt_parsed.malicious >= 10:
+                score += 25
+            elif vt_parsed.malicious >= 5:
+                score += 18
+            elif vt_parsed.malicious >= 1:
+                score += 10
+        elif vt_raw and isinstance(vt_raw, dict) and not vt_raw.get('error'):
+            # Fallback sin validación (schema desconocido, usar raw)
+            malicious = vt_raw.get('malicious', 0)
             if malicious:
-                if malicious >= 10:
-                    score += 25
-                elif malicious >= 5:
-                    score += 18
-                elif malicious >= 1:
-                    score += 10
+                score += min(25, int(malicious * 2.5))
 
         # ── AbuseIPDB (hasta 15 puntos) ──
-        abuse = api_results.get('abuseipdb', {})
-        if abuse and isinstance(abuse, dict) and not abuse.get('error'):
-            abuse_conf = abuse.get('abuse_confidence_score', 0)
+        abuse_raw = api_results.get('abuseipdb', {})
+        abuse_parsed = parse_abuseipdb(abuse_raw)
+        if abuse_parsed:
+            score += min(15, int(abuse_parsed.abuse_confidence * 0.15))
+        elif abuse_raw and isinstance(abuse_raw, dict) and not abuse_raw.get('error'):
+            abuse_conf = abuse_raw.get('abuse_confidence_score', abuse_raw.get('abuse_confidence', 0))
             if abuse_conf:
                 score += min(15, int(abuse_conf * 0.15))
 
@@ -251,12 +262,18 @@ class ThreatIntelService:
                 score += min(10, pulse_count * 2)
 
         # ── GreyNoise (hasta 8 puntos) ──
-        gn = api_results.get('greynoise', {})
-        if gn and isinstance(gn, dict) and not gn.get('error'):
-            classification = gn.get('classification', '')
+        gn_raw = api_results.get('greynoise', {})
+        gn_parsed = parse_greynoise(gn_raw)
+        if gn_parsed:
+            if gn_parsed.classification == 'malicious':
+                score += 8
+            elif gn_parsed.classification == 'unknown' and gn_parsed.noise:
+                score += 4
+        elif gn_raw and isinstance(gn_raw, dict) and not gn_raw.get('error'):
+            classification = gn_raw.get('classification', '')
             if classification == 'malicious':
                 score += 8
-            elif classification == 'unknown' and gn.get('noise'):
+            elif classification == 'unknown' and gn_raw.get('noise'):
                 score += 4
 
         # ── Criminal IP (hasta 8 puntos) ──
@@ -343,7 +360,7 @@ class ThreatIntelService:
         else:
             return "LIMPIO"
 
-    def _generate_recommendation(self, results: Dict) -> str:
+    def _generate_recommendation(self, results: Dict[str, Any]) -> str:
         """Genera recomendaciones basadas en los resultados"""
         confidence = results['confidence_score']
         recommendations = []
@@ -427,7 +444,7 @@ class ThreatIntelService:
 
         return "\n".join(recommendations)
 
-    def batch_analyze(self, iocs: List[tuple]) -> List[Dict]:
+    def batch_analyze(self, iocs: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
         """
         Analiza múltiples IOCs
 

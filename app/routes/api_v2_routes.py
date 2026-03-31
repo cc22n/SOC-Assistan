@@ -187,6 +187,19 @@ def analyze_enhanced(data: AnalyzeRequest):
 
         db.session.commit()
 
+        from app.models.audit import AuditEvent
+        AuditEvent.log(
+            'analyze_ioc',
+            resource_type='ioc',
+            resource_id=analysis.id,
+            details={
+                'ioc': ioc_value,
+                'type': ioc_type,
+                'risk_level': analysis_result['risk_level'],
+                'confidence': analysis_result['confidence_score'],
+            }
+        )
+
         return jsonify({
             'success': True,
             'analysis_id': analysis.id,
@@ -309,6 +322,10 @@ def get_session(session_id):
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         if session.user_id != current_user.id and current_user.role != 'admin':
+            from app.models.audit import AuditEvent
+            AuditEvent.log('unauthorized_access', resource_type='session',
+                           resource_id=session_id, success=False,
+                           details={'reason': 'IDOR attempt'})
             return jsonify({'error': 'No autorizado'}), 403
         return jsonify({'success': True, 'session': session.to_dict()}), 200
     except Exception as e:
@@ -595,10 +612,17 @@ def llm_providers():
                 'description': 'Gratuito con buen contexto largo',
                 'speed': 'medium',
                 'cost': 'free'
+            },
+            'anthropic': {
+                'available': bool(api_keys.get('anthropic')),
+                'model': 'claude-sonnet-4-6',
+                'description': 'Claude — razonamiento avanzado y contexto largo',
+                'speed': 'fast',
+                'cost': 'paid'
             }
         }
 
-        default_provider = next((p for p in ['xai', 'openai', 'groq', 'gemini'] if providers[p]['available']), None)
+        default_provider = next((p for p in ['xai', 'openai', 'groq', 'gemini', 'anthropic'] if providers[p]['available']), None)
 
         return jsonify({
             'success': True,
@@ -699,26 +723,68 @@ def test_api(api_name):
         return safe_error_response(e, "API test error")
 
 
+@bp.route('/health/metrics', methods=['GET'])
+@login_required
+def health_metrics():
+    """Métricas de performance P50/P95/P99 por endpoint y por API de TI"""
+    from app.utils.metrics import get_metrics_summary
+    return jsonify(get_metrics_summary()), 200
+
+
 @bp.route('/health', methods=['GET'])
 def health_check():
-    """Verificación de salud"""
+    """Verificación de salud con latencias de DB y Redis"""
+    import time
+
+    # DB latency
+    db_status = 'error'
+    db_latency_ms = None
     try:
         from app import db
+        t0 = time.monotonic()
         db.session.execute(db.text('SELECT 1'))
+        db_latency_ms = round((time.monotonic() - t0) * 1000, 2)
         db_status = 'healthy'
     except Exception as e:
         logger.error(f"Health check DB error: {e}")
-        db_status = 'error'
+
+    # Redis latency
+    redis_status = 'not_configured'
+    redis_latency_ms = None
+    redis_url = current_app.config.get('REDIS_URL')
+    if redis_url and redis_url != 'redis://localhost:6379/0':
+        try:
+            import redis as redis_lib
+            t0 = time.monotonic()
+            r = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+            r.ping()
+            redis_latency_ms = round((time.monotonic() - t0) * 1000, 2)
+            redis_status = 'healthy'
+        except Exception as e:
+            logger.warning(f"Health check Redis error: {e}")
+            redis_status = 'error'
 
     api_keys = current_app.config.get('API_KEYS', {})
     configured_apis = sum(1 for v in api_keys.values() if v)
     llm_count = sum(1 for p in ['xai', 'openai', 'groq', 'gemini'] if api_keys.get(p))
 
+    overall = 'healthy' if db_status == 'healthy' else 'degraded'
+
+    # Circuit breaker statuses
+    from app.utils.circuit_breaker import get_all_circuit_statuses
+    circuit_statuses = get_all_circuit_statuses()
+    open_circuits = [s for s in circuit_statuses.values() if s['state'] == 'OPEN']
+    if open_circuits:
+        overall = 'degraded'
+
     return jsonify({
-        'status': 'healthy' if db_status == 'healthy' else 'degraded',
-        'database': db_status,
+        'status': overall,
+        'database': {'status': db_status, 'latency_ms': db_latency_ms},
+        'redis': {'status': redis_status, 'latency_ms': redis_latency_ms},
         'configured_apis': configured_apis,
         'available_llms': llm_count,
+        'circuit_breakers': circuit_statuses,
+        'open_circuits': len(open_circuits),
         'version': '5.0',
         'timestamp': datetime.utcnow().isoformat()
     }), 200

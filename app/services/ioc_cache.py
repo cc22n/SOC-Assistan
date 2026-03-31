@@ -22,7 +22,7 @@ from app import db
 logger = logging.getLogger(__name__)
 
 # TTL por nivel de riesgo (en horas)
-CACHE_TTL = {
+CACHE_TTL_BY_RISK = {
     'CRÍTICO': 1,
     'CRITICO': 1,
     'ALTO': 3,
@@ -31,7 +31,29 @@ CACHE_TTL = {
     'LIMPIO': 24,
 }
 
+# TTL por tipo de IOC (en horas)
+# IPs y URLs cambian rápido; hashes son inmutables; dominios son intermedios
+CACHE_TTL_BY_TYPE = {
+    'ip':     1,    # Reputación de IP puede cambiar en horas
+    'url':    1,    # URLs maliciosas se dan de baja rápido
+    'domain': 6,    # Dominios cambian más lentamente
+    'hash':   24,   # Hashes son inmutables
+}
+
+# Alias legacy para backwards compatibility
+CACHE_TTL = CACHE_TTL_BY_RISK
+
 DEFAULT_TTL_HOURS = 6
+
+
+def _get_effective_ttl(risk_level: str, ioc_type: str) -> int:
+    """
+    Retorna el TTL efectivo en horas para una combinación de riesgo + tipo de IOC.
+    Usa el mínimo entre ambos para mayor seguridad (frescura de datos).
+    """
+    ttl_risk = CACHE_TTL_BY_RISK.get(risk_level, DEFAULT_TTL_HOURS)
+    ttl_type = CACHE_TTL_BY_TYPE.get(ioc_type, DEFAULT_TTL_HOURS)
+    return min(ttl_risk, ttl_type)
 
 
 def get_cached_analysis(
@@ -76,11 +98,11 @@ def get_cached_analysis(
         if not analysis:
             return None
 
-        # Calcular TTL
+        # Calcular TTL (mínimo entre TTL-por-riesgo y TTL-por-tipo)
         if max_age_hours is not None:
             ttl_hours = max_age_hours
         else:
-            ttl_hours = CACHE_TTL.get(analysis.risk_level, DEFAULT_TTL_HOURS)
+            ttl_hours = _get_effective_ttl(analysis.risk_level, ioc.ioc_type)
 
         # Verificar si el cache sigue vigente
         cache_expiry = analysis.created_at + timedelta(hours=ttl_hours)

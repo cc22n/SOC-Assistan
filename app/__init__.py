@@ -1,7 +1,7 @@
 """
 Inicialización de la aplicación Flask SOC Agent
 """
-from flask import Flask
+from flask import Flask, g, request as flask_request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -12,9 +12,47 @@ from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 
 #from app.routes.dashboard_routes import bp as dashboard_bp
+import json
 import logging
+import time
+import uuid
 from logging.handlers import RotatingFileHandler
 import os
+
+
+class JSONFormatter(logging.Formatter):
+    """
+    Formatter de logs en JSON estructurado.
+    Facilita ingestión por SIEM/Elasticsearch.
+    Incluye correlation ID por request cuando hay contexto Flask activo.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry: dict = {
+            'timestamp': self.formatTime(record, self.datefmt),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno,
+        }
+
+        if record.exc_info:
+            log_entry['exception'] = self.formatException(record.exc_info)
+
+        # Agregar contexto de request si está disponible
+        try:
+            from flask import has_request_context
+            if has_request_context():
+                log_entry['request_id'] = getattr(g, 'request_id', None)
+                log_entry['user_id'] = getattr(g, 'user_id', None)
+                log_entry['method'] = flask_request.method
+                log_entry['path'] = flask_request.path
+        except RuntimeError:
+            pass  # Fuera de contexto de aplicación
+
+        return json.dumps(log_entry, ensure_ascii=False)
 
 # Inicializar extensiones
 db = SQLAlchemy()
@@ -60,7 +98,8 @@ def create_app(config_name='default'):
 
     # IMPORTANTE: Importar modelos DESPUÉS de inicializar db
     with app.app_context():
-        from app.models import ioc
+        from app.models import ioc  # noqa: F401
+        from app.models import audit  # noqa: F401
 
     # Configurar login
     login_manager.login_view = 'auth.login'
@@ -78,6 +117,12 @@ def create_app(config_name='default'):
 
     # Registrar manejadores de errores
     register_error_handlers(app)
+
+    # Correlation ID por request (T3B-05)
+    register_request_context(app)
+
+    # Métricas de performance (T5C-01)
+    register_metrics_collector(app)
 
     # Security headers
     register_security_headers(app)
@@ -134,6 +179,26 @@ def register_blueprints(app):
     csrf.exempt(docs_bp)
 
 
+def register_metrics_collector(app: Flask) -> None:
+    """Registra métricas de performance por endpoint en after_request."""
+
+    @app.after_request
+    def collect_request_metrics(response):
+        try:
+            start = getattr(g, '_request_start', None)
+            if start is not None:
+                latency_ms = (time.monotonic() - start) * 1000
+                from app.utils.metrics import record_request_time
+                record_request_time(
+                    endpoint=flask_request.path,
+                    latency_ms=latency_ms,
+                    success=response.status_code < 500,
+                )
+        except Exception:
+            pass
+        return response
+
+
 def register_security_headers(app):
     """Agrega headers de seguridad a todas las respuestas"""
 
@@ -175,6 +240,10 @@ def register_error_handlers(app):
     def ratelimit_handler(error):
         return {'error': 'Rate Limit Exceeded', 'message': 'Demasiadas solicitudes'}, 429
 
+    @app.errorhandler(413)
+    def request_entity_too_large(error):
+        return {'error': 'Request Too Large', 'message': 'El cuerpo de la solicitud supera el límite de 16 MB'}, 413
+
     @app.errorhandler(500)
     def internal_error(error):
         db.session.rollback()
@@ -182,27 +251,58 @@ def register_error_handlers(app):
         return {'error': 'Internal Server Error', 'message': 'Error interno del servidor'}, 500
 
 
-def setup_logging(app):
-    """Configura el sistema de logging"""
+def register_request_context(app: Flask) -> None:
+    """Inyecta correlation ID y user_id en cada request (T3B-05)."""
+
+    @app.before_request
+    def set_request_context() -> None:
+        g.request_id = str(uuid.uuid4())
+        g._request_start = time.monotonic()
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                g.user_id = current_user.id
+            else:
+                g.user_id = None
+        except Exception:
+            g.user_id = None
+
+
+def setup_logging(app: Flask) -> None:
+    """
+    Configura el sistema de logging con JSONFormatter.
+    En producción: RotatingFileHandler JSON.
+    En desarrollo: StreamHandler JSON (stdout).
+    """
+    log_level = getattr(logging, app.config.get('LOG_LEVEL', 'INFO'))
+    json_formatter = JSONFormatter()
 
     if not app.debug and not app.testing:
         # Crear directorio de logs si no existe
         if not os.path.exists('logs'):
             os.mkdir('logs')
 
-        # Handler para archivo
+        # Handler para archivo con formato JSON
         file_handler = RotatingFileHandler(
             app.config['LOG_FILE'],
             maxBytes=10240000,  # 10MB
             backupCount=10
         )
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(getattr(logging, app.config['LOG_LEVEL']))
-
+        file_handler.setFormatter(json_formatter)
+        file_handler.setLevel(log_level)
         app.logger.addHandler(file_handler)
-        app.logger.setLevel(getattr(logging, app.config['LOG_LEVEL']))
+
+    else:
+        # En desarrollo: stream handler con JSON para consistencia
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(json_formatter)
+        stream_handler.setLevel(log_level)
+        # Solo agregar si no hay handlers ya (evitar duplicados en testing)
+        if not app.logger.handlers:
+            app.logger.addHandler(stream_handler)
+
+    app.logger.setLevel(log_level)
+    if not app.testing:
         app.logger.info('SOC Agent startup')
 
 

@@ -52,11 +52,16 @@ agentesoc/
 │       ├── audit.md         ← /audit — auditoría completa
 │       ├── bitacora.md      ← /bitacora — actualizar BITACORA.md
 │       ├── check-patterns.md ← /check-patterns — anti-patrones
+│       ├── complete-task.md ← /complete-task T3A-01 — marcar tarea completada
 │       ├── fase-status.md   ← /fase-status — estado actual
-│       └── new-endpoint.md  ← /new-endpoint — crear endpoint seguro
+│       ├── mejora-status.md ← /mejora-status — progreso del plan maestro
+│       ├── new-endpoint.md  ← /new-endpoint — crear endpoint seguro
+│       └── run-tests.md     ← /run-tests — ejecutar suite y ver cobertura
 ├── AGENTE_CONTEXTO.md       ← ESTE ARCHIVO
 ├── BITACORA.md              ← Historial de cambios por fase
-├── ROADMAP_FASE3.md         ← Plan para llegar a 8.0/10
+├── PLAN-MEJORAS.md          ← Plan maestro 6.4→9.5 (3 fases, 27 tareas)
+├── ROADMAP_FASE3.md         ← Detalle técnico de Fase 3
+├── propuestas-mejora.md     ← Análisis técnico profundo (origen del plan)
 └── CHANGELOG_BUGFIXES.md    ← Detalle técnico de todos los bug fixes
 ```
 
@@ -167,17 +172,31 @@ IOC.value.contains(query_text, autoescape=True)
 
 ---
 
-## 🗺️ Próximos objetivos (ver ROADMAP_FASE3.md)
+## 🗺️ Próximos objetivos (ver PLAN-MEJORAS.md)
 
-Para llegar de **6.4 → 8.0**:
-- [ ] Tests unitarios con cobertura ≥60% (+0.8 pts)
-- [ ] Type hints en servicios críticos (+0.3 pts)
-- [ ] Logging estructurado JSON (+0.3 pts)
-- [ ] Paginación en endpoints de lista (+0.2 pts)
-- [ ] Health check endpoint mejorado (+0.1 pts)
-- [ ] Validación de tamaño de payload (+0.2 pts)
-- [ ] Documentación OpenAPI completa (+0.3 pts)
-- [ ] Variables de entorno validadas al arranque (+0.2 pts)
+> Plan maestro: **6.4 → 9.5/10** en 3 fases
+> Ver `PLAN-MEJORAS.md` para el detalle completo y checklist de tareas.
+
+### Fase 3 (activa) — 6.4 → 8.0
+- [ ] Tests unitarios cobertura ≥60% (T3A-01 a T3A-06)
+- [ ] Type hints en servicios críticos (T3B-01 a T3B-03)
+- [ ] Logging estructurado JSON + correlation ID (T3B-04, T3B-05)
+- [ ] MAX_CONTENT_LENGTH + validación payload (T3C-01, T3C-02)
+- [ ] Variables entorno validadas al arranque (T3C-03)
+- [ ] Paginación en /incidents (T3C-04)
+- [ ] Health check con latencias (T3C-05)
+- [ ] OpenAPI spec completa (T3C-06)
+
+### Fase 4 (siguiente) — 8.0 → 9.0
+- [ ] Sanitización prompts LLM anti-injection (T4A-01)
+- [ ] Audit log inmutable (T4A-02)
+- [ ] Circuit breakers para APIs externas (T4B-01)
+- [ ] RBAC ANALYST/SENIOR/ADMIN (T4B-04)
+
+### Fase 5 (futuro) — 9.0 → 9.5+
+- [ ] Notificaciones in-app (T5A-01)
+- [ ] Webhooks outbound Slack/Teams (T5A-02)
+- [ ] Celery + Redis async (T5B-01)
 
 ---
 

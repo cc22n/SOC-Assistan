@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Estado de APIs — SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-heartbeat text-indigo-600 mr-2"></i>Estado de APIs TI
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Circuit breakers y métricas de performance en tiempo real.
+                Actualizado: <span id="last-refresh">{{ metrics.collected_at }}</span>
+            </p>
+        </div>
+        <button onclick="location.reload()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm">
+            <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+    </div>
+
+    <!-- Resumen general -->
+    {% set open_count = circuit_statuses.values() | selectattr('state', 'eq', 'OPEN') | list | length %}
+    {% set half_count = circuit_statuses.values() | selectattr('state', 'eq', 'HALF_OPEN') | list | length %}
+    {% set total_apis = circuit_statuses | length %}
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-500">
+            <div class="text-2xl font-bold text-green-600">{{ total_apis - open_count - half_count }}</div>
+            <div class="text-sm text-gray-500">APIs Operativas</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-red-500">
+            <div class="text-2xl font-bold text-red-600">{{ open_count }}</div>
+            <div class="text-sm text-gray-500">Circuito ABIERTO</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-yellow-500">
+            <div class="text-2xl font-bold text-yellow-600">{{ half_count }}</div>
+            <div class="text-sm text-gray-500">En prueba (HALF-OPEN)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-indigo-500">
+            <div class="text-2xl font-bold text-indigo-600">{{ metrics.uptime_seconds | int // 3600 }}h {{ (metrics.uptime_seconds | int % 3600) // 60 }}m</div>
+            <div class="text-sm text-gray-500">Uptime del servidor</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+
+        <!-- Circuit Breakers -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <i class="fas fa-plug text-indigo-600"></i>
+                <h2 class="text-base font-semibold text-gray-800">Circuit Breakers por API</h2>
+            </div>
+
+            {% if circuit_statuses %}
+            <div class="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                {% for api_name, status in circuit_statuses.items() | sort(attribute='0') %}
+                <div class="flex items-center justify-between px-6 py-3 hover:bg-gray-50">
+                    <div class="flex items-center gap-3">
+                        {% if status.state == 'CLOSED' %}
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        {% elif status.state == 'OPEN' %}
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        {% else %}
+                            <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                        {% endif %}
+                        <span class="text-sm font-medium text-gray-700">{{ api_name }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        {% if status.state == 'OPEN' %}
+                            <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">OPEN</span>
+                            {% if status.time_until_retry_s is not none %}
+                                <span class="text-gray-400">retry en {{ status.time_until_retry_s }}s</span>
+                            {% endif %}
+                        {% elif status.state == 'HALF_OPEN' %}
+                            <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">HALF-OPEN</span>
+                        {% else %}
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">OK</span>
+                        {% endif %}
+                        {% if status.failure_count > 0 %}
+                            <span class="text-red-400">{{ status.failure_count }} fallos</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-8 text-center text-gray-400 text-sm">
+                <i class="fas fa-info-circle mr-2"></i>No hay datos aún — los circuit breakers se crean al consultar cada API.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Top APIs lentas -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <i class="fas fa-tachometer-alt text-orange-500"></i>
+                <h2 class="text-base font-semibold text-gray-800">Top 5 APIs más lentas (P95)</h2>
+            </div>
+            {% if metrics.top_slow_apis %}
+            <div class="p-6 space-y-3">
+                {% for entry in metrics.top_slow_apis %}
+                <div>
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span class="font-medium">{{ entry.api }}</span>
+                        <span>P95: <strong>{{ entry.p95 }}ms</strong> · P99: {{ entry.p99 }}ms · avg: {{ entry.avg }}ms</span>
+                    </div>
+                    {% set pct = [[(entry.p95 / 5000 * 100) | int, 3] | max, 100] | min %}
+                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full {% if entry.p95 > 3000 %}bg-red-500{% elif entry.p95 > 1500 %}bg-yellow-500{% else %}bg-green-500{% endif %}"
+                             style="width: {{ pct }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-8 text-center text-gray-400 text-sm">
+                <i class="fas fa-info-circle mr-2"></i>Sin datos de latencia aún.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Métricas de endpoints -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+            <i class="fas fa-server text-indigo-600"></i>
+            <h2 class="text-base font-semibold text-gray-800">Latencias por Endpoint</h2>
+        </div>
+        {% if metrics.endpoints %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-6 py-3 text-left">Endpoint</th>
+                        <th class="px-4 py-3 text-right">Requests</th>
+                        <th class="px-4 py-3 text-right">P50</th>
+                        <th class="px-4 py-3 text-right">P95</th>
+                        <th class="px-4 py-3 text-right">P99</th>
+                        <th class="px-4 py-3 text-right">Avg</th>
+                        <th class="px-4 py-3 text-right">Error %</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for endpoint, stats in metrics.endpoints.items() | sort(attribute='0') %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-3 font-mono text-xs text-gray-700">{{ endpoint }}</td>
+                        <td class="px-4 py-3 text-right text-gray-600">{{ stats.count }}</td>
+                        <td class="px-4 py-3 text-right {% if stats.p50 and stats.p50 > 1000 %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                            {{ stats.p50 or '—' }}{% if stats.p50 %}ms{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right {% if stats.p95 and stats.p95 > 3000 %}text-red-600 font-medium{% elif stats.p95 and stats.p95 > 1500 %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                            {{ stats.p95 or '—' }}{% if stats.p95 %}ms{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right text-gray-600">
+                            {{ stats.p99 or '—' }}{% if stats.p99 %}ms{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right text-gray-600">
+                            {{ stats.avg or '—' }}{% if stats.avg %}ms{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right {% if stats.error_rate > 10 %}text-red-600 font-medium{% elif stats.error_rate > 5 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                            {{ stats.error_rate }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-8 text-center text-gray-400 text-sm">
+            <i class="fas fa-info-circle mr-2"></i>Sin datos de endpoints. Realiza algunas peticiones primero.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Cuotas diarias de APIs TI -->
+    {% if usage %}
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+            <i class="fas fa-database text-indigo-600"></i>
+            <h2 class="text-base font-semibold text-gray-800">Cuotas Diarias de APIs TI</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-6 py-3 text-left">API</th>
+                        <th class="px-4 py-3 text-right">Usadas hoy</th>
+                        <th class="px-4 py-3 text-right">Límite</th>
+                        <th class="px-4 py-3 text-right">Restantes</th>
+                        <th class="px-4 py-3 text-right">Errores</th>
+                        <th class="px-4 py-3 text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for api_name, stats in usage.items() | sort(attribute='0') %}
+                    {% set is_unlimited = (stats.limit == 'unlimited' or stats.remaining == 'unlimited') %}
+                    {% set pct = 0 if is_unlimited else ((stats.used / stats.limit * 100) | int if stats.limit > 0 else 0) %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-2 font-medium text-gray-700 text-xs">{{ api_name }}</td>
+                        <td class="px-4 py-2 text-right text-gray-600">{{ stats.used }}</td>
+                        <td class="px-4 py-2 text-right text-gray-500">{{ stats.limit }}</td>
+                        <td class="px-4 py-2 text-right {% if not is_unlimited and pct > 80 %}text-red-600 font-medium{% elif not is_unlimited and pct > 50 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                            {{ stats.remaining }}
+                        </td>
+                        <td class="px-4 py-2 text-right {% if stats.errors > 0 %}text-red-500{% else %}text-gray-400{% endif %}">{{ stats.errors }}</td>
+                        <td class="px-4 py-2 text-center">
+                            {% if is_unlimited or pct < 50 %}
+                                <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">OK</span>
+                            {% elif pct < 80 %}
+                                <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs">Precaución</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">Límite bajo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top APIs con errores -->
+    {% if metrics.top_error_apis %}
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+            <i class="fas fa-exclamation-triangle text-red-500"></i>
+            <h2 class="text-base font-semibold text-gray-800">Top APIs con mayor tasa de error</h2>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for entry in metrics.top_error_apis %}
+            <div class="border border-gray-100 rounded-lg p-4 {% if entry.error_rate > 20 %}border-red-200 bg-red-50{% elif entry.error_rate > 10 %}border-yellow-200 bg-yellow-50{% endif %}">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-medium text-sm text-gray-700">{{ entry.api }}</span>
+                    <span class="text-lg font-bold {% if entry.error_rate > 20 %}text-red-600{% elif entry.error_rate > 10 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                        {{ entry.error_rate }}%
+                    </span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ entry.errors }} errores / {{ entry.count }} requests
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// Auto-refresh cada 30 segundos
+setTimeout(() => location.reload(), 30000);
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
 <div align="center">
 
-# SOC Assistan
+# SOC Agent
 
 ### AI-Powered Threat Intelligence Platform for SOC Analysts
 
@@ -9,7 +9,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![APIs](https://img.shields.io/badge/Threat_Intel_APIs-19-red)
-![LLMs](https://img.shields.io/badge/LLM_Providers-4-purple)
+![LLMs](https://img.shields.io/badge/LLM_Providers-5-purple)
 
 *Analyze IOCs, generate professional reports, and manage security incidents from a single interface.*
 
@@ -19,54 +19,55 @@
 
 ---
 
-## What is SOC Assistan?
+## What is SOC Agent?
 
-SOC Assistan is a web-based threat intelligence platform designed for Security Operations Center (SOC) analysts. It integrates **19 threat intelligence APIs** and **4 LLM providers** to analyze Indicators of Compromise (IOCs) such as IPs, domains, hashes, and URLs.
+SOC Agent is a web-based threat intelligence platform designed for Security Operations Center (SOC) analysts. It integrates **19 threat intelligence APIs** and **5 LLM providers** to analyze Indicators of Compromise (IOCs) such as IPs, domains, hashes, and URLs.
 
 The system enables analysts to:
 - Analyze IOCs against multiple sources simultaneously
-- Get AI-powered intelligent analysis (LLM orchestration)
+- Get AI-powered intelligent analysis with automatic LLM routing
 - Manage incidents with Kanban board and timeline views
 - Chat with an AI SOC assistant that maintains investigation context
 - Generate professional reports in PDF and DOCX formats
 - Correlate IOCs with MITRE ATT&CK techniques
+- Monitor API health, circuit breakers, and performance metrics in real time
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Frontend                          │
-│  Dashboard │ Analysis │ Chat │ Incidents │ Reports   │
-│            (Jinja2 + Tailwind + Chart.js)            │
-├─────────────────────────────────────────────────────┤
-│                 Flask Backend                         │
-│  ┌──────────┐ ┌──────────┐ ┌───────────────────┐    │
-│  │ Auth     │ │ API v2   │ │ Security          │    │
-│  │ (Login,  │ │ Routes   │ │ Middleware        │    │
-│  │ Register)│ │          │ │ (Anti-SQLi, XSS)  │    │
-│  └──────────┘ └──────────┘ └───────────────────┘    │
-│  ┌──────────────────────────────────────────────┐    │
-│  │           Services Layer                      │    │
-│  │  LLM Orchestrator │ Session Manager           │    │
-│  │  Threat Intel      │ Report Generator          │    │
-│  │  Deep Analysis     │ Dashboard Stats           │    │
-│  └──────────────────────────────────────────────┘    │
-├─────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────────────────────┐    │
-│  │ PostgreSQL  │  │ 19 Threat Intel APIs         │    │
-│  │ (Users,     │  │ VirusTotal, AbuseIPDB,       │    │
-│  │  IOCs,      │  │ Shodan, GreyNoise, OTX,      │    │
-│  │  Analyses,  │  │ ThreatFox, URLhaus,           │    │
-│  │  Incidents, │  │ MalwareBazaar, SecurityTrails, │    │
-│  │  Sessions)  │  │ Pulsedive, URLScan, ...       │    │
-│  └─────────────┘  └─────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────┐     │
-│  │ 4 LLM Providers                              │     │
-│  │ xAI (Grok) │ OpenAI (GPT-4) │ Groq │ Gemini │     │
-│  └─────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                         Frontend                             │
+│  Dashboard │ Analysis │ Chat │ Incidents │ Reports │ Health  │
+│              (Jinja2 + Tailwind + Chart.js)                  │
+├─────────────────────────────────────────────────────────────┤
+│                      Flask Backend                            │
+│  ┌──────────┐  ┌──────────┐  ┌────────────────────────┐    │
+│  │ Auth     │  │ API v2   │  │ Security Middleware     │    │
+│  │ (RBAC,   │  │ Routes   │  │ (Anti-SQLi, XSS,       │    │
+│  │ Audit)   │  │          │  │  Prompt Injection)     │    │
+│  └──────────┘  └──────────┘  └────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                   Services Layer                     │    │
+│  │  LLM Orchestrator (smart routing)  │ Session Manager │    │
+│  │  Threat Intel + Circuit Breakers   │ Report Generator│    │
+│  │  IOC Cache (TTL by type & risk)    │ Metrics Engine  │    │
+│  └─────────────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌────────────────────────────────────┐   │
+│  │ PostgreSQL   │  │ 19 Threat Intel APIs               │   │
+│  │ (Users,      │  │ VirusTotal, AbuseIPDB, Shodan,     │   │
+│  │  IOCs,       │  │ GreyNoise, OTX, ThreatFox,         │   │
+│  │  Analyses,   │  │ URLhaus, MalwareBazaar,             │   │
+│  │  Incidents,  │  │ SecurityTrails, Pulsedive, ...      │   │
+│  │  Audit Log,  │  └────────────────────────────────────┘   │
+│  │  Sessions)   │  ┌────────────────────────────────────┐   │
+│  └──────────────┘  │ 5 LLM Providers                    │   │
+│                    │ xAI · OpenAI · Groq · Gemini        │   │
+│                    │ Anthropic (Claude)                  │   │
+│                    └────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -84,14 +85,17 @@ The system enables analysts to:
 | **Intelligence** | AlienVault OTX |
 | **Geolocation** | IP-API (free, no key required) |
 
-### LLM Providers (4)
+### LLM Providers (5)
 
-| Provider | Model | Use Case |
+| Provider | Model | Best For |
 |----------|-------|----------|
-| **xAI** | Grok | Fast analysis, default |
-| **OpenAI** | GPT-4 | Deep analysis |
-| **Groq** | LLaMA / Mixtral | Speed, free tier |
-| **Gemini** | Gemini Pro | Google alternative |
+| **xAI** | Grok-3-mini | Fast analysis, default |
+| **OpenAI** | GPT-4o-mini | Deep analysis, hashes |
+| **Groq** | LLaMA 3.3 70B | Speed, free tier |
+| **Gemini** | Gemini 2.5 Flash | Long context, free tier |
+| **Anthropic** | Claude Sonnet 4.6 | Advanced reasoning |
+
+The orchestrator automatically routes each analysis to the optimal provider based on IOC type and analysis depth (e.g. Groq for IPs, OpenAI/Anthropic for malware hashes).
 
 ---
 
@@ -102,13 +106,15 @@ The system enables analysts to:
 - Automatic IOC type detection (IP, domain, hash, URL)
 - Confidence score and risk level (CRITICAL, HIGH, MEDIUM, LOW, CLEAN)
 - Automatic MITRE ATT&CK technique mapping
-- LLM model selector for analysis
+- Smart LLM routing: provider selected automatically by IOC type and depth
+- Pydantic validation of all API responses (detects unexpected schema changes)
 
 ### AI SOC Chat
 - Investigation assistant with persistent context
 - Investigation sessions with full history
 - Automatic correlation of IOCs analyzed in the session
 - Session export (JSON, Markdown, PDF, DOCX)
+- LLM provider selector (xAI, OpenAI, Groq, Gemini, Claude)
 
 ### Incident Management
 - Kanban board view (Open, Investigating, Resolved, Closed)
@@ -116,12 +122,20 @@ The system enables analysts to:
 - Multiple IOCs linked per incident (pivot table)
 - Auto-generated ticket IDs (SOC-YYYYMMDD-NNN)
 - Quick creation from analysis or chat
+- Paginated API with ownership verification (IDOR protection)
 
 ### Dashboard
 - Real-time statistics with charts
 - Risk distribution, temporal trends
 - Recent IOCs and open incidents
 - Top analyzed IOCs
+
+### API Health Dashboard (`/api-health`)
+- Unified view of API quotas (used / remaining today) and circuit breaker states
+- Circuit breakers per API: CLOSED / OPEN / HALF-OPEN with failure count and retry timer
+- Top 5 slowest APIs by P95 latency with visual bars
+- HTTP endpoint latency table (P50 / P95 / P99 / avg / error rate)
+- Auto-refresh every 30 seconds
 
 ### Reports
 - Professional PDF generation with ReportLab
@@ -130,11 +144,23 @@ The system enables analysts to:
 
 ### Security
 - Authentication with Flask-Login + password hashing (Werkzeug)
+- RBAC with 4 roles: `viewer`, `analyst`, `senior_analyst`, `admin`
 - CSRF protection on all forms
 - Rate limiting by IP and endpoint
 - Anti-injection middleware (SQLi, XSS, Command Injection, Path Traversal)
+- **Prompt injection protection** — 15 patterns blocked before sending to LLM
 - Security headers (CSP, X-Frame-Options, HSTS, etc.)
 - Session hardening (HttpOnly, SameSite, timeout)
+- **Append-only audit log** — every login, analysis, and access denial recorded
+- Request size limit (16 MB) with proper 413 handler
+
+### Observability
+- **Structured JSON logging** with correlation ID per request
+- **In-memory sliding window metrics** (P50/P95/P99) without external dependencies
+- Circuit breaker pattern for all external APIs (CLOSED → OPEN → HALF-OPEN)
+- TTL cache differentiated by IOC type (IP: 1h, URL: 1h, domain: 6h, hash: 24h)
+- Compound PostgreSQL indexes for high-cardinality queries
+- Full OpenAPI spec at `/api/v2/openapi.json`
 
 ---
 
@@ -174,7 +200,7 @@ pip install -r requirements.txt
 ### 4. Configure environment variables
 
 ```bash
-cp ..env.example .env
+cp .env.example .env
 # Edit .env with your API keys and configuration
 ```
 
@@ -191,11 +217,8 @@ GRANT ALL PRIVILEGES ON DATABASE soc_agent TO soc_admin;
 ```bash
 flask db upgrade
 
-# Or run migrations manually:
-psql -U soc_admin -d soc_agent -f migrations/add_investigation_sessions.sql
-psql -U soc_admin -d soc_agent -f migrations/add_new_api_fields_v3.sql
-psql -U soc_admin -d soc_agent -f migrations/add_apis_v31_censys_ipinfo.sql
-psql -U soc_admin -d soc_agent -f add_incidents_v31.sql
+# Apply performance and audit migrations:
+psql -U soc_admin -d soc_agent -f migrations/add_performance_indexes_and_audit.sql
 ```
 
 ### 7. Run the application
@@ -220,17 +243,17 @@ You don't need all APIs to use SOC Agent. The system works with whatever APIs yo
 
 | API | Free Tier | Sign Up |
 |-----|-----------|---------|
-| VirusTotal | Yes (500 req/day) | [virustotal.com](https://www.virustotal.com/gui/join-us) |
-| AbuseIPDB | Yes (1000 req/day) | [abuseipdb.com](https://www.abuseipdb.com/register) |
-| GreyNoise | Yes (community) | [greynoise.io](https://viz.greynoise.io/signup) |
-| AlienVault OTX | Yes (unlimited) | [otx.alienvault.com](https://otx.alienvault.com/api) |
-| Shodan InternetDB | Yes (no key) | Not required |
-| IP-API | Yes (no key) | Not required |
-| URLhaus | Yes (no key) | Not required |
-| ThreatFox | Yes (no key) | Not required |
-| MalwareBazaar | Yes (no key) | Not required |
+| VirusTotal | 500 req/day | [virustotal.com](https://www.virustotal.com/gui/join-us) |
+| AbuseIPDB | 1000 req/day | [abuseipdb.com](https://www.abuseipdb.com/register) |
+| GreyNoise | Community | [greynoise.io](https://viz.greynoise.io/signup) |
+| AlienVault OTX | Unlimited | [otx.alienvault.com](https://otx.alienvault.com/api) |
+| Shodan InternetDB | No key required | — |
+| IP-API | No key required | — |
+| URLhaus | No key required | — |
+| ThreatFox | No key required | — |
+| MalwareBazaar | No key required | — |
 
-For LLMs, [Groq](https://console.groq.com/) offers free access.
+For LLMs, [Groq](https://console.groq.com/) offers free access. [Anthropic](https://console.anthropic.com/) and [OpenAI](https://platform.openai.com/) are paid.
 
 ---
 
@@ -239,34 +262,49 @@ For LLMs, [Groq](https://console.groq.com/) offers free access.
 ```
 soc-agent/
 ├── app/
-│   ├── __init__.py              # Factory pattern, config
-│   ├── config.py                # Environment-based config
+│   ├── __init__.py              # Factory pattern, JSON logging, metrics hook
+│   ├── config.py                # Environment-based config, LLM models
 │   ├── middleware/
 │   │   └── security.py          # Anti-SQLi, XSS, validation
 │   ├── models/
 │   │   ├── ioc.py               # User, IOC, IOCAnalysis, Incident
 │   │   ├── session.py           # InvestigationSession, SessionIOC
-│   │   └── mitre.py             # MITRE ATT&CK mappings
+│   │   ├── mitre.py             # MITRE ATT&CK mappings
+│   │   └── audit.py             # AuditEvent, @audit_action decorator
 │   ├── routes/
-│   │   ├── main.py              # Main views
-│   │   ├── auth.py              # Login, register, profile
-│   │   ├── api_v2_routes.py     # REST API (analysis, chat, sessions)
-│   │   ├── incident_routes.py   # Incident CRUD
+│   │   ├── main.py              # Main views + unified API health dashboard
+│   │   ├── auth.py              # Login, register, profile (with audit log)
+│   │   ├── api_v2_routes.py     # REST API (analysis, chat, sessions, health)
+│   │   ├── incident_routes.py   # Incident CRUD with pagination + IDOR checks
 │   │   ├── dashboard_routes.py  # Dashboard stats API
-│   │   └── report_routes.py     # Report generation
+│   │   ├── report_routes.py     # Report generation
+│   │   └── mitre_stix_routes.py # MITRE + STIX export (RBAC protected)
+│   ├── schemas/
+│   │   ├── api.py               # Request schemas (Pydantic v2)
+│   │   └── api_responses.py     # Response schemas for TI APIs
 │   ├── services/
 │   │   ├── threat_intel.py      # API coordinator
-│   │   ├── api_clients.py       # 19 API clients
-│   │   ├── llm_orchestrator.py  # LLM orchestration
-│   │   ├── llm_service.py       # LLM communication
+│   │   ├── new_api_clients.py   # 19 API clients with circuit breakers
+│   │   ├── llm_orchestrator.py  # Smart LLM routing by IOC type
+│   │   ├── llm_service.py       # LLM communication (5 providers)
+│   │   ├── ioc_cache.py         # Cache with TTL by type and risk
 │   │   ├── session_manager.py   # Chat session management
 │   │   ├── report_generator.py  # PDF and DOCX
 │   │   └── dashboard_stats.py   # Statistics
 │   ├── templates/               # Jinja2 templates
+│   ├── docs/
+│   │   └── openapi.py           # Full OpenAPI spec
 │   └── utils/
+│       ├── auth.py              # RBAC: @require_role decorator
+│       ├── circuit_breaker.py   # APICircuitBreaker (CLOSED/OPEN/HALF-OPEN)
+│       ├── metrics.py           # Sliding window P50/P95/P99 metrics
+│       ├── security.py          # Prompt injection sanitizer
 │       ├── validators.py        # IOC validation
 │       └── formatters.py        # Data formatting
 ├── migrations/                  # SQL migrations
+│   └── add_performance_indexes_and_audit.sql
+├── tests/
+│   └── unit/                    # pytest test suite (180+ tests)
 ├── .env.example                 # Configuration template
 ├── requirements.txt             # Python dependencies
 ├── wsgi.py                      # WSGI entry point
@@ -280,14 +318,16 @@ soc-agent/
 | Layer | Technology |
 |-------|------------|
 | **Backend** | Python 3.12, Flask 3.0 |
-| **Database** | PostgreSQL 16 |
-| **ORM** | SQLAlchemy (Flask-SQLAlchemy) |
+| **Database** | PostgreSQL 16 (JSONB, compound indexes) |
+| **ORM** | SQLAlchemy 2.x (Flask-SQLAlchemy) |
+| **Validation** | Pydantic v2 (requests + API responses) |
 | **Frontend** | Jinja2, Tailwind CSS (CDN), Chart.js |
-| **Authentication** | Flask-Login, Werkzeug (password hashing) |
-| **Security** | Flask-WTF (CSRF), Flask-Limiter, Custom Middleware |
+| **Authentication** | Flask-Login, Werkzeug, RBAC roles |
+| **Security** | Flask-WTF (CSRF), Flask-Limiter, custom middleware, audit log |
+| **Resilience** | Circuit breakers, TTL cache by IOC type, request metrics |
 | **Reports** | ReportLab (PDF), python-docx (DOCX) |
 | **APIs** | 19 Threat Intelligence APIs |
-| **AI** | 4 LLM providers (xAI, OpenAI, Groq, Gemini) |
+| **AI** | 5 LLM providers with smart routing (xAI, OpenAI, Groq, Gemini, Anthropic) |
 
 ---
 
@@ -321,5 +361,5 @@ Built as a portfolio project demonstrating skills in:
 ---
 
 <div align="center">
-<i>SOC Assistan - AI-Powered Threat Intelligence Platform</i>
+<i>SOC Agent — AI-Powered Threat Intelligence Platform</i>
 </div>

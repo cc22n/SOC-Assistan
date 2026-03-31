@@ -30,6 +30,9 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user is None or not user.check_password(password):
+            from app.models.audit import AuditEvent
+            AuditEvent.log('login_failed', success=False,
+                           details={'username': username, 'reason': 'invalid_credentials'})
             flash('Usuario o contraseña incorrectos', 'error')
             return render_template('auth/login.html')
 
@@ -43,6 +46,10 @@ def login():
         from datetime import datetime
         user.last_login = datetime.utcnow()
         db.session.commit()
+
+        from app.models.audit import AuditEvent
+        AuditEvent.log('login', resource_type='user', resource_id=user.id,
+                       details={'username': user.username}, user_id=user.id, username=user.username)
 
         # Redirect a la página solicitada o dashboard (VULN-03 fix)
         next_page = request.args.get('next')
@@ -64,6 +71,8 @@ def login():
 @login_required
 def logout():
     """Logout de usuario"""
+    from app.models.audit import AuditEvent
+    AuditEvent.log('logout', resource_type='user', resource_id=current_user.id)
     logout_user()
     flash('Sesión cerrada correctamente', 'info')
     return redirect(url_for('main.index'))

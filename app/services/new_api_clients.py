@@ -1196,7 +1196,8 @@ class IPinfoClient:
 
 class UnifiedThreatIntelClient:
     """
-    Cliente unificado que consulta múltiples fuentes de threat intelligence
+    Cliente unificado que consulta múltiples fuentes de threat intelligence.
+    Todas las llamadas a APIs externas están protegidas con circuit breakers.
     """
 
     def __init__(self):
@@ -1226,6 +1227,31 @@ class UnifiedThreatIntelClient:
         self.censys = CensysClient()
         self.ipinfo = IPinfoClient()
 
+    def _call(self, api_name: str, func, *args, **kwargs) -> Dict:
+        """Ejecuta una llamada a API externa protegida por circuit breaker y métricas."""
+        import time as _time
+        from app.utils.circuit_breaker import call_with_circuit_breaker
+        t0 = _time.monotonic()
+        try:
+            result = call_with_circuit_breaker(api_name, func, *args, **kwargs)
+            latency_ms = (_time.monotonic() - t0) * 1000
+            success = not (isinstance(result, dict) and 'error' in result)
+            try:
+                from app.utils.metrics import record_api_latency
+                record_api_latency(api_name, latency_ms, success)
+            except Exception:
+                pass
+            return result
+        except Exception as exc:
+            latency_ms = (_time.monotonic() - t0) * 1000
+            try:
+                from app.utils.metrics import record_api_latency
+                record_api_latency(api_name, latency_ms, success=False)
+            except Exception:
+                pass
+            logger.error(f"[{api_name}] call failed: {exc}")
+            return {'error': str(exc)}
+
     def analyze_ip(self, ip: str, sources: list = None) -> Dict:
         """Analiza una IP en múltiples fuentes"""
         if sources is None:
@@ -1236,31 +1262,31 @@ class UnifiedThreatIntelClient:
         results = {}
 
         if 'virustotal' in sources:
-            results['virustotal'] = self.virustotal.check_ip(ip)
+            results['virustotal'] = self._call('virustotal', self.virustotal.check_ip, ip)
         if 'abuseipdb' in sources:
-            results['abuseipdb'] = self.abuseipdb.check_ip(ip)
+            results['abuseipdb'] = self._call('abuseipdb', self.abuseipdb.check_ip, ip)
         if 'shodan' in sources:
-            results['shodan'] = self.shodan.check_ip(ip)
+            results['shodan'] = self._call('shodan', self.shodan.check_ip, ip)
         if 'otx' in sources:
-            results['otx'] = self.otx.check_ip(ip)
+            results['otx'] = self._call('otx', self.otx.check_ip, ip)
         if 'greynoise' in sources:
-            results['greynoise'] = self.greynoise.check_ip(ip)
+            results['greynoise'] = self._call('greynoise', self.greynoise.check_ip, ip)
         if 'criminal_ip' in sources:
-            results['criminal_ip'] = self.criminal_ip.check_ip(ip)
+            results['criminal_ip'] = self._call('criminal_ip', self.criminal_ip.check_ip, ip)
         if 'pulsedive' in sources:
-            results['pulsedive'] = self.pulsedive.get_indicator(ip)
+            results['pulsedive'] = self._call('pulsedive', self.pulsedive.get_indicator, ip)
         if 'shodan_internetdb' in sources:
-            results['shodan_internetdb'] = self.shodan_internetdb.check_ip(ip)
+            results['shodan_internetdb'] = self._call('shodan_internetdb', self.shodan_internetdb.check_ip, ip)
         if 'ip_api' in sources:
-            results['ip_api'] = self.ip_api.get_geolocation(ip)
+            results['ip_api'] = self._call('ip_api', self.ip_api.get_geolocation, ip)
         if 'censys' in sources:
-            results['censys'] = self.censys.check_ip(ip)
+            results['censys'] = self._call('censys', self.censys.check_ip, ip)
         if 'ipinfo' in sources:
-            results['ipinfo'] = self.ipinfo.check_ip(ip)
+            results['ipinfo'] = self._call('ipinfo', self.ipinfo.check_ip, ip)
         if 'urlhaus' in sources:
-            results['urlhaus'] = self.urlhaus.check_host(ip)
+            results['urlhaus'] = self._call('urlhaus', self.urlhaus.check_host, ip)
         if 'threatfox' in sources:
-            results['threatfox'] = self.threatfox.search_ioc(ip)
+            results['threatfox'] = self._call('threatfox', self.threatfox.search_ioc, ip)
 
         return results
 
@@ -1273,23 +1299,23 @@ class UnifiedThreatIntelClient:
         results = {}
 
         if 'virustotal' in sources:
-            results['virustotal'] = self.virustotal.check_domain(domain)
+            results['virustotal'] = self._call('virustotal', self.virustotal.check_domain, domain)
         if 'otx' in sources:
-            results['otx'] = self.otx.check_domain(domain)
+            results['otx'] = self._call('otx', self.otx.check_domain, domain)
         if 'securitytrails' in sources:
-            results['securitytrails'] = self.securitytrails.get_domain_details(domain)
+            results['securitytrails'] = self._call('securitytrails', self.securitytrails.get_domain_details, domain)
         if 'safebrowsing' in sources:
-            results['safebrowsing'] = self.safebrowsing.check_url(f"http://{domain}")
+            results['safebrowsing'] = self._call('google_safebrowsing', self.safebrowsing.check_url, f"http://{domain}")
         if 'criminal_ip' in sources:
-            results['criminal_ip'] = self.criminal_ip.check_domain(domain)
+            results['criminal_ip'] = self._call('criminal_ip', self.criminal_ip.check_domain, domain)
         if 'pulsedive' in sources:
-            results['pulsedive'] = self.pulsedive.get_indicator(domain)
+            results['pulsedive'] = self._call('pulsedive', self.pulsedive.get_indicator, domain)
         if 'urlscan' in sources:
-            results['urlscan'] = self.urlscan.search(f"domain:{domain}")
+            results['urlscan'] = self._call('urlscan', self.urlscan.search, f"domain:{domain}")
         if 'urlhaus' in sources:
-            results['urlhaus'] = self.urlhaus.check_host(domain)
+            results['urlhaus'] = self._call('urlhaus', self.urlhaus.check_host, domain)
         if 'threatfox' in sources:
-            results['threatfox'] = self.threatfox.search_ioc(domain)
+            results['threatfox'] = self._call('threatfox', self.threatfox.search_ioc, domain)
 
         return results
 
@@ -1301,17 +1327,17 @@ class UnifiedThreatIntelClient:
         results = {}
 
         if 'virustotal' in sources:
-            results['virustotal'] = self.virustotal.check_hash(file_hash)
+            results['virustotal'] = self._call('virustotal', self.virustotal.check_hash, file_hash)
         if 'hybrid_analysis' in sources:
-            results['hybrid_analysis'] = self.hybrid_analysis.search_hash(file_hash)
+            results['hybrid_analysis'] = self._call('hybrid_analysis', self.hybrid_analysis.search_hash, file_hash)
         if 'malwarebazaar' in sources:
-            results['malwarebazaar'] = self.malwarebazaar.query_hash(file_hash)
+            results['malwarebazaar'] = self._call('malwarebazaar', self.malwarebazaar.query_hash, file_hash)
         if 'otx' in sources:
-            results['otx'] = self.otx.check_hash(file_hash)
+            results['otx'] = self._call('otx', self.otx.check_hash, file_hash)
         if 'pulsedive' in sources:
-            results['pulsedive'] = self.pulsedive.get_indicator(file_hash)
+            results['pulsedive'] = self._call('pulsedive', self.pulsedive.get_indicator, file_hash)
         if 'threatfox' in sources:
-            results['threatfox'] = self.threatfox.search_ioc(file_hash)
+            results['threatfox'] = self._call('threatfox', self.threatfox.search_ioc, file_hash)
 
         return results
 
@@ -1323,14 +1349,14 @@ class UnifiedThreatIntelClient:
         results = {}
 
         if 'safebrowsing' in sources:
-            results['safebrowsing'] = self.safebrowsing.check_url(url)
+            results['safebrowsing'] = self._call('google_safebrowsing', self.safebrowsing.check_url, url)
         if 'urlhaus' in sources:
-            results['urlhaus'] = self.urlhaus.check_url(url)
+            results['urlhaus'] = self._call('urlhaus', self.urlhaus.check_url, url)
         if 'urlscan' in sources:
-            results['urlscan'] = self.urlscan.search(f'url:"{url}"')
+            results['urlscan'] = self._call('urlscan', self.urlscan.search, f'url:"{url}"')
         if 'pulsedive' in sources:
-            results['pulsedive'] = self.pulsedive.get_indicator(url)
+            results['pulsedive'] = self._call('pulsedive', self.pulsedive.get_indicator, url)
         if 'threatfox' in sources:
-            results['threatfox'] = self.threatfox.search_ioc(url)
+            results['threatfox'] = self._call('threatfox', self.threatfox.search_ioc, url)
 
         return results

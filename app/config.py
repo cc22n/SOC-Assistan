@@ -30,6 +30,9 @@ class Config:
     # Redis
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
+    # Upload limits
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
 
@@ -77,6 +80,7 @@ class Config:
         'openai': os.environ.get('OPENAI_API_KEY'),
         'groq': os.environ.get('GROQ_API_KEY'),
         'gemini': os.environ.get('GEMINI_API_KEY'),
+        'anthropic': os.environ.get('ANTHROPIC_API_KEY'),
     }
 
     # ==========================================================================
@@ -129,11 +133,16 @@ class Config:
             'model': 'gemini-2.5-flash',      # REST API recomendada sobre SDK
             'max_tokens': 4096,
             'temperature': 0.7
+        },
+        'anthropic': {
+            'model': 'claude-sonnet-4-6',     # Claude Sonnet 4.6 — balance costo/calidad
+            'max_tokens': 4096,
+            'temperature': 0.7
         }
     }
 
     # Orden de prioridad para LLMs
-    LLM_PRIORITY = ['xai', 'openai', 'groq', 'gemini']
+    LLM_PRIORITY = ['xai', 'openai', 'groq', 'gemini', 'anthropic']
 
     # ==========================================================================
     # Session Investigation Settings
@@ -162,12 +171,19 @@ class ProductionConfig(Config):
 
     @classmethod
     def init_app(cls, app=None):
-        """Valida configuracion critica antes de arrancar en produccion."""
+        """Valida variables de entorno críticas antes de arrancar en producción."""
         secret = os.environ.get('SECRET_KEY')
         if not secret or len(secret) < 32:
             raise RuntimeError(
                 "Production requires SECRET_KEY env var with at least 32 characters. "
                 "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            raise RuntimeError(
+                "Production requires DATABASE_URL env var. "
+                "Example: postgresql://user:password@host:5432/dbname"
             )
 
 

@@ -11,7 +11,7 @@ CAMBIOS v6 (Febrero 2025):
 import json
 import logging
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 from flask import current_app
 
@@ -29,12 +29,13 @@ class LLMOrchestrator:
     4. Responde con información completa
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.llm_providers = {
             'xai': self._get_xai_client,
             'openai': self._get_openai_client,
             'groq': self._get_groq_client,
-            'gemini': self._get_gemini_client
+            'gemini': self._get_gemini_client,
+            'anthropic': self._get_anthropic_client,
         }
 
         self.api_clients = {}
@@ -128,14 +129,14 @@ class LLMOrchestrator:
             logger.error(f"CRITICAL: Failed to initialize API clients: {e}", exc_info=True)
 
     @property
-    def session_manager(self):
+    def session_manager(self) -> Any:
         if self._session_manager is None:
             from app.services.session_manager import SessionManager
             self._session_manager = SessionManager()
         return self._session_manager
 
     @property
-    def deep_analysis_service(self):
+    def deep_analysis_service(self) -> Any:
         """Servicio de análisis profundo (NUEVO v6)"""
         if self._deep_analysis_service is None:
             from app.services.deep_analysis_service import DeepAnalysisService
@@ -219,24 +220,101 @@ class LLMOrchestrator:
         from app.services.llm_service import LLMService
         return LLMService(provider='gemini')
 
-    def _get_available_llm(self, specific_provider: str = None) -> Optional[object]:
+    def _get_anthropic_client(self):
+        from app.services.llm_service import LLMService
+        return LLMService(provider='anthropic')
+
+    # =========================================================================
+    # LLM ROUTING INTELIGENTE (T5B-02)
+    # =========================================================================
+
+    # Routing table: (ioc_type, analysis_depth) → (primary, fallback)
+    # primary: proveedor óptimo para el caso de uso
+    # fallback: solo se usa si primary no está disponible o falla — no cadena
+    _ROUTING_TABLE: Dict[Tuple[str, str], Tuple[str, str]] = {
+        # IPs: Groq (LLaMA 3.1 — rápido, bajo costo, suficiente para reputación)
+        ('ip',     'basic'): ('groq',   'xai'),
+        ('ip',     'deep'):  ('groq',   'openai'),
+
+        # Dominios: Grok por defecto; profundo → OpenAI para más contexto
+        ('domain', 'basic'): ('xai',    'groq'),
+        ('domain', 'deep'):  ('openai', 'xai'),
+
+        # URLs: Groq (rápido, patrones de phishing son simples)
+        ('url',    'basic'): ('groq',   'xai'),
+        ('url',    'deep'):  ('openai', 'xai'),
+
+        # Hashes/malware: OpenAI GPT-4 (mayor ventana de contexto, mejor para análisis binario)
+        ('hash',   'basic'): ('openai', 'xai'),
+        ('hash',   'deep'):  ('openai', 'groq'),
+    }
+
+    _DEFAULT_ROUTING = ('xai', 'groq')  # Grok como default, Groq como fallback
+
+    def select_provider(self, ioc_type: str, analysis_depth: str = 'basic',
+                        preferred_provider: Optional[str] = None) -> Optional[object]:
+        """
+        Selecciona el proveedor LLM óptimo según el tipo de IOC y profundidad.
+
+        Política:
+        - Si preferred_provider está configurado y disponible → úsalo directamente
+        - Si no → consulta _ROUTING_TABLE para (ioc_type, analysis_depth)
+        - Intenta primary; si falla → intenta fallback
+        - No hace cascada más allá de 2 intentos
+
+        Args:
+            ioc_type: 'ip', 'domain', 'url', 'hash'
+            analysis_depth: 'basic' | 'deep'
+            preferred_provider: Sobreescribe el routing (para peticiones explícitas del usuario)
+
+        Returns:
+            Instancia de LLMService configurada, o None si no hay proveedor disponible.
+        """
         api_keys = current_app.config.get('API_KEYS', {})
 
-        if specific_provider and api_keys.get(specific_provider):
-            if specific_provider in self.llm_providers:
-                try:
-                    return self.llm_providers[specific_provider]()
-                except Exception as e:
-                    logger.warning(f"Failed to initialize {specific_provider}: {e}")
+        # 1. Provider explícito del usuario
+        if preferred_provider and api_keys.get(preferred_provider):
+            try:
+                llm = self.llm_providers[preferred_provider]()
+                logger.debug(f"LLM routing: explicit override → {preferred_provider}")
+                return llm
+            except Exception as e:
+                logger.warning(f"LLM routing: explicit provider '{preferred_provider}' failed: {e}")
 
-        for provider in ['xai', 'openai', 'groq', 'gemini']:
+        # 2. Routing inteligente por tipo + profundidad
+        key = (ioc_type, analysis_depth)
+        primary, fallback = self._ROUTING_TABLE.get(key, self._DEFAULT_ROUTING)
+
+        for provider in (primary, fallback):
+            if not api_keys.get(provider):
+                continue
+            try:
+                llm = self.llm_providers[provider]()
+                label = 'primary' if provider == primary else 'fallback'
+                logger.info(f"LLM routing: ioc_type={ioc_type} depth={analysis_depth} → {provider} ({label})")
+                return llm
+            except Exception as e:
+                logger.warning(f"LLM routing: provider '{provider}' failed: {e}")
+
+        # 3. Last resort: cualquier provider disponible
+        for provider in ('xai', 'openai', 'groq', 'gemini'):
+            if provider in (primary, fallback):
+                continue  # Ya los intentamos
             if api_keys.get(provider):
                 try:
-                    return self.llm_providers[provider]()
-                except Exception as e:
-                    logger.warning(f"Failed to initialize {provider}: {e}")
+                    llm = self.llm_providers[provider]()
+                    logger.warning(f"LLM routing: last resort → {provider}")
+                    return llm
+                except Exception:
                     continue
+
+        logger.error("LLM routing: no provider available")
         return None
+
+    def _get_available_llm(self, specific_provider: str = None) -> Optional[object]:
+        """Legacy: usa select_provider con defaults. Mantenido para compatibilidad."""
+        return self.select_provider(ioc_type='ip', analysis_depth='basic',
+                                    preferred_provider=specific_provider)
 
     def _call_llm(self, llm, prompt: str) -> Dict:
         try:
@@ -355,9 +433,12 @@ class LLMOrchestrator:
             ioc_type: str,
             user_context: str = "",
             use_llm_planning: bool = True,
-            session_context: str = None
-    ) -> Dict:
+            session_context: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Análisis inteligente multi-etapa"""
+        from app.utils.security import sanitize_user_context
+        user_context = sanitize_user_context(user_context)
+
         self._initialize_clients()
         start_time = datetime.utcnow()
 
@@ -373,7 +454,12 @@ class LLMOrchestrator:
         logger.info(f"Selected APIs for {ioc_type}: {selected_apis}")
 
         api_results = self._execute_apis(ioc, ioc_type, selected_apis)
-        llm_analysis = self._synthesize_with_llm(ioc, ioc_type, api_results, full_context)
+        # Inferir profundidad: hashes siempre deep; deep_analysis keywords → deep
+        _is_deep = ioc_type == 'hash' or any(
+            kw in full_context.lower() for kw in self.deep_analysis_keywords
+        )
+        _depth = 'deep' if _is_deep else 'basic'
+        llm_analysis = self._synthesize_with_llm(ioc, ioc_type, api_results, full_context, _depth)
         mitre_techniques = self._correlate_mitre(api_results, llm_analysis)
         confidence_score = self._calculate_enhanced_score(api_results, llm_analysis)
         risk_level = self._determine_risk_level(confidence_score)
@@ -395,7 +481,8 @@ class LLMOrchestrator:
         }
 
     def _plan_analysis_with_llm(self, ioc: str, ioc_type: str, user_context: str) -> List[str]:
-        llm = self._get_available_llm()
+        # Planning es siempre 'basic' — tarea liviana de selección de APIs
+        llm = self.select_provider(ioc_type=ioc_type, analysis_depth='basic')
         if not llm:
             return self.strategies.get(ioc_type, [])
 
@@ -455,8 +542,10 @@ Responde SOLO con un array JSON: ["api1", "api2", ...]"""
 
         return combined, new_results
 
-    def _synthesize_with_llm(self, ioc: str, ioc_type: str, api_results: Dict, user_context: str) -> Dict:
-        llm = self._get_available_llm()
+    def _synthesize_with_llm(self, ioc: str, ioc_type: str, api_results: Dict, user_context: str,
+                             analysis_depth: str = 'basic') -> Dict:
+        # Synthesis usa el depth real del análisis — hash/deep → OpenAI; IP/basic → Groq
+        llm = self.select_provider(ioc_type=ioc_type, analysis_depth=analysis_depth)
         if not llm:
             return self._fallback_synthesis(api_results)
 
@@ -592,17 +681,26 @@ Responde SOLO con el JSON."""
     def chat_analysis(
             self,
             message: str,
-            user_id: int = None,
-            session_id: int = None,
-            conversation_history: List[Dict] = None,
-            preferred_provider: str = None
-    ) -> Dict:
+            user_id: Optional[int] = None,
+            session_id: Optional[int] = None,
+            conversation_history: Optional[List[Dict[str, Any]]] = None,
+            preferred_provider: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Análisis conversacional con re-consulta inteligente.
 
         Si el usuario pregunta algo que requiere datos que no tenemos,
         automáticamente consulta las APIs necesarias.
         """
+        from app.utils.security import sanitize_chat_message
+        message = sanitize_chat_message(message)
+        if not message:
+            return {
+                'response': 'Mensaje no permitido.',
+                'requires_analysis': False,
+                'session_id': None
+            }
+
         self._initialize_clients()
 
         llm = self._get_available_llm(specific_provider=preferred_provider)
@@ -1083,7 +1181,7 @@ Usa emojis para severidad (🔴🟠🟡🟢)."""
     def get_session_context(self, session_id: int) -> str:
         return self.session_manager.build_context_for_llm(session_id)
 
-    def get_session_summary(self, session_id: int) -> Dict:
+    def get_session_summary(self, session_id: int) -> Dict[str, Any]:
         return self.session_manager.get_session_summary_for_ui(session_id)
 
     # =========================================================================
