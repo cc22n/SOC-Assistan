@@ -284,9 +284,34 @@ def generate_openapi_spec():
                         {"name": "severity", "in": "query", "schema": {"type": "string", "enum": ["P1", "P2", "P3", "P4"]}},
                         {"name": "assigned_to", "in": "query", "schema": {"type": "integer"}},
                         {"name": "my_only", "in": "query", "schema": {"type": "boolean", "default": False}},
-                        {"name": "limit", "in": "query", "schema": {"type": "integer", "default": 50}}
+                        {"name": "page", "in": "query", "schema": {"type": "integer", "default": 1, "minimum": 1}},
+                        {"name": "per_page", "in": "query", "schema": {"type": "integer", "default": 20, "minimum": 1, "maximum": 100}}
                     ],
-                    "responses": {"200": {"description": "Lista de incidentes"}}
+                    "responses": {
+                        "200": {
+                            "description": "Lista paginada de incidentes",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "success": {"type": "boolean"},
+                                            "incidents": {"type": "array", "items": {"type": "object"}},
+                                            "pagination": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "page": {"type": "integer"},
+                                                    "per_page": {"type": "integer"},
+                                                    "total": {"type": "integer"},
+                                                    "pages": {"type": "integer"}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             "/incidents/{incident_id}": {
@@ -494,10 +519,42 @@ def generate_openapi_spec():
                 "get": {
                     "tags": ["System"],
                     "summary": "Health check",
-                    "description": "Verifica estado de BD y APIs configuradas. No requiere autenticación.",
+                    "description": "Verifica estado de BD y Redis con latencias. No requiere autenticación.",
                     "operationId": "healthCheck",
                     "security": [],
-                    "responses": {"200": {"description": "Estado del sistema"}}
+                    "responses": {
+                        "200": {
+                            "description": "Estado del sistema",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {"type": "string", "enum": ["healthy", "degraded"]},
+                                            "database": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "status": {"type": "string", "enum": ["healthy", "error"]},
+                                                    "latency_ms": {"type": "number", "nullable": True}
+                                                }
+                                            },
+                                            "redis": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "status": {"type": "string", "enum": ["healthy", "error", "not_configured"]},
+                                                    "latency_ms": {"type": "number", "nullable": True}
+                                                }
+                                            },
+                                            "configured_apis": {"type": "integer"},
+                                            "available_llms": {"type": "integer"},
+                                            "version": {"type": "string"},
+                                            "timestamp": {"type": "string", "format": "date-time"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },

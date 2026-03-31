@@ -1,6 +1,6 @@
 """
 Servicio de análisis con LLM (Large Language Models)
-Soporte para: Groq, OpenAI, Gemini y xAI (Grok)
+Soporte para: Groq, OpenAI, Gemini, xAI (Grok) y Anthropic (Claude)
 """
 import requests
 import json
@@ -33,7 +33,7 @@ class LLMService:
         """Detecta qué proveedor LLM está configurado y disponible"""
         api_keys = current_app.config.get('API_KEYS', {})
 
-        # Prioridad sugerida: xAI > OpenAI > Groq > Gemini
+        # Prioridad sugerida: xAI > OpenAI > Groq > Gemini > Anthropic
         if api_keys.get('xai'):
             return 'xai'
         elif api_keys.get('openai'):
@@ -42,6 +42,8 @@ class LLMService:
             return 'groq'
         elif api_keys.get('gemini'):
             return 'gemini'
+        elif api_keys.get('anthropic'):
+            return 'anthropic'
         return None
 
     def _configure_provider(self):
@@ -69,6 +71,11 @@ class LLMService:
             self.base_url = "https://generativelanguage.googleapis.com/v1beta"
             self.model = llm_models.get('gemini', {}).get('model', 'gemini-2.5-flash')
 
+        elif self.provider == 'anthropic':
+            self.api_key = api_keys.get('anthropic')
+            self.base_url = "https://api.anthropic.com/v1"
+            self.model = llm_models.get('anthropic', {}).get('model', 'claude-sonnet-4-6')
+
     def analyze_context(self, ioc_data: Dict) -> Dict:
         """Analiza contexto de IOC usando el LLM configurado"""
         if not self.provider or not self.api_key:
@@ -85,6 +92,8 @@ class LLMService:
                 return self._call_generic_openai_style(prompt)
             elif self.provider == 'gemini':
                 return self._call_gemini(prompt)
+            elif self.provider == 'anthropic':
+                return self._call_anthropic(prompt)
             else:
                 return self._fallback_analysis(ioc_data)
 
@@ -164,6 +173,39 @@ class LLMService:
                 return self._extract_json(content)
             else:
                 return {'error': 'Gemini no retornó contenido'}
+        except Exception as e:
+            return {'error': str(e)}
+
+    def _call_anthropic(self, prompt: str) -> Dict:
+        """Llamada a Anthropic Messages API (Claude)"""
+        headers = {
+            'x-api-key': self.api_key,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json'
+        }
+
+        data = {
+            'model': self.model,
+            'max_tokens': 1024,
+            'messages': [{'role': 'user', 'content': prompt}]
+        }
+
+        try:
+            response = requests.post(
+                f"{self.base_url}/messages",
+                headers=headers,
+                json=data,
+                timeout=45
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Anthropic API Error: {response.text}")
+                return {'error': f'Anthropic API error: {response.status_code}'}
+
+            result = response.json()
+            content = result['content'][0]['text']
+            return self._extract_json(content)
+
         except Exception as e:
             return {'error': str(e)}
 

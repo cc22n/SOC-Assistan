@@ -195,11 +195,15 @@ def generate_analysis_pdf(analysis_id):
     """
     try:
         # Obtener análisis
-        analysis = IOCAnalysis.query.get(analysis_id)
+        analysis = db.session.get(IOCAnalysis, analysis_id)
         if not analysis:
             return jsonify({'error': 'Análisis no encontrado'}), 404
-        
+
         if analysis.user_id != current_user.id and current_user.role != 'admin':
+            from app.models.audit import AuditEvent
+            AuditEvent.log('unauthorized_access', resource_type='analysis',
+                           resource_id=analysis_id, success=False,
+                           details={'reason': 'IDOR attempt'})
             return jsonify({'error': 'No autorizado'}), 403
         
         # Generar PDF simple para un solo análisis

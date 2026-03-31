@@ -166,48 +166,46 @@ def incident_detail(incident_id):
     )
 
 
+@main_bp.route('/api-health')
+@login_required
+def api_health():
+    """Dashboard unificado: circuit breakers, métricas y cuotas de APIs TI"""
+    from app.utils.circuit_breaker import get_all_circuit_statuses
+    from app.utils.metrics import get_metrics_summary
+    from flask import redirect, url_for
+
+    circuit_statuses = get_all_circuit_statuses()
+    metrics = get_metrics_summary()
+
+    # Cuotas diarias (mismo cálculo que api_stats)
+    today = datetime.utcnow().date()
+    today_usage = APIUsage.query.filter_by(date=today).all()
+    usage_data = {}
+    for usage in today_usage:
+        limit = current_app.config['API_LIMITS'].get(usage.api_name, 0)
+        if isinstance(limit, str):
+            usage_data[usage.api_name] = {'used': usage.requests_count, 'errors': usage.errors_count, 'limit': limit, 'remaining': 'unlimited'}
+        else:
+            limit = int(limit)
+            usage_data[usage.api_name] = {'used': usage.requests_count, 'errors': usage.errors_count, 'limit': limit, 'remaining': max(limit - usage.requests_count, 0)}
+    for api_name, limit in current_app.config['API_LIMITS'].items():
+        if api_name not in usage_data:
+            usage_data[api_name] = {'used': 0, 'errors': 0, 'limit': limit, 'remaining': 'unlimited' if isinstance(limit, str) else limit}
+
+    return render_template(
+        'api_health.html',
+        circuit_statuses=circuit_statuses,
+        metrics=metrics,
+        usage=usage_data,
+    )
+
+
 @main_bp.route('/api-stats')
 @login_required
 def api_stats():
-    """Estadísticas de uso de APIs"""
-    today = datetime.utcnow().date()
-
-    today_usage = APIUsage.query.filter_by(date=today).all()
-
-    usage_data = {}
-
-    for usage in today_usage:
-        limit = current_app.config['API_LIMITS'].get(usage.api_name, 0)
-
-        if isinstance(limit, str):  # 'unlimited'
-            usage_data[usage.api_name] = {
-                'used': usage.requests_count,
-                'errors': usage.errors_count,
-                'limit': limit,
-                'remaining': 'unlimited'
-            }
-        else:
-            limit = int(limit)
-            usage_data[usage.api_name] = {
-                'used': usage.requests_count,
-                'errors': usage.errors_count,
-                'limit': limit,
-                'remaining': max(limit - usage.requests_count, 0)
-            }
-
-    for api_name, limit in current_app.config['API_LIMITS'].items():
-        if api_name not in usage_data:
-            usage_data[api_name] = {
-                'used': 0,
-                'errors': 0,
-                'limit': limit,
-                'remaining': 'unlimited' if isinstance(limit, str) else limit
-            }
-
-    return render_template(
-        'api_stats.html',
-        usage=usage_data
-    )
+    """Redirige al dashboard unificado"""
+    from flask import redirect, url_for
+    return redirect(url_for('main.api_health'))
 
 
 @main_bp.route('/search')

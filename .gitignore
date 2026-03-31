@@ -34,7 +34,14 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
-
+.claude
+BITACORA.md
+AGENTE_CONTEXTO.md
+CHANGELOG_BUGFIXES.md
+PLAN-MEJORAS.md
+propuestas-mejora.md
+prompt-de -mejora.md
+ROADMAP_FASE3.md
 # Logs
 logs/
 *.log

@@ -14,6 +14,8 @@ Endpoints:
 - GET    /api/v2/incidents/{id}/timeline - Timeline completo (notas + chat)
 - GET    /api/v2/incidents/stats        - Estadisticas de incidentes
 """
+from typing import Any, Tuple
+
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
@@ -27,7 +29,7 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('incidents_api', __name__, url_prefix='/api/v2/incidents')
 
 
-def _safe_error(e, context=""):
+def _safe_error(e: Exception, context: str = "") -> Tuple[Any, int]:
     """Retorna error sin exponer detalles internos (VULN-02 fix)"""
     logger.error(f"{context}: {e}", exc_info=True)
     from flask import current_app
@@ -36,7 +38,7 @@ def _safe_error(e, context=""):
     return jsonify({'error': 'Internal server error'}), 500
 
 
-def _check_incident_access(incident):
+def _check_incident_access(incident: Incident) -> bool:
     """Verifica que el usuario tenga acceso al incidente (VULN-01 fix)"""
     if current_user.role == 'admin':
         return True
@@ -44,6 +46,15 @@ def _check_incident_access(incident):
         return True
     if incident.assigned_to == current_user.id:
         return True
+    # Registrar intento de acceso no autorizado
+    from app.models.audit import AuditEvent
+    AuditEvent.log(
+        'unauthorized_access',
+        resource_type='incident',
+        resource_id=incident.id,
+        success=False,
+        details={'ticket_id': incident.ticket_id, 'reason': 'IDOR attempt'},
+    )
     return False
 
 
@@ -155,14 +166,15 @@ def create_incident():
 @login_required
 def list_incidents():
     """
-    Lista incidentes con filtros.
+    Lista incidentes con filtros y paginación.
 
     Query params:
     - status: open, investigating, resolved, closed (puede ser CSV)
     - severity: P1, P2, P3, P4
     - assigned_to: user_id
     - my_only: true/false
-    - limit: int (default 50)
+    - page: int (default 1)
+    - per_page: int (default 20, máx 100)
     """
     try:
         query = Incident.query
@@ -188,14 +200,26 @@ def list_incidents():
                 (Incident.assigned_to == current_user.id)
             )
 
-        limit = request.args.get('limit', 50, type=int)
+        page = max(1, request.args.get('page', 1, type=int))
+        per_page = min(100, max(1, request.args.get('per_page', 20, type=int)))
 
-        incidents = query.order_by(desc(Incident.created_at)).limit(limit).all()
+        total = query.count()
+        incidents = (
+            query.order_by(desc(Incident.created_at))
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
 
         return jsonify({
             'success': True,
             'incidents': [i.to_dict() for i in incidents],
-            'total': query.count()
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page,
+            }
         }), 200
 
     except Exception as e:

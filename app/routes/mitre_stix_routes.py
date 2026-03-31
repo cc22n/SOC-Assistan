@@ -15,6 +15,7 @@ Endpoints:
 """
 from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
+from app.utils.auth import require_role
 import json
 import logging
 
@@ -139,6 +140,7 @@ def mitre_stats():
 
 @bp.route('/mitre/update', methods=['POST'])
 @login_required
+@require_role('admin')
 def update_mitre():
     """Actualizar datos MITRE desde API oficial (solo admin)"""
     try:
@@ -163,6 +165,7 @@ def update_mitre():
 
 @bp.route('/stix/analysis/<int:analysis_id>', methods=['GET'])
 @login_required
+@require_role('senior_analyst')
 def export_analysis_stix(analysis_id):
     """Exporta un análisis como STIX 2.1 Bundle"""
     try:
@@ -195,6 +198,7 @@ def export_analysis_stix(analysis_id):
 
 @bp.route('/stix/incident/<int:incident_id>', methods=['GET'])
 @login_required
+@require_role('senior_analyst')
 def export_incident_stix(incident_id):
     """Exporta un incidente como STIX 2.1 Bundle"""
     try:
@@ -226,6 +230,7 @@ def export_incident_stix(incident_id):
 
 @bp.route('/stix/bulk', methods=['POST'])
 @login_required
+@require_role('senior_analyst')
 def export_bulk_stix():
     """Exporta múltiples IOCs como STIX Bundle"""
     try:
