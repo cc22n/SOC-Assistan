@@ -168,8 +168,9 @@ class ChatMessageRequest(BaseModel):
     @field_validator('llm_provider')
     @classmethod
     def valid_provider(cls, v):
-        if v and v not in ('xai', 'openai', 'groq', 'gemini'):
-            raise ValueError(f'Invalid LLM provider: {v}. Must be xai, openai, groq, or gemini')
+        valid = ('xai', 'openai', 'groq', 'gemini', 'anthropic')
+        if v and v not in valid:
+            raise ValueError(f'Invalid LLM provider: {v}. Must be one of {valid}')
         return v
 
 

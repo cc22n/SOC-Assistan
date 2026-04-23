@@ -102,10 +102,27 @@ class LLMService:
             return {'error': f'LLM service error: {str(e)}'}
 
     def _build_prompt(self, ioc_data: Dict) -> str:
+        # Strip control characters from the IOC value before embedding it in the
+        # prompt. API responses from third-party services could theoretically
+        # contain instruction-override text in field values; serialising through
+        # json.dumps already quotes strings, which limits the attack surface, but
+        # we still strip null bytes and angle brackets from the IOC itself.
+        raw_ioc = str(ioc_data.get('ioc', ''))
+        safe_ioc = re.sub(r'[\x00-\x1f\x7f<>]', '', raw_ioc)[:512]
+        safe_type = re.sub(r'[^\w]', '', str(ioc_data.get('type', '')))[:20]
+        safe_score = int(ioc_data.get('confidence_score', 0)
+                         if str(ioc_data.get('confidence_score', 0)).isdigit()
+                         else 0)
+
+        api_subset = {
+            k: v for k, v in ioc_data.items()
+            if k in ('virustotal', 'greynoise', 'threatfox')
+        }
+
         return f"""Eres un analista SOC experto. Analiza:
-        IOC: {ioc_data.get('ioc')} ({ioc_data.get('type')})
-        Score: {ioc_data.get('confidence_score')}/100
-        Datos: {json.dumps({k: v for k, v in ioc_data.items() if k in ['virustotal', 'greynoise', 'threatfox']}, default=str)}
+        IOC: {safe_ioc} ({safe_type})
+        Score: {safe_score}/100
+        Datos: {json.dumps(api_subset, default=str)}
 
         Responde SOLO JSON:
         {{

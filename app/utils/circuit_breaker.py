@@ -68,6 +68,10 @@ class APICircuitBreaker:
         self._last_failure_time: Optional[datetime] = None
         self._opened_at: Optional[datetime] = None
         self._lock = threading.Lock()
+        # True while exactly one probe request is in-flight in HALF_OPEN state.
+        # Prevents multiple concurrent threads from probing simultaneously, which
+        # could all fail before any succeeds and keep the circuit perpetually open.
+        self._probe_in_flight: bool = False
 
     @property
     def state(self) -> CircuitState:
@@ -75,12 +79,13 @@ class APICircuitBreaker:
             return self._get_state()
 
     def _get_state(self) -> CircuitState:
-        """Evalúa si debemos transitar de OPEN → HALF_OPEN (llamar sin lock)."""
+        """Evalua si debemos transitar de OPEN -> HALF_OPEN (llamar sin lock)."""
         if self._state == CircuitState.OPEN:
             if self._opened_at and datetime.utcnow() >= self._opened_at + timedelta(seconds=self.timeout):
                 self._state = CircuitState.HALF_OPEN
                 self._success_count = 0
-                logger.info(f"[Circuit:{self.api_name}] OPEN → HALF_OPEN after {self.timeout}s")
+                self._probe_in_flight = False  # fresh probe window
+                logger.info(f"[Circuit:{self.api_name}] OPEN -> HALF_OPEN after {self.timeout}s")
         return self._state
 
     def allow_request(self) -> bool:
@@ -90,7 +95,12 @@ class APICircuitBreaker:
             if state == CircuitState.CLOSED:
                 return True
             if state == CircuitState.HALF_OPEN:
-                return True  # Una sola llamada de prueba
+                # Allow only ONE probe at a time. If a probe is already in-flight,
+                # block other threads until we know whether the API recovered.
+                if self._probe_in_flight:
+                    return False
+                self._probe_in_flight = True
+                return True
             # OPEN
             return False
 
@@ -99,15 +109,16 @@ class APICircuitBreaker:
         with self._lock:
             state = self._get_state()
             if state == CircuitState.HALF_OPEN:
+                self._probe_in_flight = False
                 self._success_count += 1
                 if self._success_count >= self.success_threshold:
                     self._state = CircuitState.CLOSED
                     self._failure_count = 0
                     self._success_count = 0
                     self._opened_at = None
-                    logger.info(f"[Circuit:{self.api_name}] HALF_OPEN → CLOSED (recovered)")
+                    logger.info(f"[Circuit:{self.api_name}] HALF_OPEN -> CLOSED (recovered)")
             elif state == CircuitState.CLOSED:
-                # Reset contador de fallos en éxito
+                # Reset contador de fallos en exito
                 self._failure_count = 0
 
     def record_failure(self) -> None:
@@ -118,11 +129,12 @@ class APICircuitBreaker:
             self._last_failure_time = datetime.utcnow()
 
             if state == CircuitState.HALF_OPEN:
-                # Fallo en prueba → volver a OPEN
+                # Fallo en prueba -> volver a OPEN
+                self._probe_in_flight = False
                 self._state = CircuitState.OPEN
                 self._opened_at = datetime.utcnow()
                 self._success_count = 0
-                logger.warning(f"[Circuit:{self.api_name}] HALF_OPEN → OPEN (probe failed)")
+                logger.warning(f"[Circuit:{self.api_name}] HALF_OPEN -> OPEN (probe failed)")
 
             elif state == CircuitState.CLOSED and self._failure_count >= self.fail_threshold:
                 self._state = CircuitState.OPEN
@@ -156,6 +168,7 @@ class APICircuitBreaker:
             self._success_count = 0
             self._opened_at = None
             self._last_failure_time = None
+            self._probe_in_flight = False
         logger.info(f"[Circuit:{self.api_name}] manually reset to CLOSED")
 
 

@@ -20,7 +20,7 @@ Uso:
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 # Ventana máxima de muestras por serie (evita crecer sin límite)
@@ -81,31 +81,49 @@ _api_metrics: Dict[str, _TimeSeries] = defaultdict(_TimeSeries)
 _registry_lock = threading.Lock()
 
 # Timestamp de inicio (para uptime en health check)
-_start_time = datetime.utcnow()
+_start_time = datetime.now(timezone.utc)
+
+
+def _get_or_create_endpoint_series(endpoint: str) -> '_TimeSeries':
+    """Retorna (o crea) la serie para un endpoint. Thread-safe."""
+    with _registry_lock:
+        return _endpoint_metrics[endpoint]
+
+
+def _get_or_create_api_series(api_name: str) -> '_TimeSeries':
+    """Retorna (o crea) la serie para una API. Thread-safe."""
+    with _registry_lock:
+        return _api_metrics[api_name]
 
 
 def record_request_time(endpoint: str, latency_ms: float, success: bool = True) -> None:
     """Registra la latencia de un endpoint HTTP."""
-    with _registry_lock:
-        _endpoint_metrics[endpoint].record(latency_ms, success)
+    # Separar la creacion del dict (registry lock) del append a la deque
+    # (series lock) para no bloquear todos los threads en un solo lock global
+    # durante el recording.
+    _get_or_create_endpoint_series(endpoint).record(latency_ms, success)
 
 
 def record_api_latency(api_name: str, latency_ms: float, success: bool = True) -> None:
     """Registra la latencia de una llamada a API de TI."""
-    with _registry_lock:
-        _api_metrics[api_name].record(latency_ms, success)
+    _get_or_create_api_series(api_name).record(latency_ms, success)
 
 
 def get_metrics_summary() -> Dict[str, Any]:
     """
-    Retorna el resumen de métricas para el endpoint /api/v2/health/metrics.
-    Incluye P50/P95/P99 por endpoint y top 5 APIs más lentas.
+    Retorna el resumen de metricas para el endpoint /api/v2/health/metrics.
+    Incluye P50/P95/P99 por endpoint y top 5 APIs mas lentas.
     """
+    # Take a snapshot of the series references under the registry lock,
+    # then release it before calling .stats() on each series.
     with _registry_lock:
-        endpoint_stats = {ep: ts.stats() for ep, ts in _endpoint_metrics.items()}
-        api_stats = {api: ts.stats() for api, ts in _api_metrics.items()}
+        endpoint_series = dict(_endpoint_metrics)
+        api_series = dict(_api_metrics)
 
-    # Top 5 APIs más lentas por P95
+    endpoint_stats = {ep: ts.stats() for ep, ts in endpoint_series.items()}
+    api_stats = {api: ts.stats() for api, ts in api_series.items()}
+
+    # Top 5 APIs mas lentas por P95
     top_slow = sorted(
         [(name, s) for name, s in api_stats.items() if s['p95'] is not None],
         key=lambda x: x[1]['p95'],
@@ -119,7 +137,7 @@ def get_metrics_summary() -> Dict[str, Any]:
         reverse=True
     )[:5]
 
-    uptime_seconds = (datetime.utcnow() - _start_time).total_seconds()
+    uptime_seconds = (datetime.now(timezone.utc) - _start_time).total_seconds()
 
     return {
         'uptime_seconds': round(uptime_seconds),
@@ -127,5 +145,5 @@ def get_metrics_summary() -> Dict[str, Any]:
         'apis': api_stats,
         'top_slow_apis': [{'api': n, **s} for n, s in top_slow],
         'top_error_apis': [{'api': n, **s} for n, s in top_errors],
-        'collected_at': datetime.utcnow().isoformat(),
+        'collected_at': datetime.now(timezone.utc).isoformat(),
     }

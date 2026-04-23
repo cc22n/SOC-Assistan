@@ -701,8 +701,7 @@ class MalwareBazaarClient:
 class CriminalIPClient:
     """
     Cliente para Criminal IP API
-    NUEVO - Escáner de IPs y dominios, detección de C2, phishing
-    API Key: GpRUD8CMxSpjZzKkU2U5ppdW4SX8fFULKUKsa2WOEIIbFUaqsS53FC4KgS67
+    NUEVO - Escaner de IPs y dominios, deteccion de C2, phishing
     """
 
     def __init__(self):
@@ -797,7 +796,6 @@ class PulsediveClient:
     """
     Cliente para Pulsedive API
     NUEVO - Threat intelligence, IOC enrichment
-    API Key: 1dfdf5b1b60d230510cc8eafd22b2fa6a53d3f731a3d7b000466fdeb6c636704
     """
 
     def __init__(self):
@@ -882,8 +880,7 @@ class PulsediveClient:
 class URLScanClient:
     """
     Cliente para URLScan.io API
-    NUEVO - Análisis visual de URLs, screenshots
-    API Key: 019c3678-d271-7667-b635-908ad42a2d83
+    NUEVO - Analisis visual de URLs, screenshots
     """
 
     def __init__(self):
@@ -1038,6 +1035,9 @@ class IPAPIClient:
     """
 
     def __init__(self):
+        # ip-api.com requires HTTPS on paid plans; free tier uses HTTP.
+        # Use the pro endpoint when a key is configured, otherwise fall back
+        # to the free HTTP endpoint (data is non-sensitive geolocation only).
         self.base_url = "http://ip-api.com/json"
 
     def get_geolocation(self, ip: str) -> Dict:

@@ -54,6 +54,7 @@ def _check_incident_access(incident: Incident) -> bool:
         resource_id=incident.id,
         success=False,
         details={'ticket_id': incident.ticket_id, 'reason': 'IDOR attempt'},
+        _commit=True,
     )
     return False
 
@@ -120,29 +121,36 @@ def create_incident():
         ioc_ids = data.get('ioc_ids', [])
         primary_ioc_id = data.get('primary_ioc_id')
 
-        for ioc_id in ioc_ids:
-            ioc = db.session.get(IOC, ioc_id)
-            if ioc:
-                # Buscar el analisis mas reciente de este IOC
-                latest_analysis = IOCAnalysis.query.filter_by(
-                    ioc_id=ioc_id
-                ).order_by(desc(IOCAnalysis.created_at)).first()
+        if ioc_ids:
+            # Batch fetch IOCs and latest analysis IDs to avoid N+1 queries
+            iocs_map = {
+                ioc.id: ioc
+                for ioc in db.session.query(IOC).filter(IOC.id.in_(ioc_ids)).all()
+            }
+            from sqlalchemy import func
+            latest_analyses = dict(
+                db.session.query(IOCAnalysis.ioc_id, func.max(IOCAnalysis.id))
+                .filter(IOCAnalysis.ioc_id.in_(ioc_ids))
+                .group_by(IOCAnalysis.ioc_id)
+                .all()
+            )
 
-                role = 'primary' if ioc_id == primary_ioc_id else 'related'
-
-                link = IncidentIOC(
-                    incident_id=incident.id,
-                    ioc_id=ioc_id,
-                    analysis_id=latest_analysis.id if latest_analysis else None,
-                    role=role
-                )
-                db.session.add(link)
-
-                incident.add_timeline_event(
-                    'ioc_linked',
-                    f'IOC vinculado: {ioc.value} ({role})',
-                    user=current_user.username
-                )
+            for ioc_id in ioc_ids:
+                ioc = iocs_map.get(ioc_id)
+                if ioc:
+                    role = 'primary' if ioc_id == primary_ioc_id else 'related'
+                    link = IncidentIOC(
+                        incident_id=incident.id,
+                        ioc_id=ioc_id,
+                        analysis_id=latest_analyses.get(ioc_id),
+                        role=role
+                    )
+                    db.session.add(link)
+                    incident.add_timeline_event(
+                        'ioc_linked',
+                        f'IOC vinculado: {ioc.value} ({role})',
+                        user=current_user.username
+                    )
 
         db.session.commit()
 
@@ -179,6 +187,21 @@ def list_incidents():
     try:
         query = Incident.query
 
+        # Non-admin users can only see their own incidents (created_by or assigned_to).
+        # Admins see all incidents; my_only=true is the default for non-admins.
+        if current_user.role != 'admin':
+            query = query.filter(
+                (Incident.created_by == current_user.id) |
+                (Incident.assigned_to == current_user.id)
+            )
+        else:
+            my_only = request.args.get('my_only', 'false').lower() == 'true'
+            if my_only:
+                query = query.filter(
+                    (Incident.created_by == current_user.id) |
+                    (Incident.assigned_to == current_user.id)
+                )
+
         # Filtro por status (acepta CSV: "open,investigating")
         status = request.args.get('status')
         if status:
@@ -192,13 +215,6 @@ def list_incidents():
         assigned_to = request.args.get('assigned_to', type=int)
         if assigned_to:
             query = query.filter_by(assigned_to=assigned_to)
-
-        my_only = request.args.get('my_only', 'false').lower() == 'true'
-        if my_only:
-            query = query.filter(
-                (Incident.created_by == current_user.id) |
-                (Incident.assigned_to == current_user.id)
-            )
 
         page = max(1, request.args.get('page', 1, type=int))
         per_page = min(100, max(1, request.args.get('per_page', 20, type=int)))
@@ -478,27 +494,41 @@ def link_iocs(incident_id):
         role = data.get('role', 'related')
         notes = data.get('notes')
 
+        if not ioc_ids:
+            return jsonify({'success': True, 'linked': [], 'incident': incident.to_dict(include_iocs=True)}), 200
+
+        # Batch fetch IOCs and existing links to avoid N+1 queries
+        iocs_by_id = {
+            ioc.id: ioc
+            for ioc in db.session.query(IOC).filter(IOC.id.in_(ioc_ids)).all()
+        }
+        existing_links = {
+            row.ioc_id
+            for row in IncidentIOC.query.filter_by(incident_id=incident_id)
+                .filter(IncidentIOC.ioc_id.in_(ioc_ids)).all()
+        }
+
+        # Latest analysis per IOC in one query
+        from sqlalchemy import func
+        latest_analysis_ids = dict(
+            db.session.query(IOCAnalysis.ioc_id, func.max(IOCAnalysis.id))
+            .filter(IOCAnalysis.ioc_id.in_(ioc_ids))
+            .group_by(IOCAnalysis.ioc_id)
+            .all()
+        )
+
         linked = []
         for ioc_id in ioc_ids:
-            ioc = db.session.get(IOC, ioc_id)
-            if not ioc:
+            ioc = iocs_by_id.get(ioc_id)
+            if not ioc or ioc_id in existing_links:
                 continue
 
-            # Verificar que no esta ya vinculado
-            existing = IncidentIOC.query.filter_by(
-                incident_id=incident_id, ioc_id=ioc_id
-            ).first()
-            if existing:
-                continue
-
-            latest_analysis = IOCAnalysis.query.filter_by(
-                ioc_id=ioc_id
-            ).order_by(desc(IOCAnalysis.created_at)).first()
+            analysis_id = latest_analysis_ids.get(ioc_id)
 
             link = IncidentIOC(
                 incident_id=incident_id,
                 ioc_id=ioc_id,
-                analysis_id=latest_analysis.id if latest_analysis else None,
+                analysis_id=analysis_id,
                 role=role,
                 notes=notes
             )
@@ -631,31 +661,52 @@ def get_stats():
     try:
         from sqlalchemy import func
 
+        # Scope queries to the current user's incidents unless admin.
+        base_q = Incident.query
+        if current_user.role != 'admin':
+            base_q = base_q.filter(
+                (Incident.created_by == current_user.id) |
+                (Incident.assigned_to == current_user.id)
+            )
+
+        # Aggregate status counts in a single GROUP BY query instead of 5 counts.
+        status_base = db.session.query(Incident.status, func.count(Incident.id))
+        if current_user.role != 'admin':
+            status_base = status_base.filter(
+                (Incident.created_by == current_user.id) |
+                (Incident.assigned_to == current_user.id)
+            )
+        status_counts = dict(status_base.group_by(Incident.status).all())
+
         stats = {
-            'total': Incident.query.count(),
-            'open': Incident.query.filter_by(status='open').count(),
-            'investigating': Incident.query.filter_by(status='investigating').count(),
-            'resolved': Incident.query.filter_by(status='resolved').count(),
-            'closed': Incident.query.filter_by(status='closed').count(),
+            'total': sum(status_counts.values()),
+            'open': status_counts.get('open', 0),
+            'investigating': status_counts.get('investigating', 0),
+            'resolved': status_counts.get('resolved', 0),
+            'closed': status_counts.get('closed', 0),
             'by_severity': {},
             'recent': []
         }
 
-        # Por severidad
-        severity_counts = db.session.query(
+        # Por severidad (solo incidentes activos)
+        sev_base = db.session.query(
             Incident.severity, func.count(Incident.id)
         ).filter(
             Incident.status.in_(['open', 'investigating'])
-        ).group_by(Incident.severity).all()
+        )
+        if current_user.role != 'admin':
+            sev_base = sev_base.filter(
+                (Incident.created_by == current_user.id) |
+                (Incident.assigned_to == current_user.id)
+            )
+        severity_counts = sev_base.group_by(Incident.severity).all()
 
         for sev, count in severity_counts:
             if sev:
                 stats['by_severity'][sev] = count
 
-        # Recientes
-        recent = Incident.query.order_by(
-            desc(Incident.created_at)
-        ).limit(5).all()
+        # Recientes (respetando el mismo scope)
+        recent = base_q.order_by(desc(Incident.created_at)).limit(5).all()
         stats['recent'] = [i.to_dict() for i in recent]
 
         return jsonify({'success': True, 'stats': stats}), 200

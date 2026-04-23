@@ -18,7 +18,7 @@ Uso:
 """
 import functools
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from flask import request, g
@@ -59,7 +59,7 @@ class AuditEvent(db.Model):
     success = db.Column(db.Boolean, default=True, nullable=False)
 
     # Cuándo
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     __table_args__ = (
         db.Index('ix_audit_user_created', 'user_id', 'created_at'),
@@ -77,11 +77,19 @@ class AuditEvent(db.Model):
         success: bool = True,
         user_id: Optional[int] = None,
         username: Optional[str] = None,
+        _commit: bool = False,
     ) -> Optional['AuditEvent']:
         """
-        Registra un evento de auditoría.
-        Captura automáticamente IP, user-agent y correlation ID del contexto Flask.
-        Nunca lanza excepciones — falla silenciosamente para no interrumpir el flujo.
+        Registra un evento de auditoria.
+        Captura automaticamente IP, user-agent y correlation ID del contexto Flask.
+        Nunca lanza excepciones -- falla silenciosamente para no interrumpir el flujo.
+
+        Args:
+            _commit: Si True, hace commit inmediatamente (util fuera de una
+                     transaccion existente). Por defecto False: solo hace add()
+                     y deja que el commit lo haga el llamador. Esto evita que
+                     AuditEvent.log() robe el commit de una transaccion activa
+                     y deje la BD en un estado parcialmente persistido.
         """
         try:
             # Intentar obtener usuario del contexto Flask
@@ -119,7 +127,8 @@ class AuditEvent(db.Model):
                 success=success,
             )
             db.session.add(event)
-            db.session.commit()
+            if _commit:
+                db.session.commit()
             return event
 
         except Exception as exc:

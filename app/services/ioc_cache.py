@@ -13,7 +13,7 @@ Estrategia:
 - Forzar re-analisis disponible via parametro
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
 from app.models.ioc import IOC, IOCAnalysis
@@ -105,16 +105,19 @@ def get_cached_analysis(
             ttl_hours = _get_effective_ttl(analysis.risk_level, ioc.ioc_type)
 
         # Verificar si el cache sigue vigente
+        # analysis.created_at may be naive (no tzinfo) if stored without tz;
+        # compare against naive utcnow for consistency with existing DB values.
+        now_naive = datetime.utcnow()
         cache_expiry = analysis.created_at + timedelta(hours=ttl_hours)
-        if datetime.utcnow() > cache_expiry:
-            age = datetime.utcnow() - analysis.created_at
+        if now_naive > cache_expiry:
+            age = now_naive - analysis.created_at
             logger.info(
                 f"Cache expired for {ioc_value} "
                 f"(age: {age.total_seconds()/3600:.1f}h, ttl: {ttl_hours}h)"
             )
             return None
 
-        age = datetime.utcnow() - analysis.created_at
+        age = now_naive - analysis.created_at
         logger.info(
             f"Cache HIT for {ioc_value} "
             f"(age: {age.total_seconds()/3600:.1f}h, ttl: {ttl_hours}h, "
@@ -181,7 +184,7 @@ def get_cache_stats() -> Dict[str, Any]:
     try:
         from sqlalchemy import func
 
-        now = datetime.utcnow()
+        now = datetime.utcnow()  # naive UTC to match DB column (no tzinfo)
         one_hour = now - timedelta(hours=1)
         one_day = now - timedelta(hours=24)
 

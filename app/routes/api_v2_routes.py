@@ -197,7 +197,8 @@ def analyze_enhanced(data: AnalyzeRequest):
                 'type': ioc_type,
                 'risk_level': analysis_result['risk_level'],
                 'confidence': analysis_result['confidence_score'],
-            }
+            },
+            _commit=True
         )
 
         return jsonify({
@@ -325,7 +326,7 @@ def get_session(session_id):
             from app.models.audit import AuditEvent
             AuditEvent.log('unauthorized_access', resource_type='session',
                            resource_id=session_id, success=False,
-                           details={'reason': 'IDOR attempt'})
+                           details={'reason': 'IDOR attempt'}, _commit=True)
             return jsonify({'error': 'No autorizado'}), 403
         return jsonify({'success': True, 'session': session.to_dict()}), 200
     except Exception as e:
@@ -527,9 +528,15 @@ def apis_status():
             'censys': 'censys', 'ipinfo': 'ipinfo'
         }
 
+        # Single query for all API usages today (avoids 18 individual queries)
+        today_usages = {
+            row.api_name: row
+            for row in APIUsage.query.filter_by(date=today).all()
+        }
+
         status = {}
         for api_name in apis:
-            usage = APIUsage.query.filter_by(api_name=api_name, date=today).first()
+            usage = today_usages.get(api_name)
             limit = current_app.config.get('API_LIMITS', {}).get(api_name, 1000)
 
             if api_name in ['shodan_internetdb', 'ip_api']:
@@ -658,6 +665,8 @@ def test_llm():
 
         if provider == 'gemini':
             result = llm._call_gemini("Responde 'OK' si funciona")
+        elif provider == 'anthropic':
+            result = llm._call_anthropic("Responde 'OK' si funciona")
         else:
             result = llm._call_generic_openai_style("Responde 'OK' si funciona")
 

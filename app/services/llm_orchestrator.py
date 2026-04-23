@@ -12,7 +12,7 @@ import json
 import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import current_app
 
 logger = logging.getLogger(__name__)
@@ -320,6 +320,8 @@ class LLMOrchestrator:
         try:
             if llm.provider == 'gemini':
                 return llm._call_gemini(prompt)
+            elif llm.provider == 'anthropic':
+                return llm._call_anthropic(prompt)
             else:
                 return llm._call_generic_openai_style(prompt)
         except Exception as e:
@@ -440,7 +442,7 @@ class LLMOrchestrator:
         user_context = sanitize_user_context(user_context)
 
         self._initialize_clients()
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         full_context = user_context
         if session_context:
@@ -464,7 +466,7 @@ class LLMOrchestrator:
         confidence_score = self._calculate_enhanced_score(api_results, llm_analysis)
         risk_level = self._determine_risk_level(confidence_score)
 
-        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
         return {
             'ioc': ioc,
@@ -477,7 +479,7 @@ class LLMOrchestrator:
             'sources_used': list(api_results.keys()),
             'selected_apis': selected_apis,
             'processing_time': processing_time,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
     def _plan_analysis_with_llm(self, ioc: str, ioc_type: str, user_context: str) -> List[str]:
@@ -532,14 +534,12 @@ Responde SOLO con un array JSON: ["api1", "api2", ...]"""
             timeout_per_api=30.0
         )
 
-    def _execute_additional_apis(self, ioc: str, ioc_type: str, apis_to_call: List[str],
-                                 existing_results: Dict) -> Dict:
-        """Ejecuta APIs adicionales y combina con resultados existentes"""
+    def _execute_additional_apis(
+        self, ioc: str, ioc_type: str, apis_to_call: List[str], existing_results: Dict
+    ) -> Tuple[Dict, Dict]:
+        """Ejecuta APIs adicionales y retorna (combined, new_only)."""
         new_results = self._execute_apis(ioc, ioc_type, apis_to_call)
-
-        combined = existing_results.copy()
-        combined.update(new_results)
-
+        combined = {**existing_results, **new_results}
         return combined, new_results
 
     def _synthesize_with_llm(self, ioc: str, ioc_type: str, api_results: Dict, user_context: str,
@@ -1111,7 +1111,7 @@ Responde de forma clara, profesional y útil."""
             return None
 
     def _update_session_analysis(self, session_id: int, ioc_value: str, new_api_data: Dict):
-        """Actualiza un análisis existente con datos de APIs adicionales"""
+        """Actualiza un analisis existente con datos de APIs adicionales"""
         try:
             from app import db
 
@@ -1134,6 +1134,11 @@ Responde de forma clara, profesional y útil."""
 
         except Exception as e:
             logger.error(f"Error updating session analysis: {e}")
+            try:
+                from app import db
+                db.session.rollback()
+            except Exception:
+                pass
 
     def _generate_analysis_response(self, llm, ioc, ioc_type, analysis, message, session_context):
         """Genera respuesta conversacional para un análisis"""
