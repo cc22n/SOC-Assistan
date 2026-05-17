@@ -74,6 +74,7 @@ class Config:
         # === APIs v3.1 ===
         'censys': os.environ.get('CENSYS_API_KEY'),
         'ipinfo': os.environ.get('IPINFO_TOKEN'),
+        'ipgeolocation': os.environ.get('IPGEOLOCATION_API_KEY'),
 
         # === LLM Providers ===
         'xai': os.environ.get('XAI_API_KEY'),
@@ -106,6 +107,7 @@ class Config:
         'ip_api': 45,               # 45 req/min (gratis)
         'censys': 8,                 # 250/mes ≈ 8/día
         'ipinfo': 333,              # 10K/mes ≈ 333/día (lite)
+        'ipgeolocation': 1000,      # 1K/día forever free (1 crédito/lookup)
     }
 
     # ==========================================================================

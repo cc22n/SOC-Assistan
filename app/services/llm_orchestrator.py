@@ -297,7 +297,7 @@ class LLMOrchestrator:
                 logger.warning(f"LLM routing: provider '{provider}' failed: {e}")
 
         # 3. Last resort: cualquier provider disponible
-        for provider in ('xai', 'openai', 'groq', 'gemini'):
+        for provider in ('xai', 'openai', 'groq', 'gemini', 'anthropic'):
             if provider in (primary, fallback):
                 continue  # Ya los intentamos
             if api_keys.get(provider):
@@ -501,10 +501,15 @@ Responde SOLO con un array JSON: ["api1", "api2", ...]"""
         try:
             response = self._call_llm(llm, prompt)
 
+            # LLM returned a JSON array directly (already parsed by _extract_json)
+            if isinstance(response, list):
+                valid_apis = [api for api in response if api in available_apis]
+                return valid_apis[:6] if valid_apis else self.strategies.get(ioc_type, [])
+
             if isinstance(response, dict):
                 text = response.get('analysis') or response.get('content') or json.dumps(response)
             else:
-                text = str(response)
+                text = json.dumps(response)
 
             match = re.search(r'\[.*?\]', text, re.DOTALL)
             if match:

@@ -82,7 +82,7 @@ def create_incident():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
         if not data:
             return jsonify({'error': 'JSON requerido'}), 400
 

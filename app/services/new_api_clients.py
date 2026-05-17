@@ -1190,6 +1190,70 @@ class IPinfoClient:
             return {'error': str(e)}
 
 
+class IPGeolocationClient:
+    """
+    Cliente para IPGeolocation.io API v3 (plan gratis forever free)
+    Geolocalización esencial: país, región, ciudad, ASN, zona horaria, moneda.
+    Límite: 1000 créditos/día. 1 lookup = 1 crédito.
+    NO usar: domain lookup, hostname, company, security, abuse, bulk.
+    """
+
+    def __init__(self):
+        self.base_url = "https://api.ipgeolocation.io/v3/ipgeo"
+        self.api_key = current_app.config.get('API_KEYS', {}).get('ipgeolocation')
+
+    def check_ip(self, ip: str) -> Dict:
+        """Obtiene geolocalización, ASN y zona horaria de una IP."""
+        if not self.api_key:
+            return {'error': 'API key no configurada (IPGEOLOCATION_API_KEY)'}
+
+        try:
+            response = requests.get(
+                self.base_url,
+                params={'apiKey': self.api_key, 'ip': ip},
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                location = data.get('location', {})
+                asn = data.get('asn', {})
+                tz = data.get('time_zone', {})
+                currency = data.get('currency', {})
+                country_meta = data.get('country_metadata', {})
+                return {
+                    'found': True,
+                    'ip': data.get('ip', ip),
+                    'continent': location.get('continent_name'),
+                    'country': location.get('country_name'),
+                    'country_code': location.get('country_code2'),
+                    'state': location.get('state_prov'),
+                    'city': location.get('city'),
+                    'zip': location.get('zipcode'),
+                    'lat': location.get('latitude'),
+                    'lon': location.get('longitude'),
+                    'asn': asn.get('as_number'),
+                    'asn_org': asn.get('organization'),
+                    'timezone': tz.get('name'),
+                    'timezone_offset': tz.get('offset'),
+                    'local_time': tz.get('current_time'),
+                    'currency_code': currency.get('code'),
+                    'currency_name': currency.get('name'),
+                    'calling_code': country_meta.get('calling_code'),
+                    'tld': country_meta.get('tld'),
+                }
+            elif response.status_code == 401:
+                return {'error': 'API key inválida'}
+            elif response.status_code == 423:
+                return {'error': 'Cuota diaria de 1000 créditos agotada'}
+            elif response.status_code == 429:
+                return {'error': 'Rate limit excedido'}
+            return {'error': f'HTTP {response.status_code}'}
+        except Exception as e:
+            logger.error(f"IPGeolocation error: {e}")
+            return {'error': str(e)}
+
+
 # ==============================================================================
 # CLIENTE UNIFICADO DE TODAS LAS APIs
 # ==============================================================================
@@ -1226,6 +1290,7 @@ class UnifiedThreatIntelClient:
         # APIs v3.1
         self.censys = CensysClient()
         self.ipinfo = IPinfoClient()
+        self.ipgeolocation = IPGeolocationClient()
 
     def _call(self, api_name: str, func, *args, **kwargs) -> Dict:
         """Ejecuta una llamada a API externa protegida por circuit breaker y métricas."""
@@ -1257,7 +1322,7 @@ class UnifiedThreatIntelClient:
         if sources is None:
             sources = ['virustotal', 'abuseipdb', 'shodan', 'otx', 'greynoise',
                        'criminal_ip', 'pulsedive', 'shodan_internetdb', 'ip_api',
-                       'censys', 'ipinfo']
+                       'censys', 'ipinfo', 'ipgeolocation']
 
         results = {}
 
@@ -1283,6 +1348,8 @@ class UnifiedThreatIntelClient:
             results['censys'] = self._call('censys', self.censys.check_ip, ip)
         if 'ipinfo' in sources:
             results['ipinfo'] = self._call('ipinfo', self.ipinfo.check_ip, ip)
+        if 'ipgeolocation' in sources:
+            results['ipgeolocation'] = self._call('ipgeolocation', self.ipgeolocation.check_ip, ip)
         if 'urlhaus' in sources:
             results['urlhaus'] = self._call('urlhaus', self.urlhaus.check_host, ip)
         if 'threatfox' in sources:

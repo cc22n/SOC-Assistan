@@ -87,7 +87,11 @@ Thumbs.db
 .coverage
 htmlcov/
 .tox/
-tests/
+# Solo ignorar artefactos de tests, no los tests mismos
+tests/__pycache__/
+tests/**/__pycache__/
+tests/.pytest_cache/
+tests/scripts/
 
 # =============================================================================
 # Cache & temp
