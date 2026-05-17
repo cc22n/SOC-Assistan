@@ -38,6 +38,7 @@ os.environ['DATABASE_URL'] = os.environ.get(
 def app():
     """Flask app configurada para testing con PostgreSQL."""
     from app import create_app
+    from flask import g
 
     application = create_app('testing')
     application.config.update({
@@ -57,6 +58,17 @@ def app():
             'anthropic', 'ipgeolocation',
         ]},
     })
+
+    # db_session keeps a single AppContext alive across requests in a test,
+    # so Flask-Login caches g._login_user from the first request and reuses
+    # it for subsequent requests in the same test (IDOR false-negative).
+    # Clearing the cache at the start of each request forces a fresh load
+    # from the session cookie.
+    @application.before_request
+    def _reset_flask_login_cache():
+        if hasattr(g, '_login_user'):
+            delattr(g, '_login_user')
+
     yield application
 
 

@@ -195,6 +195,9 @@ class TestingConfig(Config):
         'TEST_DATABASE_URL',
         'postgresql://soc_admin:1234@localhost:5432/soc_agent_test?client_encoding=utf8'
     )
+    # Desactivar rate limiting en tests (evita 429 por requests acumulados)
+    RATELIMIT_ENABLED = False
+    RATELIMIT_STORAGE_URI = 'memory://'
 
 
 config = {
