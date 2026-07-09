@@ -82,7 +82,8 @@ def require_role(role: str):
                         'required_role': role,
                         'user_role': getattr(current_user, 'role', None),
                         'endpoint': func.__name__,
-                    }
+                    },
+                    _commit=True,
                 )
                 return jsonify({
                     'error': 'Forbidden',

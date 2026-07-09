@@ -144,9 +144,6 @@ def mitre_stats():
 def update_mitre():
     """Actualizar datos MITRE desde API oficial (solo admin)"""
     try:
-        if current_user.role != 'admin':
-            return jsonify({'error': 'Solo administradores pueden actualizar MITRE'}), 403
-
         from app.services.mitre_service import get_mitre_service
         svc = get_mitre_service()
 

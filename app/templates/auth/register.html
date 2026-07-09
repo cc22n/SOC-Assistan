@@ -27,15 +27,18 @@
         .logo p { color: #666; font-size: 14px; }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 14px; }
-        .form-group input {
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 11px 14px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
             transition: border-color 0.3s;
+            background: white;
         }
-        .form-group input:focus { outline: none; border-color: #667eea; }
+        .form-group input:focus,
+        .form-group select:focus { outline: none; border-color: #667eea; }
         .form-group .hint { font-size: 12px; color: #999; margin-top: 4px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .btn-register {
@@ -75,7 +78,7 @@
     <div class="register-container">
         <div class="logo">
             <h1>SOC Agent</h1>
-            <p>Crear nueva cuenta</p>
+            <p>{% if is_bootstrap %}Crear cuenta de administrador{% else %}Crear nuevo usuario{% endif %}</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -114,7 +117,19 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-register" id="submitBtn">Crear Cuenta</button>
+            {% if not is_bootstrap %}
+            <div class="form-group">
+                <label for="role">Rol</label>
+                <select id="role" name="role">
+                    <option value="viewer">Viewer — solo lectura</option>
+                    <option value="analyst" selected>Analyst — analisis e incidentes</option>
+                    <option value="senior_analyst">Senior Analyst — + exportar STIX</option>
+                    <option value="admin">Admin — acceso total</option>
+                </select>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn-register" id="submitBtn">{% if is_bootstrap %}Crear Cuenta{% else %}Crear Usuario{% endif %}</button>
         </form>
 
         <div class="login-link">

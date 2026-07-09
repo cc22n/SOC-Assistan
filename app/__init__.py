@@ -11,7 +11,6 @@ from flask_caching import Cache
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 
-#from app.routes.dashboard_routes import bp as dashboard_bp
 import json
 import logging
 import time
@@ -83,7 +82,6 @@ def create_app(config_name='default'):
     login_manager.init_app(app)
     limiter.init_app(app)
     cache.init_app(app)
-    #app.register_blueprint(dashboard_bp)
     csrf.init_app(app)
 
     # CORS restringido a orígenes permitidos
@@ -160,6 +158,7 @@ def register_blueprints(app):
     from app.routes.dashboard_routes import bp as dashboard_bp
     from app.routes.incident_routes import bp as incidents_api_bp
     from app.routes.mitre_stix_routes import bp as mitre_stix_bp
+    from app.routes.deep_analysis_routes import bp as deep_bp
     from app.docs.openapi import docs_bp
 
     app.register_blueprint(main_bp)
@@ -169,6 +168,7 @@ def register_blueprints(app):
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(incidents_api_bp)
     app.register_blueprint(mitre_stix_bp)
+    app.register_blueprint(deep_bp)
     app.register_blueprint(docs_bp)
 
     # Eximir API blueprints de CSRF
@@ -176,6 +176,7 @@ def register_blueprints(app):
     csrf.exempt(reports_bp)
     csrf.exempt(incidents_api_bp)
     csrf.exempt(mitre_stix_bp)
+    csrf.exempt(deep_bp)
     csrf.exempt(docs_bp)
 
 
@@ -194,8 +195,8 @@ def register_metrics_collector(app: Flask) -> None:
                     latency_ms=latency_ms,
                     success=response.status_code < 500,
                 )
-        except Exception:
-            pass
+        except Exception as _e:
+            app.logger.debug(f"Metrics collector error: {_e}")
         return response
 
 
@@ -230,7 +231,8 @@ def register_error_handlers(app):
 
     @app.errorhandler(400)
     def bad_request(error):
-        return {'error': 'Bad Request', 'message': str(error)}, 400
+        msg = str(error) if app.debug else 'Bad request'
+        return {'error': 'Bad Request', 'message': msg}, 400
 
     @app.errorhandler(404)
     def not_found(error):

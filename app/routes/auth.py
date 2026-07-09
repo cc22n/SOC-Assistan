@@ -32,7 +32,8 @@ def login():
         if user is None or not user.check_password(password):
             from app.models.audit import AuditEvent
             AuditEvent.log('login_failed', success=False,
-                           details={'username': username, 'reason': 'invalid_credentials'})
+                           details={'username': username, 'reason': 'invalid_credentials'},
+                           _commit=True)
             flash('Usuario o contraseña incorrectos', 'error')
             return render_template('auth/login.html')
 
@@ -49,7 +50,8 @@ def login():
 
         from app.models.audit import AuditEvent
         AuditEvent.log('login', resource_type='user', resource_id=user.id,
-                       details={'username': user.username}, user_id=user.id, username=user.username)
+                       details={'username': user.username}, user_id=user.id, username=user.username,
+                       _commit=True)
 
         # Redirect a la página solicitada o dashboard (VULN-03 fix)
         next_page = request.args.get('next')
@@ -72,7 +74,7 @@ def login():
 def logout():
     """Logout de usuario"""
     from app.models.audit import AuditEvent
-    AuditEvent.log('logout', resource_type='user', resource_id=current_user.id)
+    AuditEvent.log('logout', resource_type='user', resource_id=current_user.id, _commit=True)
     logout_user()
     flash('Sesión cerrada correctamente', 'info')
     return redirect(url_for('main.index'))
@@ -81,9 +83,17 @@ def logout():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit("3 per minute", methods=["POST"])
 def register():
-    """Registro de nuevo usuario"""
-    if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
+    """Crear usuario — solo admin, o bootstrap inicial cuando no hay usuarios."""
+    is_bootstrap = User.query.count() == 0
+
+    # Fuera del bootstrap, solo admins autenticados pueden crear usuarios
+    if not is_bootstrap:
+        if not current_user.is_authenticated:
+            flash('Acceso restringido. Inicia sesion como administrador.', 'error')
+            return redirect(url_for('auth.login'))
+        if current_user.role != 'admin':
+            flash('Solo los administradores pueden crear usuarios.', 'error')
+            return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -94,50 +104,59 @@ def register():
         # Validaciones
         if not all([username, email, password, password2]):
             flash('Por favor completa todos los campos', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
         if len(username) < 3 or len(username) > 30:
             flash('El nombre de usuario debe tener entre 3 y 30 caracteres', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
         import re
         if not re.match(r'^[a-zA-Z0-9_]+$', username):
             flash('El nombre de usuario solo puede contener letras, numeros y guion bajo', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
         if password != password2:
             flash('Las contrasenas no coinciden', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
         if len(password) < 8:
             flash('La contrasena debe tener al menos 8 caracteres', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
         if User.query.filter_by(username=username).first():
             flash('El usuario ya existe', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
         if User.query.filter_by(email=email).first():
             flash('El email ya esta registrado', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
-        # Primer usuario = admin, resto = analyst
-        is_first = User.query.count() == 0
-        user = User(
-            username=username,
-            email=email,
-            role='admin' if is_first else 'analyst'
-        )
+        # Bootstrap → primer admin; admin creando → rol elegido (analyst por defecto)
+        if is_bootstrap:
+            role = 'admin'
+        else:
+            from app.utils.auth import ROLE_HIERARCHY
+            role = request.form.get('role', 'analyst')
+            if role not in ROLE_HIERARCHY:
+                role = 'analyst'
+
+        user = User(username=username, email=email, role=role)
         user.set_password(password)
-
         db.session.add(user)
         db.session.commit()
 
-        role_msg = ' (Administrador)' if is_first else ''
-        flash(f'Cuenta creada exitosamente{role_msg}. Inicia sesion.', 'success')
-        return redirect(url_for('auth.login'))
+        from app.models.audit import AuditEvent
+        AuditEvent.log('user_created', resource_type='user', resource_id=user.id,
+                       details={'username': username, 'role': role}, _commit=True)
 
-    return render_template('auth/register.html')
+        if is_bootstrap:
+            flash('Cuenta de administrador creada. Inicia sesion.', 'success')
+            return redirect(url_for('auth.login'))
+
+        flash(f'Usuario {username} creado con rol {role}.', 'success')
+        return redirect(url_for('auth.register'))
+
+    return render_template('auth/register.html', is_bootstrap=is_bootstrap)
 
 
 @auth_bp.route('/profile')

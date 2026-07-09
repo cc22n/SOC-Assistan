@@ -180,11 +180,11 @@ class TestRegister:
         assert user is not None
         assert user.role == 'admin'
 
-    def test_register_second_user_becomes_analyst(self, client, db_session, admin_user):
-        """El segundo usuario registrado recibe role='analyst'."""
+    def test_register_second_user_becomes_analyst(self, admin_client, db_session, admin_user):
+        """Un admin crea un usuario sin rol explícito → role='analyst' por defecto."""
         from app.models.ioc import User
 
-        client.post('/auth/register', data={
+        admin_client.post('/auth/register', data={
             'username': 'seconduser',
             'email': 'second@soc-test.local',
             'password': 'SecondPass123!',
@@ -195,9 +195,38 @@ class TestRegister:
         assert user is not None
         assert user.role == 'analyst'
 
-    def test_register_duplicate_username_rejected(self, client, db_session, analyst_user):
-        """Registrar username duplicado devuelve error."""
+    def test_register_admin_can_choose_role(self, admin_client, db_session, admin_user):
+        """Un admin puede asignar un rol válido al crear un usuario."""
+        from app.models.ioc import User
+
+        admin_client.post('/auth/register', data={
+            'username': 'senioruser',
+            'email': 'senior@soc-test.local',
+            'password': 'SeniorPass123!',
+            'password2': 'SeniorPass123!',
+            'role': 'senior_analyst',
+        }, follow_redirects=True)
+
+        user = User.query.filter_by(username='senioruser').first()
+        assert user is not None
+        assert user.role == 'senior_analyst'
+
+    def test_register_anonymous_blocked_when_users_exist(self, client, db_session, admin_user):
+        """Fuera del bootstrap, un anónimo no puede registrar usuarios."""
+        from app.models.ioc import User
+
         resp = client.post('/auth/register', data={
+            'username': 'intruder',
+            'email': 'intruder@soc-test.local',
+            'password': 'IntruderPass123!',
+            'password2': 'IntruderPass123!',
+        }, follow_redirects=False)
+        assert resp.status_code == 302  # redirect a login
+        assert User.query.filter_by(username='intruder').first() is None
+
+    def test_register_duplicate_username_rejected(self, admin_client, db_session, admin_user, analyst_user):
+        """Registrar username duplicado devuelve error."""
+        resp = admin_client.post('/auth/register', data={
             'username': 'test_analyst',
             'email': 'different@soc-test.local',
             'password': 'NewPass123!',
@@ -206,9 +235,9 @@ class TestRegister:
         assert resp.status_code == 200
         assert 'ya existe' in resp.data.decode('utf-8', errors='replace')
 
-    def test_register_duplicate_email_rejected(self, client, db_session, analyst_user):
+    def test_register_duplicate_email_rejected(self, admin_client, db_session, admin_user, analyst_user):
         """Registrar email duplicado devuelve error."""
-        resp = client.post('/auth/register', data={
+        resp = admin_client.post('/auth/register', data={
             'username': 'new_name',
             'email': 'analyst@soc-test.local',
             'password': 'NewPass123!',
