@@ -119,3 +119,10 @@ PLAN-MEJORAS.md
 propuestas-mejora.md
 prompt-de -mejora.md
 ROADMAP_FASE3.md
+# =============================================================================
+# Claude Code / herramientas locales
+# =============================================================================
+.claude/*.lock
+
+# Scripts manuales de prueba de APIs (experimentos locales, no son la suite)
+scripts/manual/
