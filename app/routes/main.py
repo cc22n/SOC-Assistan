@@ -6,12 +6,12 @@ from flask import (
     render_template,
     request,
     jsonify,
-    current_app
+    current_app,
+    abort
 )
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 
-from app.services.threat_intel import ThreatIntelService
 from app.models.ioc import IOC, IOCAnalysis, Incident, APIUsage
 from app import db, cache
 
@@ -31,29 +31,33 @@ def dashboard():
     today = datetime.utcnow().date()
     week_ago = today - timedelta(days=7)
 
+    is_admin = current_user.role == 'admin'
+    analysis_base = IOCAnalysis.query if is_admin else IOCAnalysis.query.filter_by(user_id=current_user.id)
+    incident_base = Incident.visible_to(current_user)
+
     stats = {
-        'total_analyses': IOCAnalysis.query.count(),
-        'today_analyses': IOCAnalysis.query.filter(
+        'total_analyses': analysis_base.count(),
+        'today_analyses': analysis_base.filter(
             db.func.date(IOCAnalysis.created_at) == today
         ).count(),
-        'week_analyses': IOCAnalysis.query.filter(
+        'week_analyses': analysis_base.filter(
             IOCAnalysis.created_at >= week_ago
         ).count(),
-        'critical_iocs': IOCAnalysis.query.filter(
-            IOCAnalysis.risk_level.in_(['CRÍTICO', 'CRITICO'])
+        'critical_iocs': analysis_base.filter(
+            IOCAnalysis.risk_level == 'CRÍTICO'
         ).count(),
-        'high_risk_iocs': IOCAnalysis.query.filter(
+        'high_risk_iocs': analysis_base.filter(
             IOCAnalysis.risk_level == 'ALTO'
         ).count(),
-        'open_incidents': Incident.query.filter_by(status='open').count(),
-        'unique_iocs': IOC.query.count()
+        'open_incidents': incident_base.filter_by(status='open').count(),
+        'unique_iocs': IOC.query.count() if is_admin else analysis_base.with_entities(IOCAnalysis.ioc_id).distinct().count()
     }
 
-    recent_analyses = IOCAnalysis.query.order_by(
+    recent_analyses = analysis_base.order_by(
         IOCAnalysis.created_at.desc()
     ).limit(10).all()
 
-    open_incidents = Incident.query.filter_by(
+    open_incidents = incident_base.filter_by(
         status='open'
     ).order_by(
         Incident.created_at.desc()
@@ -136,7 +140,7 @@ def incidents():
 
     status = request.args.get('status', 'open')
 
-    query = Incident.query
+    query = Incident.visible_to(current_user)
     if status:
         query = query.filter_by(status=status)
 
@@ -160,6 +164,13 @@ def incidents():
 def incident_detail(incident_id):
     """Detalle de un incidente"""
     incident = Incident.query.get_or_404(incident_id)
+    if not incident.is_visible_to(current_user):
+        from app.models.audit import AuditEvent
+        AuditEvent.log('unauthorized_access', resource_type='incident',
+                       resource_id=incident.id, success=False,
+                       details={'ticket_id': incident.ticket_id, 'reason': 'IDOR attempt (web)'},
+                       _commit=True)
+        abort(403)
     return render_template(
         'incident_detail.html',
         incident=incident

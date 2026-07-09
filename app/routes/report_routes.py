@@ -8,7 +8,7 @@ Endpoints:
 - GET /api/v2/reports/session/{id}/preview - Vista previa del reporte (JSON)
 - POST /api/v2/reports/analysis/{id}/pdf - Reporte de un análisis específico
 """
-from flask import Blueprint, request, jsonify, send_file, current_app
+from flask import Blueprint, request, jsonify, send_file
 from flask_login import login_required, current_user
 from app.services.report_generator import report_generator
 from app.services.session_manager import session_manager
@@ -16,6 +16,8 @@ from app.models.ioc import IOC, IOCAnalysis, db
 import logging
 from datetime import datetime
 from io import BytesIO
+
+from app.utils.responses import safe_error_response
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +64,7 @@ def generate_session_pdf(session_id):
         )
         
     except Exception as e:
-        logger.error(f"Error generating PDF report: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error generating PDF report")
 
 
 @bp.route('/session/<int:session_id>/docx', methods=['GET'])
@@ -105,8 +106,7 @@ def generate_session_docx(session_id):
         )
         
     except Exception as e:
-        logger.error(f"Error generating DOCX report: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error generating DOCX report")
 
 
 @bp.route('/session/<int:session_id>/preview', methods=['GET'])
@@ -181,8 +181,7 @@ def preview_session_report(session_id):
         }), 200
         
     except Exception as e:
-        logger.error(f"Error generating preview: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error generating preview")
 
 
 @bp.route('/analysis/<int:analysis_id>/pdf', methods=['GET'])
@@ -203,7 +202,7 @@ def generate_analysis_pdf(analysis_id):
             from app.models.audit import AuditEvent
             AuditEvent.log('unauthorized_access', resource_type='analysis',
                            resource_id=analysis_id, success=False,
-                           details={'reason': 'IDOR attempt'})
+                           details={'reason': 'IDOR attempt'}, _commit=True)
             return jsonify({'error': 'No autorizado'}), 403
         
         # Generar PDF simple para un solo análisis
@@ -223,8 +222,7 @@ def generate_analysis_pdf(analysis_id):
         )
         
     except Exception as e:
-        logger.error(f"Error generating analysis PDF: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error generating analysis PDF")
 
 
 @bp.route('/formats', methods=['GET'])

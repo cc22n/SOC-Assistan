@@ -444,3 +444,69 @@ class TestLLMProviders:
             assert 'available' in provider_data
             assert 'model' in provider_data
             assert 'speed' in provider_data
+
+
+# ==============================================================================
+# WHITELIST DE IOCs
+# ==============================================================================
+
+class TestWhitelist:
+
+    def test_analyst_can_whitelist_ioc(self, analyst_client, db_session, sample_ioc):
+        """POST /ioc/<id>/whitelist marca el IOC y guarda la razón."""
+        resp = post_json(analyst_client, f'{BASE}/ioc/{sample_ioc.id}/whitelist',
+                         {'reason': 'IP corporativa'})
+        assert resp.status_code == 200
+
+        from app.models.ioc import IOC
+        ioc = db_session.session.get(IOC, sample_ioc.id)
+        assert ioc.is_whitelisted is True
+        assert ioc.whitelist_reason == 'IP corporativa'
+
+    def test_analyst_can_remove_whitelist(self, analyst_client, db_session, sample_ioc):
+        """DELETE /ioc/<id>/whitelist desmarca el IOC."""
+        sample_ioc.is_whitelisted = True
+        sample_ioc.whitelist_reason = 'test'
+        db_session.session.commit()
+
+        resp = analyst_client.delete(f'{BASE}/ioc/{sample_ioc.id}/whitelist')
+        assert resp.status_code == 200
+
+        from app.models.ioc import IOC
+        ioc = db_session.session.get(IOC, sample_ioc.id)
+        assert ioc.is_whitelisted is False
+        assert ioc.whitelist_reason is None
+
+    def test_whitelist_nonexistent_ioc_404(self, analyst_client):
+        resp = post_json(analyst_client, f'{BASE}/ioc/999999/whitelist', {'reason': 'x'})
+        assert resp.status_code == 404
+
+    def test_viewer_cannot_whitelist(self, app, db_session, sample_ioc):
+        """El rol viewer no puede modificar la whitelist (403 vía require_role)."""
+        from app.models.ioc import User
+        viewer = User(username='test_viewer', email='viewer@soc-test.local',
+                      role='viewer', is_active=True)
+        viewer.set_password('ViewerPass123!')
+        db_session.session.add(viewer)
+        db_session.session.commit()
+
+        c = app.test_client()
+        with c.session_transaction() as sess:
+            sess['_user_id'] = str(viewer.id)
+            sess['_fresh'] = True
+
+        resp = c.post(f'{BASE}/ioc/{sample_ioc.id}/whitelist', json={'reason': 'x'})
+        assert resp.status_code == 403
+
+    def test_whitelisted_ioc_skips_analysis(self, analyst_client, db_session, sample_ioc):
+        """Un IOC en whitelist corta el análisis antes de llamar APIs/LLM."""
+        sample_ioc.is_whitelisted = True
+        sample_ioc.whitelist_reason = 'IP interna'
+        db_session.session.commit()
+
+        resp = post_json(analyst_client, f'{BASE}/analyze/enhanced',
+                         {'ioc': sample_ioc.value, 'type': 'ip'})
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data.get('whitelisted') is True
+        assert data['whitelist_reason'] == 'IP interna'

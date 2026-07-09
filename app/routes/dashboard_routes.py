@@ -7,6 +7,8 @@ from flask_login import login_required, current_user
 from app.services.dashboard_stats import DashboardStatsService
 import logging
 
+from app.utils.responses import safe_error_response
+
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('dashboard', __name__, url_prefix='/dashboard')
@@ -63,8 +65,7 @@ def get_all_stats():
         }), 200
         
     except Exception as e:
-        logger.error(f"Error getting stats: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting stats")
 
 
 @bp.route('/api/stats/risk', methods=['GET'])
@@ -82,8 +83,7 @@ def get_risk_distribution():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting risk distribution: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting risk distribution")
 
 
 @bp.route('/api/stats/apis', methods=['GET'])
@@ -99,8 +99,7 @@ def get_api_usage():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting API usage: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting API usage")
 
 
 @bp.route('/api/stats/timeline', methods=['GET'])
@@ -118,8 +117,7 @@ def get_timeline():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting timeline: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting timeline")
 
 
 @bp.route('/api/stats/geo', methods=['GET'])
@@ -137,8 +135,7 @@ def get_geo_threats():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting geo threats: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting geo threats")
 
 
 @bp.route('/api/stats/summary', methods=['GET'])
@@ -156,8 +153,7 @@ def get_summary():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting summary: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting summary")
 
 
 @bp.route('/api/stats/recent', methods=['GET'])
@@ -175,8 +171,7 @@ def get_recent():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting recent analyses: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting recent analyses")
 
 
 @bp.route('/api/stats/threats', methods=['GET'])
@@ -194,5 +189,4 @@ def get_threats():
         return jsonify({'success': True, 'data': data}), 200
         
     except Exception as e:
-        logger.error(f"Error getting top threats: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Error getting top threats")

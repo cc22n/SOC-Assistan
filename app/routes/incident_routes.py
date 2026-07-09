@@ -14,14 +14,13 @@ Endpoints:
 - GET    /api/v2/incidents/{id}/timeline - Timeline completo (notas + chat)
 - GET    /api/v2/incidents/stats        - Estadisticas de incidentes
 """
-from typing import Any, Tuple
-
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
 from sqlalchemy import desc
 from app import db
 from app.models.ioc import Incident, IncidentIOC, IOC, IOCAnalysis, User
+from app.utils.responses import safe_error_response as _safe_error  # (VULN-02 fix)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,22 +28,9 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('incidents_api', __name__, url_prefix='/api/v2/incidents')
 
 
-def _safe_error(e: Exception, context: str = "") -> Tuple[Any, int]:
-    """Retorna error sin exponer detalles internos (VULN-02 fix)"""
-    logger.error(f"{context}: {e}", exc_info=True)
-    from flask import current_app
-    if current_app.debug:
-        return jsonify({'error': str(e)}), 500
-    return jsonify({'error': 'Internal server error'}), 500
-
-
 def _check_incident_access(incident: Incident) -> bool:
     """Verifica que el usuario tenga acceso al incidente (VULN-01 fix)"""
-    if current_user.role == 'admin':
-        return True
-    if incident.created_by == current_user.id:
-        return True
-    if incident.assigned_to == current_user.id:
+    if incident.is_visible_to(current_user):
         return True
     # Registrar intento de acceso no autorizado
     from app.models.audit import AuditEvent
@@ -185,22 +171,14 @@ def list_incidents():
     - per_page: int (default 20, máx 100)
     """
     try:
-        query = Incident.query
-
         # Non-admin users can only see their own incidents (created_by or assigned_to).
-        # Admins see all incidents; my_only=true is the default for non-admins.
-        if current_user.role != 'admin':
+        # Admins see all incidents; my_only=true los restringe a los propios.
+        query = Incident.visible_to(current_user)
+        if current_user.role == 'admin' and request.args.get('my_only', 'false').lower() == 'true':
             query = query.filter(
                 (Incident.created_by == current_user.id) |
                 (Incident.assigned_to == current_user.id)
             )
-        else:
-            my_only = request.args.get('my_only', 'false').lower() == 'true'
-            if my_only:
-                query = query.filter(
-                    (Incident.created_by == current_user.id) |
-                    (Incident.assigned_to == current_user.id)
-                )
 
         # Filtro por status (acepta CSV: "open,investigating")
         status = request.args.get('status')
@@ -563,19 +541,19 @@ def link_iocs(incident_id):
 def unlink_ioc(incident_id, ioc_id):
     """Desvincula un IOC de un incidente"""
     try:
-        link = IncidentIOC.query.filter_by(
-            incident_id=incident_id, ioc_id=ioc_id
-        ).first()
-
-        if not link:
-            return jsonify({'error': 'Vinculo no encontrado'}), 404
-
         incident = db.session.get(Incident, incident_id)
         if not incident:
             return jsonify({'error': 'Incidente no encontrado'}), 404
 
         if not _check_incident_access(incident):
             return jsonify({'error': 'No autorizado'}), 403
+
+        link = IncidentIOC.query.filter_by(
+            incident_id=incident_id, ioc_id=ioc_id
+        ).first()
+
+        if not link:
+            return jsonify({'error': 'Vinculo no encontrado'}), 404
 
         ioc = db.session.get(IOC, ioc_id)
 
@@ -662,20 +640,13 @@ def get_stats():
         from sqlalchemy import func
 
         # Scope queries to the current user's incidents unless admin.
-        base_q = Incident.query
-        if current_user.role != 'admin':
-            base_q = base_q.filter(
-                (Incident.created_by == current_user.id) |
-                (Incident.assigned_to == current_user.id)
-            )
+        visibility = Incident.visibility_criterion(current_user)
+        base_q = Incident.visible_to(current_user)
 
         # Aggregate status counts in a single GROUP BY query instead of 5 counts.
         status_base = db.session.query(Incident.status, func.count(Incident.id))
-        if current_user.role != 'admin':
-            status_base = status_base.filter(
-                (Incident.created_by == current_user.id) |
-                (Incident.assigned_to == current_user.id)
-            )
+        if visibility is not None:
+            status_base = status_base.filter(visibility)
         status_counts = dict(status_base.group_by(Incident.status).all())
 
         stats = {
@@ -694,11 +665,8 @@ def get_stats():
         ).filter(
             Incident.status.in_(['open', 'investigating'])
         )
-        if current_user.role != 'admin':
-            sev_base = sev_base.filter(
-                (Incident.created_by == current_user.id) |
-                (Incident.assigned_to == current_user.id)
-            )
+        if visibility is not None:
+            sev_base = sev_base.filter(visibility)
         severity_counts = sev_base.group_by(Incident.severity).all()
 
         for sev, count in severity_counts:

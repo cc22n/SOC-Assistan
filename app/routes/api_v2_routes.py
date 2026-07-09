@@ -13,6 +13,7 @@ from app.services.llm_orchestrator import LLMOrchestrator
 from app.services.session_manager import SessionManager
 from app.models.ioc import IOC, IOCAnalysis, db
 from app.utils.validators import validate_ioc, sanitize_chat_input
+from app.utils.auth import require_role
 from app.schemas.api import AnalyzeRequest, ChatMessageRequest
 from app.schemas.validator import validate_request
 from app import limiter
@@ -35,12 +36,7 @@ def require_json(f):
     return decorated
 
 
-def safe_error_response(error: Exception, context: str = ""):
-    """Retorna error sin exponer detalles internos en producción"""
-    logger.error(f"{context}: {error}", exc_info=True)
-    if current_app.debug:
-        return jsonify({'error': str(error)}), 500
-    return jsonify({'error': 'An internal error occurred'}), 500
+from app.utils.responses import safe_error_response
 
 _orchestrator = None
 _session_manager = None
@@ -84,6 +80,18 @@ def analyze_enhanced(data: AnalyzeRequest):
             ioc_type = detect_ioc_type(ioc_value)
             if not ioc_type:
                 return jsonify({'error': 'No se pudo detectar tipo de IOC'}), 400
+
+        # === WHITELIST CHECK ===
+        wl = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type, is_whitelisted=True).first()
+        if wl:
+            return jsonify({
+                'success': True,
+                'whitelisted': True,
+                'ioc': ioc_value,
+                'type': ioc_type,
+                'whitelist_reason': wl.whitelist_reason,
+                'message': 'IOC en whitelist — análisis omitido'
+            }), 200
 
         # === CACHE CHECK ===
         if not force_refresh:
@@ -170,6 +178,9 @@ def analyze_enhanced(data: AnalyzeRequest):
             urlscan_data=analysis_result['api_results'].get('urlscan'),
             shodan_internetdb_data=analysis_result['api_results'].get('shodan_internetdb'),
             ip_api_data=analysis_result['api_results'].get('ip_api'),
+            censys_data=analysis_result['api_results'].get('censys'),
+            ipinfo_data=analysis_result['api_results'].get('ipinfo'),
+            ipgeolocation_data=analysis_result['api_results'].get('ipgeolocation'),
             llm_analysis=analysis_result.get('llm_analysis'),
             mitre_techniques=analysis_result.get('mitre_techniques', []),
             sources_used=analysis_result.get('sources_used', []),
@@ -220,6 +231,65 @@ def analyze_enhanced(data: AnalyzeRequest):
     except Exception as e:
         db.session.rollback()
         return safe_error_response(e, "Enhanced analysis error")
+
+
+# =============================================================================
+# WHITELIST DE IOCs
+# =============================================================================
+
+@bp.route('/ioc/<int:ioc_id>/whitelist', methods=['POST'])
+@login_required
+@require_role('analyst')
+@limiter.limit("30 per minute")
+def whitelist_ioc(ioc_id):
+    """Agrega un IOC a la whitelist (analyst o superior)"""
+    try:
+        ioc = db.session.get(IOC, ioc_id)
+        if not ioc:
+            return jsonify({'error': 'IOC no encontrado'}), 404
+
+        data = request.get_json(silent=True) or {}
+        reason = (data.get('reason') or '').strip() or 'Sin razón especificada'
+
+        ioc.is_whitelisted = True
+        ioc.whitelist_reason = reason[:500]
+        db.session.commit()
+
+        from app.models.audit import AuditEvent
+        AuditEvent.log('ioc_whitelisted', resource_type='ioc', resource_id=ioc.id,
+                       details={'ioc': ioc.value, 'reason': reason[:200]}, _commit=True)
+
+        return jsonify({'message': 'IOC agregado a whitelist', 'ioc': ioc.to_dict()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return safe_error_response(e, "Whitelist add error")
+
+
+@bp.route('/ioc/<int:ioc_id>/whitelist', methods=['DELETE'])
+@login_required
+@require_role('analyst')
+@limiter.limit("30 per minute")
+def unwhitelist_ioc(ioc_id):
+    """Remueve un IOC de la whitelist (analyst o superior)"""
+    try:
+        ioc = db.session.get(IOC, ioc_id)
+        if not ioc:
+            return jsonify({'error': 'IOC no encontrado'}), 404
+
+        ioc.is_whitelisted = False
+        ioc.whitelist_reason = None
+        db.session.commit()
+
+        from app.models.audit import AuditEvent
+        AuditEvent.log('ioc_unwhitelisted', resource_type='ioc', resource_id=ioc.id,
+                       details={'ioc': ioc.value}, _commit=True)
+
+        return jsonify({'message': 'IOC removido de whitelist', 'ioc': ioc.to_dict()}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return safe_error_response(e, "Whitelist remove error")
 
 
 # =============================================================================
@@ -761,7 +831,7 @@ def health_check():
     redis_status = 'not_configured'
     redis_latency_ms = None
     redis_url = current_app.config.get('REDIS_URL')
-    if redis_url and redis_url != 'redis://localhost:6379/0':
+    if redis_url:
         try:
             import redis as redis_lib
             t0 = time.monotonic()

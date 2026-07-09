@@ -9,6 +9,8 @@ from app.utils.validators import validate_ioc, detect_ioc_type
 import logging
 from datetime import datetime
 
+from app.utils.responses import safe_error_response
+
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('deep_analysis', __name__, url_prefix='/api/v2/deep')
@@ -106,8 +108,7 @@ def deep_analyze():
         }), 200
         
     except Exception as e:
-        logger.error(f"Deep analysis error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Deep analysis error")
 
 
 @bp.route('/apt-database', methods=['GET'])
@@ -139,8 +140,7 @@ def get_apt_database():
         }), 200
         
     except Exception as e:
-        logger.error(f"APT database error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "APT database error")
 
 
 @bp.route('/mitre-techniques', methods=['GET'])
@@ -166,8 +166,7 @@ def get_mitre_techniques():
         }), 200
         
     except Exception as e:
-        logger.error(f"MITRE techniques error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "MITRE techniques error")
 
 
 @bp.route('/quick-apt-check', methods=['POST'])
@@ -203,5 +202,4 @@ def quick_apt_check():
         }), 200
         
     except Exception as e:
-        logger.error(f"Quick APT check error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return safe_error_response(e, "Quick APT check error")
