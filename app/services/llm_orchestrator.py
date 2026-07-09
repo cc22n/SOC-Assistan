@@ -94,11 +94,15 @@ class LLMOrchestrator:
             'fraude': ['google_safebrowsing', 'criminal_ip', 'pulsedive'],
             'scam': ['google_safebrowsing', 'criminal_ip', 'pulsedive'],
 
-            # Preguntas sobre geolocalización
-            'ubicación': ['shodan', 'ip_api', 'abuseipdb', 'criminal_ip'],
-            'país': ['shodan', 'ip_api', 'abuseipdb'],
-            'geolocalización': ['ip_api', 'shodan', 'criminal_ip'],
-            'location': ['ip_api', 'shodan', 'criminal_ip'],
+            # Preguntas sobre geolocalización / red
+            'ubicación': ['ipgeolocation', 'ipinfo', 'ip_api', 'shodan', 'abuseipdb', 'criminal_ip'],
+            'país': ['ipgeolocation', 'ipinfo', 'ip_api', 'shodan', 'abuseipdb'],
+            'geolocalización': ['ipgeolocation', 'ipinfo', 'ip_api', 'shodan', 'criminal_ip'],
+            'location': ['ipgeolocation', 'ipinfo', 'ip_api', 'shodan', 'criminal_ip'],
+            'asn': ['ipinfo', 'ipgeolocation', 'shodan'],
+            'isp': ['ipinfo', 'ipgeolocation', 'abuseipdb', 'ip_api'],
+            'zona horaria': ['ipgeolocation'],
+            'timezone': ['ipgeolocation'],
 
             # Preguntas sobre sandbox/comportamiento
             'comportamiento': ['hybrid_analysis'],
@@ -149,8 +153,8 @@ class LLMOrchestrator:
             return
 
         try:
-            from flask import current_app
-            if not current_app:
+            from flask import has_app_context
+            if not has_app_context():
                 return
 
             # Importar TODOS los clientes de new_api_clients (unificado v3)
@@ -160,7 +164,7 @@ class LLMOrchestrator:
                 GoogleSafeBrowsingClient, SecurityTrailsClient, HybridAnalysisClient,
                 MalwareBazaarClient, CriminalIPClient, PulsediveClient,
                 URLScanClient, ShodanInternetDBClient, IPAPIClient,
-                CensysClient, IPinfoClient
+                CensysClient, IPinfoClient, IPGeolocationClient
             )
 
             self.api_clients = {
@@ -191,6 +195,7 @@ class LLMOrchestrator:
                 # APIs v3.1
                 'censys': CensysClient(),
                 'ipinfo': IPinfoClient(),
+                'ipgeolocation': IPGeolocationClient(),
             }
 
             self._clients_initialized = True
@@ -376,6 +381,7 @@ class LLMOrchestrator:
             'ip_api': ['ip'],
             'censys': ['ip'],
             'ipinfo': ['ip'],
+            'ipgeolocation': ['ip'],
         }
 
         return ioc_type in compatibility.get(api_name, [])
@@ -388,13 +394,9 @@ class LLMOrchestrator:
         try:
             session_iocs = self.session_manager.get_session_iocs(session_id)
 
-            # Lista de APIs disponibles (ACTUALIZADO v5)
-            available_apis = [
-                'virustotal', 'abuseipdb', 'shodan', 'otx', 'greynoise',
-                'threatfox', 'urlhaus', 'malwarebazaar',
-                'google_safebrowsing', 'securitytrails', 'hybrid_analysis',
-                'criminal_ip', 'pulsedive', 'urlscan', 'shodan_internetdb', 'ip_api'
-            ]
+            # Lista de APIs derivada de las columnas *_data del modelo
+            from app.models.ioc import IOCAnalysis
+            available_apis = IOCAnalysis.api_source_names()
 
             for sioc in session_iocs:
                 if ioc_value and sioc.ioc and sioc.ioc.value == ioc_value:
@@ -864,10 +866,184 @@ IMPORTANTE:
                 'session_id': session.id if session else None
             }
 
+    def _get_ioc_history(self, ioc_value: str, ioc_type: str, user_id: Optional[int],
+                         current_session_id: Optional[int] = None) -> Optional[Dict]:
+        """
+        Memoria entre sesiones: análisis previos del mismo IOC por el mismo usuario.
+        Se consulta ANTES de guardar el análisis nuevo, así todo lo encontrado es histórico.
+        Scope por user_id para respetar la misma regla de visibilidad del dashboard.
+        """
+        if not user_id:
+            return None
+        try:
+            from app.models.ioc import IOC, IOCAnalysis
+            from app.models.session import SessionIOC, InvestigationSession
+
+            ioc_obj = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type).first()
+            if not ioc_obj:
+                return None
+
+            previous = (IOCAnalysis.query
+                        .filter_by(ioc_id=ioc_obj.id, user_id=user_id)
+                        .order_by(IOCAnalysis.created_at.desc())
+                        .limit(5).all())
+            if not previous:
+                return None
+
+            sessions = []
+            links = (SessionIOC.query
+                     .join(InvestigationSession, SessionIOC.session_id == InvestigationSession.id)
+                     .filter(SessionIOC.ioc_id == ioc_obj.id,
+                             InvestigationSession.user_id == user_id))
+            if current_session_id:
+                links = links.filter(SessionIOC.session_id != current_session_id)
+            for link in links.order_by(SessionIOC.added_at.desc()).limit(3).all():
+                if link.session:
+                    sessions.append({
+                        'session_id': link.session_id,
+                        'title': link.session.title,
+                        'date': link.added_at.isoformat() if link.added_at else None,
+                    })
+
+            last = previous[0]
+            return {
+                'times_analyzed': len(previous),
+                'last_risk_level': last.risk_level,
+                'last_confidence': last.confidence_score,
+                'last_analyzed_at': last.created_at.isoformat() if last.created_at else None,
+                'previous_sessions': sessions,
+            }
+        except Exception as e:
+            logger.warning(f"IOC history lookup failed for {ioc_value}: {e}")
+            return None
+
+    @staticmethod
+    def _extract_correlation_attrs(api_results: Dict, mitre_techniques=None) -> Dict:
+        """Extrae atributos correlacionables de un análisis: familias, MITRE, ASN."""
+        api_results = api_results or {}
+        families = set()
+        vt = api_results.get('virustotal') or {}
+        for fam in (vt.get('malware_families') or []):
+            families.add(str(fam).lower())
+        tf = api_results.get('threatfox') or {}
+        if tf.get('malware'):
+            families.add(str(tf['malware']).lower())
+
+        techniques = set(t for t in (mitre_techniques or []) if t)
+
+        asn = None
+        for geo_key in ('ipinfo', 'ipgeolocation', 'ip_api', 'shodan'):
+            geo = api_results.get(geo_key) or {}
+            for field in ('asn', 'as', 'asn_org', 'org', 'organization'):
+                if geo.get(field):
+                    asn = str(geo[field]).lower()
+                    break
+            if asn:
+                break
+
+        return {'families': families, 'techniques': techniques, 'asn': asn}
+
+    def _get_related_iocs(self, ioc_value: str, analysis: Dict, user_id: Optional[int],
+                          limit: int = 5) -> Optional[List[Dict]]:
+        """
+        Grafo de correlación: IOCs previos del usuario que comparten atributos
+        con el análisis actual — familia de malware, técnicas MITRE, ASN o
+        incidente. Puro SQL + comparación en memoria, sin costo de LLM.
+        """
+        if not user_id:
+            return None
+        try:
+            from app.models.ioc import IOC, IOCAnalysis, IncidentIOC
+
+            current = self._extract_correlation_attrs(
+                analysis.get('api_results', {}),
+                analysis.get('mitre_techniques', [])
+            )
+            if not (current['families'] or current['techniques'] or current['asn']):
+                return None
+
+            # IOCs vinculados a los mismos incidentes que el IOC actual
+            shared_incident_ioc_ids = set()
+            current_ioc_obj = IOC.query.filter_by(value=ioc_value).first()
+            if current_ioc_obj:
+                incident_ids = [l.incident_id for l in
+                                IncidentIOC.query.filter_by(ioc_id=current_ioc_obj.id).all()]
+                if incident_ids:
+                    shared_incident_ioc_ids = {
+                        l.ioc_id for l in
+                        IncidentIOC.query.filter(IncidentIOC.incident_id.in_(incident_ids)).all()
+                        if l.ioc_id != current_ioc_obj.id
+                    }
+
+            # Último análisis por IOC del usuario (acotado a los 300 más recientes)
+            rows = (IOCAnalysis.query
+                    .filter(IOCAnalysis.user_id == user_id)
+                    .order_by(IOCAnalysis.created_at.desc())
+                    .limit(300).all())
+            latest_by_ioc = {}
+            for r in rows:
+                if r.ioc_id not in latest_by_ioc:
+                    latest_by_ioc[r.ioc_id] = r
+
+            related = []
+            for r in latest_by_ioc.values():
+                if not r.ioc or r.ioc.value == ioc_value:
+                    continue
+
+                cand_api_results = {
+                    'virustotal': r.virustotal_data,
+                    'threatfox': r.threatfox_data,
+                    'ipinfo': r.ipinfo_data,
+                    'ipgeolocation': r.ipgeolocation_data,
+                    'ip_api': r.ip_api_data,
+                    'shodan': r.shodan_data,
+                }
+                cand = self._extract_correlation_attrs(cand_api_results, r.mitre_techniques)
+
+                score = 0
+                reasons = []
+                shared_fams = current['families'] & cand['families']
+                if shared_fams:
+                    score += 3 * len(shared_fams)
+                    reasons.append(f"misma familia de malware: {', '.join(sorted(shared_fams))}")
+                shared_ttps = current['techniques'] & cand['techniques']
+                if shared_ttps:
+                    score += len(shared_ttps)
+                    reasons.append(f"técnicas MITRE compartidas: {', '.join(sorted(shared_ttps))}")
+                if current['asn'] and cand['asn'] and current['asn'] == cand['asn']:
+                    score += 2
+                    reasons.append(f"misma infraestructura (ASN/org: {current['asn']})")
+                if r.ioc_id in shared_incident_ioc_ids:
+                    score += 3
+                    reasons.append("vinculado al mismo incidente")
+
+                if score > 0:
+                    related.append({
+                        'ioc': r.ioc.value,
+                        'ioc_type': r.ioc.ioc_type,
+                        'risk_level': r.risk_level,
+                        'last_analyzed_at': r.created_at.isoformat() if r.created_at else None,
+                        'correlation_score': score,
+                        'reasons': reasons,
+                    })
+
+            related.sort(key=lambda x: x['correlation_score'], reverse=True)
+            return related[:limit] or None
+
+        except Exception as e:
+            logger.warning(f"IOC correlation lookup failed for {ioc_value}: {e}")
+            return None
+
     def _handle_new_ioc_analysis(self, llm, intent, message, session, session_context, user_id, user_message_id):
         """Maneja análisis de un IOC nuevo"""
         ioc = intent['ioc_value']
         ioc_type = intent.get('ioc_type') or self._detect_ioc_type(ioc)
+
+        # Memoria entre sesiones: buscar historial ANTES de crear el análisis nuevo
+        ioc_history = self._get_ioc_history(
+            ioc, ioc_type, user_id,
+            current_session_id=session.id if session else None
+        )
 
         analysis = self.analyze_with_intelligence(
             ioc=ioc,
@@ -875,6 +1051,9 @@ IMPORTANTE:
             user_context=message,
             session_context=session_context
         )
+
+        # Grafo de correlación: IOCs previos que comparten familia/MITRE/ASN/incidente
+        related_iocs = self._get_related_iocs(ioc, analysis, user_id)
 
         if session:
             analysis_obj = self._save_analysis_to_session(
@@ -884,7 +1063,8 @@ IMPORTANTE:
             analysis_obj = None
 
         response_text = self._generate_analysis_response(
-            llm, ioc, ioc_type, analysis, message, session_context
+            llm, ioc, ioc_type, analysis, message, session_context,
+            ioc_history=ioc_history, related_iocs=related_iocs
         )
 
         if session:
@@ -900,6 +1080,8 @@ IMPORTANTE:
                 'risk_level': analysis['risk_level'],
                 'sources_used': analysis['sources_used']
             },
+            'ioc_history': ioc_history,
+            'related_iocs': related_iocs,
             'session_id': session.id if session else None,
             'session_title': session.title if session else None,
             'llm_provider': llm.provider
@@ -1089,6 +1271,11 @@ Responde de forma clara, profesional y útil."""
                 shodan_internetdb_data=analysis['api_results'].get('shodan_internetdb'),
                 ip_api_data=analysis['api_results'].get('ip_api'),
 
+                # APIs v3.1+
+                censys_data=analysis['api_results'].get('censys'),
+                ipinfo_data=analysis['api_results'].get('ipinfo'),
+                ipgeolocation_data=analysis['api_results'].get('ipgeolocation'),
+
                 # LLM y metadata
                 llm_analysis=analysis.get('llm_analysis'),
                 mitre_techniques=analysis.get('mitre_techniques', []),
@@ -1145,12 +1332,40 @@ Responde de forma clara, profesional y útil."""
             except Exception:
                 pass
 
-    def _generate_analysis_response(self, llm, ioc, ioc_type, analysis, message, session_context):
+    def _generate_analysis_response(self, llm, ioc, ioc_type, analysis, message, session_context,
+                                    ioc_history: Optional[Dict] = None,
+                                    related_iocs: Optional[List[Dict]] = None):
         """Genera respuesta conversacional para un análisis"""
+        history_block = ""
+        if ioc_history:
+            history_block = (
+                "=== HISTORIAL: ESTE IOC YA FUE INVESTIGADO ANTES ===\n"
+                + json.dumps(ioc_history, indent=2, default=str, ensure_ascii=False)
+                + "\n"
+            )
+
+        correlation_block = ""
+        if related_iocs:
+            correlation_block = (
+                "=== CORRELACIÓN: IOCs PREVIOS RELACIONADOS (posible misma campaña) ===\n"
+                + json.dumps(related_iocs, indent=2, default=str, ensure_ascii=False)
+                + "\n"
+            )
+
+        extra_points = []
+        if ioc_history:
+            extra_points.append("Menciona brevemente que este IOC ya fue investigado antes "
+                                "(cuándo, con qué riesgo, y en qué investigación) y si el riesgo cambió")
+        if related_iocs:
+            extra_points.append("Advierte la correlación con IOCs previos (⚠️ posible misma campaña), "
+                                "nombrando los IOCs relacionados y POR QUÉ están relacionados")
+        extra_block = "\n".join(f"{i + 5}. {p}" for i, p in enumerate(extra_points))
+
         response_prompt = f"""Eres un analista SOC experto.
 
 {"=== CONTEXTO ===" + chr(10) + session_context if session_context else ""}
 
+{history_block}{correlation_block}
 El usuario preguntó: "{message}"
 
 Resultados del análisis de {ioc} ({ioc_type}):
@@ -1161,6 +1376,7 @@ Genera una respuesta que incluya:
 2. Datos clave de las fuentes
 3. Nivel de riesgo
 4. 2-3 acciones recomendadas
+{extra_block}
 
 Usa emojis para severidad (🔴🟠🟡🟢)."""
 

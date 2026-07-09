@@ -386,3 +386,128 @@ class TestGetCacheStats:
         with app.app_context():
             stats = get_cache_stats()
             assert stats['total_analyses'] == 0
+
+
+# ==============================================================================
+# MEMORIA ENTRE SESIONES (_get_ioc_history)
+# ==============================================================================
+
+class TestIOCHistory:
+
+    def _orchestrator(self):
+        from app.services.llm_orchestrator import LLMOrchestrator
+        return LLMOrchestrator()
+
+    def test_history_found_for_previous_analysis(self, app, db_session, sample_ioc,
+                                                 sample_analysis, analyst_user):
+        """Si el usuario ya analizó el IOC, el historial lo reporta."""
+        with app.app_context():
+            h = self._orchestrator()._get_ioc_history(
+                sample_ioc.value, sample_ioc.ioc_type, analyst_user.id
+            )
+            assert h is not None
+            assert h['times_analyzed'] == 1
+            assert h['last_risk_level'] == 'ALTO'
+            assert h['last_confidence'] == 82
+
+    def test_history_scoped_to_user(self, app, db_session, sample_ioc,
+                                    sample_analysis, other_user):
+        """Los análisis de otro usuario NO aparecen (misma regla de visibilidad)."""
+        with app.app_context():
+            h = self._orchestrator()._get_ioc_history(
+                sample_ioc.value, sample_ioc.ioc_type, other_user.id
+            )
+            assert h is None
+
+    def test_history_none_for_unknown_ioc(self, app, db_session, analyst_user):
+        with app.app_context():
+            h = self._orchestrator()._get_ioc_history('10.99.99.99', 'ip', analyst_user.id)
+            assert h is None
+
+    def test_history_none_without_user(self, app, db_session, sample_ioc, sample_analysis):
+        with app.app_context():
+            h = self._orchestrator()._get_ioc_history(
+                sample_ioc.value, sample_ioc.ioc_type, None
+            )
+            assert h is None
+
+
+# ==============================================================================
+# GRAFO DE CORRELACIÓN (_get_related_iocs)
+# ==============================================================================
+
+class TestRelatedIOCs:
+
+    def _orchestrator(self):
+        from app.services.llm_orchestrator import LLMOrchestrator
+        return LLMOrchestrator()
+
+    def _make_analysis(self, db_session, user, value, ioc_type='ip', **kwargs):
+        from app.models.ioc import IOC, IOCAnalysis
+        ioc = IOC(value=value, ioc_type=ioc_type)
+        db_session.session.add(ioc)
+        db_session.session.flush()
+        a = IOCAnalysis(ioc_id=ioc.id, user_id=user.id, confidence_score=70,
+                        risk_level='ALTO', **kwargs)
+        db_session.session.add(a)
+        db_session.session.commit()
+        return ioc, a
+
+    def test_shared_malware_family_correlates(self, app, db_session, analyst_user):
+        with app.app_context():
+            self._make_analysis(
+                db_session, analyst_user, '10.1.1.1',
+                virustotal_data={'malware_families': ['lockbit']},
+            )
+            fresh = {'api_results': {'virustotal': {'malware_families': ['lockbit', 'otro']}},
+                     'mitre_techniques': []}
+            related = self._orchestrator()._get_related_iocs('10.2.2.2', fresh, analyst_user.id)
+
+            assert related is not None
+            assert related[0]['ioc'] == '10.1.1.1'
+            assert any('lockbit' in r for r in related[0]['reasons'])
+
+    def test_shared_mitre_and_asn_scores_add_up(self, app, db_session, analyst_user):
+        with app.app_context():
+            self._make_analysis(
+                db_session, analyst_user, '10.3.3.3',
+                mitre_techniques=['T1071', 'T1059'],
+                ipinfo_data={'asn_org': 'Evil Hosting'},
+            )
+            fresh = {'api_results': {'ipinfo': {'asn_org': 'Evil Hosting'}},
+                     'mitre_techniques': ['T1071']}
+            related = self._orchestrator()._get_related_iocs('10.4.4.4', fresh, analyst_user.id)
+
+            assert related is not None
+            r = related[0]
+            assert r['correlation_score'] == 3  # 1 técnica (+1) + ASN (+2)
+            assert len(r['reasons']) == 2
+
+    def test_other_users_analyses_not_correlated(self, app, db_session, analyst_user, other_user):
+        with app.app_context():
+            self._make_analysis(
+                db_session, analyst_user, '10.5.5.5',
+                virustotal_data={'malware_families': ['emotet']},
+            )
+            fresh = {'api_results': {'virustotal': {'malware_families': ['emotet']}},
+                     'mitre_techniques': []}
+            related = self._orchestrator()._get_related_iocs('10.6.6.6', fresh, other_user.id)
+            assert related is None
+
+    def test_no_signals_returns_none(self, app, db_session, analyst_user):
+        with app.app_context():
+            fresh = {'api_results': {}, 'mitre_techniques': []}
+            related = self._orchestrator()._get_related_iocs('10.7.7.7', fresh, analyst_user.id)
+            assert related is None
+
+    def test_same_ioc_excluded(self, app, db_session, analyst_user):
+        """El propio IOC no se correlaciona consigo mismo."""
+        with app.app_context():
+            self._make_analysis(
+                db_session, analyst_user, '10.8.8.8',
+                virustotal_data={'malware_families': ['qakbot']},
+            )
+            fresh = {'api_results': {'virustotal': {'malware_families': ['qakbot']}},
+                     'mitre_techniques': []}
+            related = self._orchestrator()._get_related_iocs('10.8.8.8', fresh, analyst_user.id)
+            assert related is None

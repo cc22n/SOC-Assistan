@@ -797,3 +797,57 @@ class TestUnifiedThreatIntelClient:
             result = client.analyze_ip('185.220.101.1', sources=['virustotal', 'abuseipdb'])
         assert 'virustotal' in result
         # abuseipdb might have error or might not be in result
+
+
+# ==============================================================================
+# TAVILY SEARCH CLIENT (búsqueda web para Deep Analysis)
+# ==============================================================================
+
+class TestTavilySearchClient:
+
+    def test_no_api_key_returns_error(self, app_ctx):
+        from app.services.new_api_clients import TavilySearchClient
+        client = TavilySearchClient()
+        client.api_key = None
+        result = client.search('lockbit ransomware')
+        assert 'error' in result
+
+    def test_search_success_normalizes_results(self, app_ctx):
+        from app.services.new_api_clients import TavilySearchClient
+        client = TavilySearchClient()
+        client.api_key = 'test-key'
+
+        mock_resp = make_response(200, {
+            'results': [
+                {'title': 'LockBit report', 'url': 'https://cisa.gov/a', 'content': 'x' * 3000, 'score': 0.9},
+                {'title': 'Otro', 'url': 'https://unit42.example/b', 'content': 'breve', 'score': 0.5},
+            ]
+        })
+        with patch('requests.post', return_value=mock_resp) as mock_post:
+            result = client.search('lockbit', restrict_to_security_domains=True)
+
+        assert result['found'] is True
+        assert len(result['results']) == 2
+        # contenido truncado a 1500 chars
+        assert len(result['results'][0]['content']) == 1500
+        # restricción de dominios enviada en el payload
+        payload = mock_post.call_args.kwargs['json']
+        assert payload['include_domains'] == client.SECURITY_DOMAINS
+
+    def test_search_quota_exhausted(self, app_ctx):
+        from app.services.new_api_clients import TavilySearchClient
+        client = TavilySearchClient()
+        client.api_key = 'test-key'
+        with patch('requests.post', return_value=make_response(429, {})):
+            result = client.search('query')
+        assert 'error' in result
+        assert 'cuota' in result['error'].lower() or 'rate' in result['error'].lower()
+
+    def test_search_empty_results(self, app_ctx):
+        from app.services.new_api_clients import TavilySearchClient
+        client = TavilySearchClient()
+        client.api_key = 'test-key'
+        with patch('requests.post', return_value=make_response(200, {'results': []})):
+            result = client.search('nada')
+        assert result['found'] is False
+        assert result['results'] == []

@@ -151,7 +151,7 @@ class SessionManager:
     
     def get_session(self, session_id: int) -> Optional[InvestigationSession]:
         """Obtiene una sesión por ID"""
-        return InvestigationSession.query.get(session_id)
+        return db.session.get(InvestigationSession, session_id)
     
     def get_user_sessions(
         self, 
@@ -264,7 +264,7 @@ class SessionManager:
         # Actualizar título si es el primer IOC y no tiene título personalizado
         session = self.get_session(session_id)
         if session and session.total_iocs == 1:
-            ioc = IOC.query.get(ioc_id)
+            ioc = db.session.get(IOC, ioc_id)
             if ioc and 'Nueva investigación' in (session.title or ''):
                 session.title = session.generate_title(ioc.value, ioc.ioc_type)
                 db.session.commit()
@@ -568,15 +568,16 @@ RESUMEN:"""
             
             # Agregar datos completos del análisis si existe
             if sioc.analysis:
+                from app.models.ioc import IOCAnalysis
                 ioc_dict['analysis_details'] = {
-                    'virustotal_data': sioc.analysis.virustotal_data,
-                    'abuseipdb_data': sioc.analysis.abuseipdb_data,
-                    'greynoise_data': sioc.analysis.greynoise_data,
-                    'threatfox_data': sioc.analysis.threatfox_data,
+                    f'{api}_data': getattr(sioc.analysis, f'{api}_data')
+                    for api in IOCAnalysis.api_source_names()
+                }
+                ioc_dict['analysis_details'].update({
                     'llm_analysis': sioc.analysis.llm_analysis,
                     'mitre_techniques': sioc.analysis.mitre_techniques,
                     'sources_used': sioc.analysis.sources_used
-                }
+                })
             
             iocs_data.append(ioc_dict)
         

@@ -145,14 +145,13 @@ class ReportGenerator:
                 spaceAfter=8
             ))
 
-            styles.add(ParagraphStyle(
-                name='BodyText',
-                parent=styles['Normal'],
-                fontSize=10,
-                textColor=HexColor(self.COLORS['dark']),
-                alignment=TA_JUSTIFY,
-                spaceAfter=8
-            ))
+            # 'BodyText' ya existe en getSampleStyleSheet — ajustar el existente,
+            # re-registrarlo lanza KeyError y aborta todo el PDF
+            body = styles['BodyText']
+            body.fontSize = 10
+            body.textColor = HexColor(self.COLORS['dark'])
+            body.alignment = TA_JUSTIFY
+            body.spaceAfter = 8
 
             styles.add(ParagraphStyle(
                 name='SmallText',
@@ -343,6 +342,20 @@ class ReportGenerator:
                             f"<b>MITRE ATT&CK:</b> {', '.join(mitre)}",
                             styles['SmallText']
                         ))
+
+                    # Datos técnicos de APIs (opcional)
+                    if include_api_details:
+                        from xml.sax.saxutils import escape as xml_escape
+                        from app.models.ioc import IOCAnalysis
+                        for api_name in (f'{api}_data' for api in IOCAnalysis.api_source_names()):
+                            api_data = analysis_details.get(api_name)
+                            if api_data and isinstance(api_data, dict) and not api_data.get('error'):
+                                raw = json.dumps(api_data, indent=2, default=str)[:500]
+                                story.append(Paragraph(
+                                    f"<b>{api_name.replace('_data', '').upper()}:</b> "
+                                    f"<font size=\"6\">{xml_escape(raw)}</font>",
+                                    styles['SmallText']
+                                ))
 
                     story.append(Spacer(1, 0.3 * inch))
             else:
@@ -682,7 +695,8 @@ class ReportGenerator:
 
                     # Datos técnicos de APIs (opcional)
                     if include_api_details:
-                        for api_name in ['virustotal_data', 'abuseipdb_data', 'greynoise_data', 'threatfox_data']:
+                        from app.models.ioc import IOCAnalysis
+                        for api_name in (f'{api}_data' for api in IOCAnalysis.api_source_names()):
                             api_data = analysis_details.get(api_name)
                             if api_data and isinstance(api_data, dict) and not api_data.get('error'):
                                 p = doc.add_paragraph()

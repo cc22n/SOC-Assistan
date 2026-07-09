@@ -135,6 +135,8 @@ def _resolve_method(api_name: str, client: Any, ioc: str, ioc_type: str) -> Opti
         ('censys', 'ip'):           lambda: client.check_ip(ioc),
 
         ('ipinfo', 'ip'):           lambda: client.check_ip(ioc),
+
+        ('ipgeolocation', 'ip'):    lambda: client.check_ip(ioc),
     }
 
     return method_map.get((api_name, ioc_type))

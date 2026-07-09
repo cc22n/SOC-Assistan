@@ -76,6 +76,10 @@ class Config:
         'ipinfo': os.environ.get('IPINFO_TOKEN'),
         'ipgeolocation': os.environ.get('IPGEOLOCATION_API_KEY'),
 
+        # === Búsqueda web (Deep Analysis) ===
+        # Acepta ambas grafías: en Windows os.environ es case-insensitive, en Linux no
+        'tavily': os.environ.get('TAVILY_API_KEY') or os.environ.get('Tavily_API_KEY'),
+
         # === LLM Providers ===
         'xai': os.environ.get('XAI_API_KEY'),
         'openai': os.environ.get('OPENAI_API_KEY'),
@@ -108,6 +112,7 @@ class Config:
         'censys': 8,                 # 250/mes ≈ 8/día
         'ipinfo': 333,              # 10K/mes ≈ 333/día (lite)
         'ipgeolocation': 1000,      # 1K/día forever free (1 crédito/lookup)
+        'tavily': 33,               # 1K créditos/mes ≈ 33/día (búsqueda web)
     }
 
     # ==========================================================================

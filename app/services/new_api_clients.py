@@ -1254,6 +1254,82 @@ class IPGeolocationClient:
             return {'error': str(e)}
 
 
+class TavilySearchClient:
+    """
+    Cliente para Tavily Search API — búsqueda web pensada para LLMs.
+    Devuelve contenido extraído de las páginas, no solo links.
+    Plan gratis: 1000 créditos/mes (búsqueda basic = 1 crédito).
+    Usado por Deep Analysis para OSINT web; no es una API de IOCs.
+    """
+
+    # Fuentes de seguridad confiables — reduce ruido SEO y contenido basura
+    SECURITY_DOMAINS = [
+        'bleepingcomputer.com', 'thehackernews.com', 'unit42.paloaltonetworks.com',
+        'blog.talosintelligence.com', 'securelist.com', 'welivesecurity.com',
+        'mandiant.com', 'crowdstrike.com', 'abuse.ch', 'virustotal.com',
+        'shadowserver.org', 'cisa.gov', 'attack.mitre.org',
+    ]
+
+    def __init__(self):
+        self.base_url = "https://api.tavily.com/search"
+        self.api_key = current_app.config.get('API_KEYS', {}).get('tavily')
+
+    def search(self, query: str, max_results: int = 5,
+               include_domains: Optional[list] = None,
+               restrict_to_security_domains: bool = False) -> Dict:
+        """
+        Busca en la web y retorna resultados con contenido extraído.
+
+        Returns:
+            {'found': bool, 'query': str, 'results': [{'title','url','content','score'}]}
+            o {'error': str}
+        """
+        if not self.api_key:
+            return {'error': 'API key no configurada (TAVILY_API_KEY)'}
+
+        payload = {
+            'query': query[:400],
+            'search_depth': 'basic',
+            'max_results': max_results,
+        }
+        if include_domains:
+            payload['include_domains'] = include_domains
+        elif restrict_to_security_domains:
+            payload['include_domains'] = self.SECURITY_DOMAINS
+
+        try:
+            response = requests.post(
+                self.base_url,
+                json=payload,
+                headers={
+                    'Authorization': f'Bearer {self.api_key}',
+                    'Content-Type': 'application/json',
+                },
+                timeout=20
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                results = [
+                    {
+                        'title': r.get('title', ''),
+                        'url': r.get('url', ''),
+                        'content': (r.get('content') or '')[:1500],
+                        'score': r.get('score', 0),
+                    }
+                    for r in data.get('results', [])
+                ]
+                return {'found': bool(results), 'query': query, 'results': results}
+            elif response.status_code == 401:
+                return {'error': 'API key inválida'}
+            elif response.status_code == 429:
+                return {'error': 'Rate limit / cuota mensual de Tavily agotada'}
+            return {'error': f'HTTP {response.status_code}'}
+        except Exception as e:
+            logger.error(f"Tavily search error: {e}")
+            return {'error': str(e)}
+
+
 # ==============================================================================
 # CLIENTE UNIFICADO DE TODAS LAS APIs
 # ==============================================================================
