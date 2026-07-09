@@ -215,6 +215,7 @@ def audit_action(
                 resource_type=resource_type,
                 resource_id=res_id,
                 success=success,
+                _commit=True,
             )
 
             return result

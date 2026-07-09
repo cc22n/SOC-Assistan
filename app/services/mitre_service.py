@@ -202,8 +202,8 @@ class MITREService:
         q = query.strip().upper()
         techniques = MITRETechnique.query.filter(
             db.or_(
-                MITRETechnique.technique_id.ilike(f'%{q}%'),
-                MITRETechnique.name.ilike(f'%{query}%')
+                MITRETechnique.technique_id.contains(q, autoescape=True),
+                MITRETechnique.name.contains(query, autoescape=True)
             )
         ).limit(limit).all()
 

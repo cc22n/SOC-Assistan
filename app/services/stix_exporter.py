@@ -51,12 +51,13 @@ class STIXExporter:
         - Relationships (vincula todo)
         """
         from app.models.ioc import IOCAnalysis, IOC
+        from app import db
 
-        analysis = IOCAnalysis.query.get(analysis_id)
+        analysis = db.session.get(IOCAnalysis, analysis_id)
         if not analysis:
             return {'error': f'Analysis {analysis_id} not found'}
 
-        ioc = IOC.query.get(analysis.ioc_id)
+        ioc = db.session.get(IOC, analysis.ioc_id)
         if not ioc:
             return {'error': 'IOC not found'}
 
@@ -92,8 +93,9 @@ class STIXExporter:
     def export_incident(self, incident_id: int) -> Dict:
         """Exporta un incidente completo como STIX Bundle"""
         from app.models.ioc import Incident, IncidentIOC, IOC, IOCAnalysis
+        from app import db
 
-        incident = Incident.query.get(incident_id)
+        incident = db.session.get(Incident, incident_id)
         if not incident:
             return {'error': f'Incident {incident_id} not found'}
 
@@ -107,11 +109,11 @@ class STIXExporter:
         indicator_ids = []
 
         for link in linked:
-            ioc = IOC.query.get(link.ioc_id)
+            ioc = db.session.get(IOC, link.ioc_id)
             if not ioc:
                 continue
 
-            analysis = IOCAnalysis.query.get(link.analysis_id) if link.analysis_id else None
+            analysis = db.session.get(IOCAnalysis, link.analysis_id) if link.analysis_id else None
             indicator = self._ioc_to_indicator(ioc, analysis)
             objects.append(indicator)
             indicator_ids.append(indicator['id'])
@@ -124,11 +126,12 @@ class STIXExporter:
     def export_iocs_bulk(self, ioc_ids: List[int]) -> Dict:
         """Exporta múltiples IOCs como STIX Bundle"""
         from app.models.ioc import IOC, IOCAnalysis
+        from app import db
 
         objects = [self.identity]
 
         for ioc_id in ioc_ids:
-            ioc = IOC.query.get(ioc_id)
+            ioc = db.session.get(IOC, ioc_id)
             if not ioc:
                 continue
 

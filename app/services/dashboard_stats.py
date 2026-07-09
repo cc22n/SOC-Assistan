@@ -12,6 +12,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from sqlalchemy import func, desc, and_
+from sqlalchemy.orm import joinedload
 from flask import current_app
 
 logger = logging.getLogger(__name__)
@@ -220,7 +221,10 @@ class DashboardStatsService:
 
             # Buscar en ip_api_data y criminal_ip_data
             # Incluir TODOS los niveles de riesgo que tengan geodata
-            query = db.session.query(IOCAnalysis).filter(
+            query = db.session.query(IOCAnalysis).options(
+                joinedload(IOCAnalysis.ioc),
+                joinedload(IOCAnalysis.analyst)
+            ).filter(
                 IOCAnalysis.created_at >= since
             )
 
@@ -406,7 +410,10 @@ class DashboardStatsService:
             from app.models.ioc import IOCAnalysis
             from app import db
 
-            query = db.session.query(IOCAnalysis).order_by(
+            query = db.session.query(IOCAnalysis).options(
+                joinedload(IOCAnalysis.ioc),
+                joinedload(IOCAnalysis.analyst)
+            ).order_by(
                 IOCAnalysis.created_at.desc()
             )
 
@@ -442,7 +449,10 @@ class DashboardStatsService:
 
             since = datetime.utcnow() - timedelta(days=days)
 
-            query = db.session.query(IOCAnalysis).filter(
+            query = db.session.query(IOCAnalysis).options(
+                joinedload(IOCAnalysis.ioc),
+                joinedload(IOCAnalysis.analyst)
+            ).filter(
                 IOCAnalysis.created_at >= since,
                 IOCAnalysis.risk_level.in_(['CRÍTICO', 'ALTO'])
             ).order_by(

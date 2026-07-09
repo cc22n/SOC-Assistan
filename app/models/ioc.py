@@ -15,6 +15,7 @@ from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSON, JSONB, UUID
+from sqlalchemy.orm import validates
 from app import db
 import uuid
 
@@ -99,8 +100,9 @@ class IOC(db.Model):
                  postgresql_ops={'value': 'gin_trgm_ops'}),
     )
 
-    def to_dict(self):
-        latest_analysis = self.analyses.order_by(IOCAnalysis.created_at.desc()).first()
+    def to_dict(self, latest_analysis=None):
+        if latest_analysis is None:
+            latest_analysis = self.analyses.order_by(IOCAnalysis.created_at.desc()).first()
         return {
             'id': self.id,
             'uuid': str(self.uuid),
@@ -170,6 +172,8 @@ class IOCAnalysis(db.Model):
     # APIs v3.1
     censys_data = db.Column(JSONB)  # NUEVO v3.1 (Platform API v3)
     ipinfo_data = db.Column(JSONB)  # NUEVO v3.1 (Lite, geoloc + ASN)
+    ipgeolocation_data = db.Column(JSONB)  # NUEVO v3.2 (geoloc + ASN + timezone)
+    web_search_data = db.Column(JSONB)  # NUEVO v3.2 (OSINT web Tavily — Deep Analysis)
 
     # =========================================================================
     # Análisis LLM y MITRE
@@ -193,6 +197,26 @@ class IOCAnalysis(db.Model):
         db.Index('idx_virustotal_data', 'virustotal_data', postgresql_using='gin'),
         db.Index('idx_mitre_techniques', 'mitre_techniques', postgresql_using='gin'),
     )
+
+    @validates('risk_level')
+    def _normalize_risk_level(self, key, value):
+        """
+        Grafía canónica: 'CRÍTICO' (con tilde). Normaliza variantes ASCII
+        que llegan de LLMs o datos antiguos para que una sola grafía
+        exista en BD y las queries no necesiten filtros duales.
+        """
+        if not value:
+            return value
+        v = str(value).strip().upper()
+        return 'CRÍTICO' if v == 'CRITICO' else v
+
+    @classmethod
+    def api_source_names(cls):
+        """
+        Nombres de las APIs con columna *_data en este modelo.
+        Derivado del esquema para que nunca se desincronice al agregar una API.
+        """
+        return [c.name[:-5] for c in cls.__table__.columns if c.name.endswith('_data')]
 
     def to_dict(self, include_details=True):
         data = {
@@ -239,6 +263,8 @@ class IOCAnalysis(db.Model):
                 # APIs v3.1
                 'censys': self.censys_data,
                 'ipinfo': self.ipinfo_data,
+                'ipgeolocation': self.ipgeolocation_data,
+                'web_search': self.web_search_data,
 
                 # LLM y MITRE
                 'llm_analysis': self.llm_analysis,
@@ -330,6 +356,30 @@ class Incident(db.Model):
         db.Index('idx_incident_status_severity', 'status', 'severity'),
         db.Index('idx_incident_created', 'created_at'),
     )
+
+    def is_visible_to(self, user) -> bool:
+        """
+        Regla única de visibilidad de incidentes:
+        admin ve todo; el resto solo lo que creó o tiene asignado.
+        """
+        return (
+            getattr(user, 'role', None) == 'admin'
+            or self.created_by == user.id
+            or self.assigned_to == user.id
+        )
+
+    @classmethod
+    def visibility_criterion(cls, user):
+        """Criterio SQLAlchemy de visibilidad, o None si el usuario ve todo (admin)."""
+        if getattr(user, 'role', None) == 'admin':
+            return None
+        return db.or_(cls.created_by == user.id, cls.assigned_to == user.id)
+
+    @classmethod
+    def visible_to(cls, user):
+        """Query base de incidentes visibles para el usuario (misma regla que is_visible_to)."""
+        criterion = cls.visibility_criterion(user)
+        return cls.query if criterion is None else cls.query.filter(criterion)
 
     @staticmethod
     def generate_ticket_id():
