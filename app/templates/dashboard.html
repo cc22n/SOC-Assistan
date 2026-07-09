@@ -9,29 +9,63 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
+    /* Tarjetas de stats */
     .stat-card {
-        @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700;
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.05);
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
     }
     .stat-value {
-        @apply text-3xl font-bold text-gray-900 dark:text-white;
+        font-size: 1.875rem;
+        line-height: 2.25rem;
+        font-weight: 700;
+        color: #111827;
     }
     .stat-label {
-        @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
     }
     .stat-icon {
-        @apply w-12 h-12 rounded-lg flex items-center justify-center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
+
+    /* Contenedores de gráficas */
     .chart-container {
-        @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700;
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.05);
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
     }
+
+    /* Badges de riesgo — nombres en español generados por JS via risk_level.toLowerCase() */
     .risk-badge {
-        @apply px-2 py-1 rounded-full text-xs font-semibold;
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
     }
-    .risk-critico { @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200; }
-    .risk-alto { @apply bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200; }
-    .risk-medio { @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200; }
-    .risk-bajo { @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200; }
-    .risk-limpio { @apply bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200; }
+    /* "crítico" con tilde (toLowerCase directo) y sin tilde (replace 'í'→'i') */
+    .risk-cr\00edtico,
+    .risk-critico  { background-color: #fee2e2; color: #991b1b; }
+    .risk-alto     { background-color: #ffedd5; color: #9a3412; }
+    .risk-medio    { background-color: #fef9c3; color: #854d0e; }
+    .risk-bajo     { background-color: #dcfce7; color: #166534; }
+    .risk-limpio   { background-color: #e0f2fe; color: #075985; }
+
+    /* Mapa */
     #threatMap { height: 300px; border-radius: 0.5rem; }
 </style>
 {% endblock %}
@@ -253,6 +287,7 @@
 <script>
 // Variables globales para charts
 let riskChart, apiChart, timelineChart, apiHealthChart, threatMap;
+let _statsController = null; // AbortController activo para loadAllStats
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
@@ -401,11 +436,16 @@ function initMap() {
 }
 
 async function loadAllStats() {
+    // Cancela cualquier request anterior en vuelo antes de iniciar uno nuevo
+    if (_statsController) _statsController.abort();
+    _statsController = new AbortController();
+    const { signal } = _statsController;
+
     const days = document.getElementById('periodSelector').value;
     const userOnly = document.getElementById('userOnlyToggle').checked;
 
     try {
-        const response = await fetch(`/dashboard/api/stats?days=${days}&user_only=${userOnly}`);
+        const response = await fetch(`/dashboard/api/stats?days=${days}&user_only=${userOnly}`, { signal });
         const data = await response.json();
 
         if (data.success) {
@@ -419,6 +459,7 @@ async function loadAllStats() {
             try { updateApiHealth(data.stats.api_usage); } catch(e) { console.error('API health error:', e); }
         }
     } catch (error) {
+        if (error.name === 'AbortError') return; // request cancelado intencionalmente
         console.error('Error loading stats:', error);
     }
 }
@@ -470,11 +511,11 @@ function updateTopThreats(threats) {
     container.innerHTML = threats.map(t => `
         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${t.ioc}</p>
-                <p class="text-xs text-gray-500">${t.ioc_type}</p>
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${escapeHtml(t.ioc)}</p>
+                <p class="text-xs text-gray-500">${escapeHtml(t.ioc_type)}</p>
             </div>
             <div class="ml-4 flex items-center space-x-2">
-                <span class="risk-badge risk-${t.risk_level.toLowerCase()}">${t.risk_level}</span>
+                <span class="risk-badge risk-${t.risk_level.toLowerCase().replace('í','i')}">${t.risk_level}</span>
                 <span class="text-sm font-semibold">${t.confidence}%</span>
             </div>
         </div>
@@ -491,9 +532,9 @@ function updateRecentTable(analyses) {
 
     tbody.innerHTML = analyses.map(a => `
         <tr class="border-t border-gray-200 dark:border-gray-700">
-            <td class="py-2 font-mono text-xs truncate max-w-[150px]" title="${a.ioc}">${a.ioc}</td>
-            <td class="py-2">${a.ioc_type}</td>
-            <td class="py-2"><span class="risk-badge risk-${a.risk_level.toLowerCase()}">${a.risk_level}</span></td>
+            <td class="py-2 font-mono text-xs truncate max-w-[150px]" title="${escapeHtml(a.ioc)}">${escapeHtml(a.ioc)}</td>
+            <td class="py-2">${escapeHtml(a.ioc_type)}</td>
+            <td class="py-2"><span class="risk-badge risk-${a.risk_level.toLowerCase().replace('í','i')}">${a.risk_level}</span></td>
             <td class="py-2">${a.confidence}%</td>
             <td class="py-2 text-gray-500">${new Date(a.created_at).toLocaleDateString()}</td>
         </tr>
@@ -520,7 +561,7 @@ function updateGeoMap(geoData) {
                 weight: 1,
                 fillOpacity: 0.8
             }).addTo(threatMap)
-              .bindPopup(`<b>${m.ioc}</b><br>${m.city || ''}, ${m.country}<br>Riesgo: ${m.risk}`);
+              .bindPopup(`<b>${escapeHtml(m.ioc)}</b><br>${escapeHtml(m.city || '')}, ${escapeHtml(m.country)}<br>Riesgo: ${escapeHtml(m.risk)}`);
         });
     }
 

@@ -287,9 +287,9 @@ function renderCard(inc) {
                 <span class="text-xs font-mono text-gray-400">${inc.ticket_id}</span>
                 <span class="text-xs font-bold px-2 py-0.5 rounded-full border ${sevClass}">${inc.severity}</span>
             </div>
-            <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">${inc.title}</h4>
+            <h4 class="text-sm font-semibold text-gray-800 mb-1 line-clamp-2">${escapeHtml(inc.title)}</h4>
             <div class="flex items-center justify-between text-xs text-gray-500 mt-2">
-                <span>${inc.assigned_to ? '<i class="fas fa-user mr-1"></i>' + inc.assigned_to : '<span class="text-gray-400">Sin asignar</span>'}</span>
+                <span>${inc.assigned_to ? '<i class="fas fa-user mr-1"></i>' + escapeHtml(inc.assigned_to) : '<span class="text-gray-400">Sin asignar</span>'}</span>
                 <span>${timeAgo}</span>
             </div>
             ${inc.ioc_count > 0 ? `<div class="mt-2 text-xs text-indigo-600"><i class="fas fa-link mr-1"></i>${inc.ioc_count} IOC(s)</div>` : ''}
@@ -341,7 +341,7 @@ function showCreateModal(options = {}) {
             list.innerHTML = options.ioc_details.map(ioc => `
                 <div class="flex items-center gap-2 p-1.5 bg-gray-50 rounded">
                     <span class="risk-badge risk-${(ioc.risk_level || 'bajo').toLowerCase()} text-xs">${ioc.risk_level || 'N/A'}</span>
-                    <span class="font-mono text-xs">${ioc.value}</span>
+                    <span class="font-mono text-xs">${escapeHtml(ioc.value)}</span>
                 </div>
             `).join('');
         } else {
@@ -410,6 +410,7 @@ async function submitIncident() {
         showToast('Error de conexion', 'error');
     }
 }
+
 
 // Exponer globalmente para uso desde otros templates
 window.showCreateModal = showCreateModal;

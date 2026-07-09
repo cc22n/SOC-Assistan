@@ -279,9 +279,9 @@ async function loadTimeline() {
                 <div class="flex gap-3">
                     <div class="flex-shrink-0 mt-1"><i class="${icon} text-sm"></i></div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm text-gray-800">${event.description}${source}</p>
+                        <p class="text-sm text-gray-800">${escapeHtml(event.description)}${source}</p>
                         <div class="text-xs text-gray-400 mt-0.5">
-                            ${event.user ? event.user + ' · ' : ''}${time}
+                            ${event.user ? escapeHtml(event.user) + ' · ' : ''}${time}
                         </div>
                     </div>
                 </div>
@@ -357,6 +357,7 @@ async function submitStatusChange() {
         showToast('Error', 'error');
     }
 }
+
 
 function formatDate(iso) {
     if (!iso) return '-';

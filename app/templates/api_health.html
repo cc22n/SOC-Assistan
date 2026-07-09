@@ -28,15 +28,15 @@
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-500">
-            <div class="text-2xl font-bold text-green-600">{{ total_apis - open_count - half_count }}</div>
+            <div id="stat-apis-ok" class="text-2xl font-bold text-green-600">{{ total_apis - open_count - half_count }}</div>
             <div class="text-sm text-gray-500">APIs Operativas</div>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-red-500">
-            <div class="text-2xl font-bold text-red-600">{{ open_count }}</div>
+            <div id="stat-open" class="text-2xl font-bold text-red-600">{{ open_count }}</div>
             <div class="text-sm text-gray-500">Circuito ABIERTO</div>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-yellow-500">
-            <div class="text-2xl font-bold text-yellow-600">{{ half_count }}</div>
+            <div id="stat-half-open" class="text-2xl font-bold text-yellow-600">{{ half_count }}</div>
             <div class="text-sm text-gray-500">En prueba (HALF-OPEN)</div>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-indigo-500">
@@ -251,7 +251,34 @@
 </div>
 
 <script>
-// Auto-refresh cada 30 segundos
-setTimeout(() => location.reload(), 30000);
+// Actualiza resumen de circuit breakers sin recargar la página completa
+async function refreshHealthSummary() {
+    try {
+        const r = await fetch('/api/v2/health');
+        if (!r.ok) return;
+        const d = await r.json();
+
+        const cbs = d.circuit_breakers || {};
+        const total = Object.keys(cbs).length;
+        const openCnt = d.open_circuits ?? Object.values(cbs).filter(s => s.state === 'OPEN').length;
+        const halfCnt = Object.values(cbs).filter(s => s.state === 'HALF_OPEN').length;
+
+        const ok = document.getElementById('stat-apis-ok');
+        const op = document.getElementById('stat-open');
+        const hp = document.getElementById('stat-half-open');
+        const ts = document.getElementById('last-refresh');
+
+        if (ok) ok.textContent = total - openCnt - halfCnt;
+        if (op) op.textContent = openCnt;
+        if (hp) hp.textContent = halfCnt;
+        if (ts && d.timestamp) {
+            const dt = new Date(d.timestamp + 'Z');
+            ts.textContent = dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    } catch (_) { /* red error — silencioso, no interrumpir al analista */ }
+}
+
+// Auto-refresh parcial cada 30 s (sin perder scroll ni estado de UI)
+setInterval(refreshHealthSummary, 30000);
 </script>
 {% endblock %}
