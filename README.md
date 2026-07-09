@@ -10,6 +10,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![APIs](https://img.shields.io/badge/Threat_Intel_APIs-19-red)
 ![LLMs](https://img.shields.io/badge/LLM_Providers-5-purple)
+![Tests](https://img.shields.io/badge/Tests-375_passing-brightgreen)
 
 *Analyze IOCs, generate professional reports, and manage security incidents from a single interface.*
 
@@ -21,13 +22,15 @@
 
 ## What is SOC Agent?
 
-SOC Agent is a web-based threat intelligence platform designed for Security Operations Center (SOC) analysts. It integrates **19 threat intelligence APIs** and **5 LLM providers** to analyze Indicators of Compromise (IOCs) such as IPs, domains, hashes, and URLs.
+SOC Agent is a web-based threat intelligence platform designed for Security Operations Center (SOC) analysts. It integrates **19 threat intelligence APIs**, **web OSINT search (Tavily)** and **5 LLM providers** to analyze Indicators of Compromise (IOCs) such as IPs, domains, hashes, and URLs.
 
 The system enables analysts to:
 - Analyze IOCs against multiple sources simultaneously
 - Get AI-powered intelligent analysis with automatic LLM routing
+- Chat with an AI SOC assistant that remembers past investigations and correlates threats
+- Run deep analysis with a 2-step web search agent (LLM-planned queries + cited synthesis)
 - Manage incidents with Kanban board and timeline views
-- Chat with an AI SOC assistant that maintains investigation context
+- Whitelist known false positives so they skip analysis
 - Generate professional reports in PDF and DOCX formats
 - Correlate IOCs with MITRE ATT&CK techniques
 - Monitor API health, circuit breakers, and performance metrics in real time
@@ -79,11 +82,12 @@ The system enables analysts to:
 | Category | APIs |
 |----------|------|
 | **Reputation** | VirusTotal, AbuseIPDB, GreyNoise, Pulsedive |
-| **Infrastructure** | Shodan, Shodan InternetDB, Criminal IP, SecurityTrails |
+| **Infrastructure** | Shodan, Shodan InternetDB, Criminal IP, SecurityTrails, Censys |
 | **Malware** | ThreatFox, MalwareBazaar, Hybrid Analysis |
 | **URLs** | URLhaus, URLScan, Google Safe Browsing |
 | **Intelligence** | AlienVault OTX |
-| **Geolocation** | IP-API (free, no key required) |
+| **Geolocation** | IP-API (no key required), IPinfo, IPGeolocation.io |
+| **Web OSINT** | Tavily Search (LLM-oriented web search, used by Deep Analysis) |
 
 ### LLM Providers (5)
 
@@ -108,13 +112,23 @@ The orchestrator automatically routes each analysis to the optimal provider base
 - Automatic MITRE ATT&CK technique mapping
 - Smart LLM routing: provider selected automatically by IOC type and depth
 - Pydantic validation of all API responses (detects unexpected schema changes)
+- IOC whitelist: known false positives skip analysis (managed via API, audited)
 
 ### AI SOC Chat
 - Investigation assistant with persistent context
-- Investigation sessions with full history
-- Automatic correlation of IOCs analyzed in the session
+- Investigation sessions with full history and auto-compressed summaries
+- **Cross-session memory**: warns when an IOC was already investigated before (when, risk, in which investigation)
+- **Threat correlation graph**: flags previous IOCs sharing malware family, MITRE techniques, ASN or incident ("possible same campaign") — pure SQL, no LLM cost
+- Smart re-query: if a question needs data not yet fetched, only the missing APIs are called and results are persisted
 - Session export (JSON, Markdown, PDF, DOCX)
 - LLM provider selector (xAI, OpenAI, Groq, Gemini, Claude)
+
+### Deep Analysis + Web OSINT Agent
+- Full pipeline: 19 APIs + web search + IOC correlation + APT attribution + attack hypothesis
+- **2-step web search agent**: an LLM plans targeted queries from API findings (malware family, ASN — not the raw IOC), Tavily searches with extracted page content restricted to trusted security domains, and a second LLM synthesizes findings **with mandatory citations**
+- Broad-retry fallback when targeted queries find nothing; static fallback when no LLM is available
+- Web content treated as untrusted (anti prompt-injection guard); claims without a source are not asserted
+- Web search results cached in PostgreSQL with 24h TTL (saves Tavily credits and LLM calls)
 
 ### Incident Management
 - Kanban board view (Open, Investigating, Resolved, Closed)
@@ -141,10 +155,12 @@ The orchestrator automatically routes each analysis to the optimal provider base
 - Professional PDF generation with ReportLab
 - Editable DOCX generation with python-docx
 - Executive summary, IOCs, MITRE ATT&CK, recommendations
+- Optional raw API data per IOC (`?include_api_details=true`) in both PDF and DOCX
 
 ### Security
 - Authentication with Flask-Login + password hashing (Werkzeug)
 - RBAC with 4 roles: `viewer`, `analyst`, `senior_analyst`, `admin`
+- Admin-only user creation (first user bootstraps as admin; role assigned at creation)
 - CSRF protection on all forms
 - Rate limiting by IP and endpoint
 - Anti-injection middleware (SQLi, XSS, Command Injection, Path Traversal)
@@ -233,7 +249,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
 
 ### 8. Create an account
 
-Navigate to `http://localhost:5000/auth/register`. The first registered user becomes **administrator**.
+Navigate to `http://localhost:5000/auth/register`. The **first registered user becomes administrator** (bootstrap). After that, registration is admin-only: administrators create new users and assign their role from the same form.
 
 ---
 
@@ -252,6 +268,8 @@ You don't need all APIs to use SOC Agent. The system works with whatever APIs yo
 | URLhaus | No key required | — |
 | ThreatFox | No key required | — |
 | MalwareBazaar | No key required | — |
+| IPGeolocation.io | 1000 req/day | [ipgeolocation.io](https://ipgeolocation.io/signup.html) |
+| Tavily (web OSINT) | 1000 credits/month | [tavily.com](https://app.tavily.com/) |
 
 For LLMs, [Groq](https://console.groq.com/) offers free access. [Anthropic](https://console.anthropic.com/) and [OpenAI](https://platform.openai.com/) are paid.
 
@@ -283,9 +301,10 @@ soc-agent/
 │   │   ├── api.py               # Request schemas (Pydantic v2)
 │   │   └── api_responses.py     # Response schemas for TI APIs
 │   ├── services/
-│   │   ├── threat_intel.py      # API coordinator
-│   │   ├── new_api_clients.py   # 19 API clients with circuit breakers
-│   │   ├── llm_orchestrator.py  # Smart LLM routing by IOC type
+│   │   ├── new_api_clients.py   # 19 API clients + Tavily, with circuit breakers
+│   │   ├── llm_orchestrator.py  # Smart LLM routing, chat memory + correlation graph
+│   │   ├── deep_analysis_service.py # Deep analysis + 2-step web search agent
+│   │   ├── async_executor.py    # Parallel API execution (asyncio)
 │   │   ├── llm_service.py       # LLM communication (5 providers)
 │   │   ├── ioc_cache.py         # Cache with TTL by type and risk
 │   │   ├── session_manager.py   # Chat session management
@@ -296,6 +315,7 @@ soc-agent/
 │   │   └── openapi.py           # Full OpenAPI spec
 │   └── utils/
 │       ├── auth.py              # RBAC: @require_role decorator
+│       ├── responses.py         # Shared debug-gated 500 error helper
 │       ├── circuit_breaker.py   # APICircuitBreaker (CLOSED/OPEN/HALF-OPEN)
 │       ├── metrics.py           # Sliding window P50/P95/P99 metrics
 │       ├── security.py          # Prompt injection sanitizer
@@ -304,7 +324,7 @@ soc-agent/
 ├── migrations/                  # SQL migrations
 │   └── add_performance_indexes_and_audit.sql
 ├── tests/
-│   └── unit/                    # pytest test suite (180+ tests)
+│   └── unit/                    # pytest test suite (375 tests)
 ├── .env.example                 # Configuration template
 ├── requirements.txt             # Python dependencies
 ├── wsgi.py                      # WSGI entry point
