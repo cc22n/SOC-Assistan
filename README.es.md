@@ -4,6 +4,7 @@
 
 ### Plataforma de Threat Intelligence con IA para Analistas SOC
 
+[![CI](https://github.com/cc22n/SOC-Assistan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cc22n/SOC-Assistan/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green?logo=flask&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql&logoColor=white)
@@ -181,6 +182,27 @@ El orchestrator enruta automáticamente cada análisis al proveedor óptimo seg�
 ---
 
 ## Instalación
+
+### Inicio rápido (Docker)
+
+La forma más rápida de probar SOC Agent — sin Python ni PostgreSQL locales:
+
+```bash
+git clone https://github.com/cc22n/SOC-Assistan.git
+cd SOC-Assistan
+
+# Opcional pero recomendado: API keys + SECRET_KEY para el contenedor
+cp .env.example .env.docker
+# Edita .env.docker: define SECRET_KEY (32+ caracteres) y las API keys que tengas
+
+docker compose up --build
+```
+
+Luego abre `http://localhost:5000`. El contenedor de la app espera a PostgreSQL, crea el esquema automáticamente (`db.create_all()` + índices de performance) y arranca gunicorn. El primer usuario registrado se convierte en administrador.
+
+> Nota: sin API keys la app funciona, pero las consultas de IOCs devolverán resultados vacíos. `DATABASE_URL`, `REDIS_URL` y `FLASK_ENV` los define `docker-compose.yml` y siempre apuntan a los servicios incluidos.
+
+### Instalación manual
 
 ### Prerrequisitos
 

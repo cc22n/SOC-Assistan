@@ -124,6 +124,6 @@ ROADMAP_FASE3.md
 # Claude Code / herramientas locales
 # =============================================================================
 .claude/*.lock
-
+graphify-out
 # Scripts manuales de prueba de APIs (experimentos locales, no son la suite)
 scripts/manual/

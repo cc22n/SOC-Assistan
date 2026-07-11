@@ -4,6 +4,7 @@
 
 ### AI-Powered Threat Intelligence Platform for SOC Analysts
 
+[![CI](https://github.com/cc22n/SOC-Assistan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cc22n/SOC-Assistan/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green?logo=flask&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql&logoColor=white)
@@ -181,6 +182,27 @@ The orchestrator automatically routes each analysis to the optimal provider base
 ---
 
 ## Installation
+
+### Quick Start (Docker)
+
+The fastest way to try SOC Agent — no local Python or PostgreSQL needed:
+
+```bash
+git clone https://github.com/cc22n/SOC-Assistan.git
+cd SOC-Assistan
+
+# Optional but recommended: API keys + SECRET_KEY for the container
+cp .env.example .env.docker
+# Edit .env.docker: set SECRET_KEY (32+ chars) and any API keys you have
+
+docker compose up --build
+```
+
+Then open `http://localhost:5000`. The app container waits for PostgreSQL, creates the schema automatically (`db.create_all()` + performance indexes) and starts gunicorn. The first registered user becomes administrator.
+
+> Note: without API keys the app runs, but IOC lookups will return empty results. `DATABASE_URL`, `REDIS_URL` and `FLASK_ENV` are set by `docker-compose.yml` and always point to the bundled services.
+
+### Manual installation
 
 ### Prerequisites
 
