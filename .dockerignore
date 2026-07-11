@@ -1,0 +1,40 @@
+# Secretos — NUNCA dentro de la imagen (compose los inyecta via env_file)
+.env
+.env.*
+!.env.example
+
+# Git / CI / tooling
+.git
+.github
+.gitignore
+.claude
+*.bundle
+
+# Python
+__pycache__
+**/__pycache__
+*.pyc
+venv
+.venv
+.pytest_cache
+
+# Artefactos locales
+logs
+*.log
+graphify-out
+htmlcov
+.coverage
+
+# No necesarios en runtime
+tests
+scripts/manual
+docker-compose.yml
+CLAUDE.md
+
+# Docs internos (locales, gitignored)
+BITACORA.md
+AGENTE_CONTEXTO.md
+CHANGELOG_BUGFIXES.md
+PLAN-PENDIENTES.md
+PLAN-MEJORAS.md
+ROADMAP_FASE3.md

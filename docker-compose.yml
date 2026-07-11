@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ===========================================
   # SOC Agent - Flask App
@@ -10,8 +8,12 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    # .env.docker: copia .env.example y define al menos SECRET_KEY (>=32 chars)
+    # y las API keys que tengas. Las variables de abajo tienen prioridad sobre
+    # el env_file, así que DATABASE_URL/REDIS_URL siempre apuntan a los servicios.
     env_file:
-      - .env.docker
+      - path: .env.docker
+        required: false
     environment:
       - DATABASE_URL=postgresql://soc_admin:soc_secure_password@db:5432/soc_agent
       - REDIS_URL=redis://redis:6379/0
@@ -41,7 +43,6 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U soc_admin -d soc_agent"]
       interval: 10s
@@ -51,14 +52,12 @@ services:
       - soc-network
 
   # ===========================================
-  # Redis (Cache & Rate Limiting)
+  # Redis (health check / cache opcional)
   # ===========================================
   redis:
     image: redis:7-alpine
     container_name: soc-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

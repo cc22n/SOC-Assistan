@@ -1,33 +1,28 @@
 FROM python:3.12-slim
 
-# Evitar prompts interactivos
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Dependencias del sistema para psycopg2
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Instalar dependencias Python
+# psycopg2-binary trae wheels precompilados: no hace falta gcc/libpq-dev
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar aplicacion
 COPY . .
 
-# Crear directorio de logs
-RUN mkdir -p /app/logs /app/instance
+# Usuario sin privilegios; logs/ debe existir y ser escribible (RotatingFileHandler)
+RUN useradd --create-home --shell /usr/sbin/nologin socagent \
+    && mkdir -p /app/logs /app/instance \
+    && chown -R socagent:socagent /app
+USER socagent
 
-# Puerto
 EXPOSE 5000
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5000/')" || exit 1
+    CMD python -c "import requests; requests.get('http://localhost:5000/', timeout=4)" || exit 1
 
-# Ejecutar con gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "3", "--timeout", "120", "wsgi:app"]
+# init_db.py espera a Postgres, crea el esquema (db.create_all) y aplica los
+# índices idempotentes de migrations/. Es Python (no .sh) para que los CRLF
+# de checkouts en Windows no rompan el arranque del contenedor.
+CMD ["sh", "-c", "python docker/init_db.py && exec gunicorn --bind 0.0.0.0:5000 --workers 3 --timeout 120 wsgi:app"]
