@@ -77,7 +77,9 @@ class Config:
         'ipgeolocation': os.environ.get('IPGEOLOCATION_API_KEY'),
 
         # === Búsqueda web (Deep Analysis) ===
-        # Acepta ambas grafías: en Windows os.environ es case-insensitive, en Linux no
+        # Grafía canónica: TAVILY_API_KEY. Se acepta la grafía legacy
+        # 'Tavily_API_KEY' por tolerancia con .env antiguos (en Linux
+        # os.environ es case-sensitive).
         'tavily': os.environ.get('TAVILY_API_KEY') or os.environ.get('Tavily_API_KEY'),
 
         # === LLM Providers ===
