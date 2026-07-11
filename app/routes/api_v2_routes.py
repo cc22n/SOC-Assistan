@@ -327,6 +327,8 @@ def chat_message(data: ChatMessageRequest):
             'response': result['response'],
             'requires_analysis': result.get('requires_analysis', False),
             'analysis_data': result.get('analysis_data'),
+            'ioc_history': result.get('ioc_history'),
+            'related_iocs': result.get('related_iocs'),
             'session_id': result.get('session_id'),
             'session_title': result.get('session_title'),
             'llm_provider': result.get('llm_provider'),

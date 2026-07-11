@@ -492,7 +492,10 @@ document.getElementById('chat-form').addEventListener('submit', async (e) => {
         const d = await r.json();
         removeTyping();
         if (d.success) {
-            addMessageToUI('assistant', d.response, d.analysis_data);
+            addMessageToUI('assistant', d.response, d.analysis_data, {
+                iocHistory: d.ioc_history || null,
+                relatedIocs: d.related_iocs || null
+            });
             if (d.analysis_data && currentSession) {
                 await loadSessionIOCs(currentSession.id);
                 document.getElementById('session-iocs-count').textContent = parseInt(document.getElementById('session-iocs-count').textContent) + 1;
@@ -502,7 +505,7 @@ document.getElementById('chat-form').addEventListener('submit', async (e) => {
     } catch (e) { removeTyping(); addMessageToUI('system', 'Error: ' + e.message); }
 });
 
-function addMessageToUI(role, content, analysis = null) {
+function addMessageToUI(role, content, analysis = null, intel = null) {
     const div = document.createElement('div');
     div.className = `message-${role} mb-4`;
     if (role === 'user') {
@@ -512,6 +515,24 @@ function addMessageToUI(role, content, analysis = null) {
         if (analysis) {
             html += `<div class="analysis-card"><div class="flex justify-between mb-1"><span class="font-semibold text-sm">Análisis</span><span class="risk-badge risk-${(analysis.risk_level||'medio').toLowerCase().replace('í','i')}">${analysis.risk_level||'N/A'}</span></div>
             <div class="text-xs text-gray-600"><p><b>IOC:</b> <code class="bg-gray-200 px-1 rounded">${escapeHtml(analysis.ioc)}</code></p><p><b>Score:</b> ${analysis.confidence_score}/100</p></div></div>`;
+        }
+        if (intel?.iocHistory?.times_analyzed > 0) {
+            const h = intel.iocHistory;
+            const riskCls = (h.last_risk_level || 'medio').toLowerCase().replace('í', 'i');
+            const when = h.last_analyzed_at ? new Date(h.last_analyzed_at).toLocaleDateString() : '';
+            html += `<div class="analysis-card"><div class="text-xs text-gray-600">🕘 <b>Visto antes:</b> ${h.times_analyzed} análisis previo${h.times_analyzed > 1 ? 's' : ''} · último: <span class="risk-badge risk-${riskCls}">${escapeHtml(h.last_risk_level || 'N/A')}</span> ${escapeHtml(when)}</div>`;
+            if (h.previous_sessions?.length) {
+                html += `<div class="text-xs text-gray-500 mt-1">Sesiones: ${h.previous_sessions.map(s => escapeHtml(s.title || ('#' + s.session_id))).join(' · ')}</div>`;
+            }
+            html += `</div>`;
+        }
+        if (intel?.relatedIocs?.length) {
+            html += `<details class="analysis-card"><summary class="text-xs font-semibold cursor-pointer text-gray-700">🔗 IOCs relacionados (${intel.relatedIocs.length})</summary><div class="mt-1 space-y-1">`;
+            for (const r of intel.relatedIocs) {
+                const cls = (r.risk_level || 'medio').toLowerCase().replace('í', 'i');
+                html += `<div class="text-xs text-gray-600"><span class="risk-badge risk-${cls}">${escapeHtml(r.risk_level || 'N/A')}</span> <code class="bg-gray-200 px-1 rounded">${escapeHtml(r.ioc)}</code> — ${(r.reasons || []).map(x => escapeHtml(x)).join('; ')}</div>`;
+            }
+            html += `</div></details>`;
         }
         html += '</div></div>';
         div.innerHTML = html;

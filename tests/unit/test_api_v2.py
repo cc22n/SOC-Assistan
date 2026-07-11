@@ -304,6 +304,22 @@ class TestChatValidation:
             })
         assert resp.status_code == 200
 
+    def test_chat_passes_through_ioc_history_and_related_iocs(self, analyst_client):
+        """El endpoint reenvía ioc_history y related_iocs del orquestador al frontend."""
+        result = dict(MOCK_CHAT_RESULT)
+        result['ioc_history'] = {'times_analyzed': 2, 'last_risk_level': 'ALTO'}
+        result['related_iocs'] = [{'ioc': '1.2.3.4', 'correlation_score': 3,
+                                   'reasons': ['misma familia de malware: lockbit']}]
+        with patch('app.routes.api_v2_routes.get_orchestrator') as mock_orch:
+            mock_orch.return_value.chat_analysis.return_value = result
+            resp = post_json(analyst_client, f'{BASE}/chat/message', {
+                'message': 'Analiza la IP 185.220.101.34'
+            })
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data['ioc_history']['times_analyzed'] == 2
+        assert data['related_iocs'][0]['ioc'] == '1.2.3.4'
+
 
 # ==============================================================================
 # SESIONES — CRUD e IDOR
