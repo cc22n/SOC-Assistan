@@ -18,7 +18,7 @@ from app.schemas.api import AnalyzeRequest, ChatMessageRequest
 from app.schemas.validator import validate_request
 from app import limiter
 import logging
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from functools import wraps
 
 logger = logging.getLogger(__name__)
@@ -149,11 +149,11 @@ def analyze_enhanced(data: AnalyzeRequest):
         # Guardar en BD
         ioc_obj = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type).first()
         if not ioc_obj:
-            ioc_obj = IOC(value=ioc_value, ioc_type=ioc_type, first_seen=datetime.utcnow(), times_analyzed=0)
+            ioc_obj = IOC(value=ioc_value, ioc_type=ioc_type, first_seen=utcnow(), times_analyzed=0)
             db.session.add(ioc_obj)
             db.session.flush()
 
-        ioc_obj.last_analyzed = datetime.utcnow()
+        ioc_obj.last_analyzed = utcnow()
         ioc_obj.times_analyzed += 1
 
         analysis = IOCAnalysis(
@@ -332,7 +332,7 @@ def chat_message(data: ChatMessageRequest):
             'session_id': result.get('session_id'),
             'session_title': result.get('session_title'),
             'llm_provider': result.get('llm_provider'),
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': utcnow().isoformat()
         }), 200
 
     except Exception as e:
@@ -867,5 +867,5 @@ def health_check():
         'circuit_breakers': circuit_statuses,
         'open_circuits': len(open_circuits),
         'version': '5.0',
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': utcnow().isoformat()
     }), 200

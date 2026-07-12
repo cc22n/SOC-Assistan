@@ -9,7 +9,8 @@ Proporciona estadísticas y datos para visualizaciones del dashboard:
 - Mapa de amenazas por país
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils.time_utils import utcnow
 from typing import Dict, List, Optional
 from sqlalchemy import func, desc, and_
 from sqlalchemy.orm import joinedload
@@ -51,7 +52,7 @@ class DashboardStatsService:
             from app.models.ioc import IOCAnalysis
             from app import db
 
-            since = datetime.utcnow() - timedelta(days=days)
+            since = utcnow() - timedelta(days=days)
 
             query = db.session.query(
                 IOCAnalysis.risk_level,
@@ -102,7 +103,7 @@ class DashboardStatsService:
             from app.models.ioc import APIUsage
             from app import db
 
-            since = datetime.utcnow().date() - timedelta(days=days)
+            since = utcnow().date() - timedelta(days=days)
 
             # Agregado por API
             total_req_col = func.sum(APIUsage.requests_count).label('total_requests')
@@ -156,7 +157,7 @@ class DashboardStatsService:
             from app.models.ioc import IOCAnalysis
             from app import db
 
-            since = datetime.utcnow() - timedelta(days=days)
+            since = utcnow() - timedelta(days=days)
 
             query = db.session.query(
                 func.date(IOCAnalysis.created_at).label('date'),
@@ -217,7 +218,7 @@ class DashboardStatsService:
             from app.models.ioc import IOCAnalysis, IOC
             from app import db
 
-            since = datetime.utcnow() - timedelta(days=days)
+            since = utcnow() - timedelta(days=days)
 
             # Buscar en ip_api_data y criminal_ip_data
             # Incluir TODOS los niveles de riesgo que tengan geodata
@@ -325,7 +326,7 @@ class DashboardStatsService:
             from app.models.session import InvestigationSession
             from app import db
 
-            since = datetime.utcnow() - timedelta(days=days)
+            since = utcnow() - timedelta(days=days)
 
             # Total análisis
             analysis_query = db.session.query(func.count(IOCAnalysis.id)).filter(
@@ -447,7 +448,7 @@ class DashboardStatsService:
             from app.models.ioc import IOCAnalysis
             from app import db
 
-            since = datetime.utcnow() - timedelta(days=days)
+            since = utcnow() - timedelta(days=days)
 
             query = db.session.query(IOCAnalysis).options(
                 joinedload(IOCAnalysis.ioc),

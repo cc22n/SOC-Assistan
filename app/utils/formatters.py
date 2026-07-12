@@ -3,6 +3,7 @@ Formateadores para respuestas y reportes
 """
 from typing import Dict
 from datetime import datetime
+from app.utils.time_utils import utcnow
 
 
 def format_analysis_response(results: Dict, analysis_id: int = None) -> Dict:
@@ -23,7 +24,7 @@ def format_analysis_response(results: Dict, analysis_id: int = None) -> Dict:
         'confidence_score': results.get('confidence_score', 0),
         'risk_level': results.get('risk_level', 'UNKNOWN'),
         'recommendation': results.get('recommendation', ''),
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': utcnow().isoformat(),
         'sources': {}
     }
 

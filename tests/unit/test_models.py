@@ -3,7 +3,7 @@ Tests de Modelos — T3A-05
 Cubre: User, IOC, IOCAnalysis, Incident, generate_ticket_id thread-safe, to_dict
 """
 import pytest
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 
 # ==============================================================================
@@ -256,7 +256,7 @@ class TestIncidentModel:
         """generate_ticket_id produce formato SOC-YYYYMMDD-NNN."""
         with app.app_context():
             ticket = __import__('app.models.ioc', fromlist=['Incident']).Incident.generate_ticket_id()
-            today = datetime.utcnow().strftime('%Y%m%d')
+            today = utcnow().strftime('%Y%m%d')
             assert ticket.startswith(f'SOC-{today}-')
             parts = ticket.split('-')
             assert len(parts) == 3

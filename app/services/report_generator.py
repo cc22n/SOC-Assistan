@@ -13,7 +13,7 @@ Genera reportes profesionales de investigaciones SOC con:
 import os
 import json
 import logging
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Dict, List, Optional, Any
 from io import BytesIO
 
@@ -204,7 +204,7 @@ class ReportGenerator:
 
             # Fecha de generación
             story.append(Paragraph(
-                f"Generado: {datetime.utcnow().strftime('%d %b %Y %H:%M UTC')}",
+                f"Generado: {utcnow().strftime('%d %b %Y %H:%M UTC')}",
                 styles['SmallText']
             ))
 
@@ -552,7 +552,7 @@ class ReportGenerator:
             # Fecha de generación
             gen_date = doc.add_paragraph()
             gen_date.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = gen_date.add_run(f"Generado: {datetime.utcnow().strftime('%d %b %Y %H:%M UTC')}")
+            run = gen_date.add_run(f"Generado: {utcnow().strftime('%d %b %Y %H:%M UTC')}")
             run.font.size = Pt(8)
             run.font.color.rgb = hex_to_rgb('#6B7280')
 
@@ -787,7 +787,7 @@ class ReportGenerator:
             run.font.color.rgb = hex_to_rgb('#6B7280')
 
             p = doc.add_paragraph()
-            run = p.add_run(f"Generado por SOC Agent - {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+            run = p.add_run(f"Generado por SOC Agent - {utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
             run.font.size = Pt(8)
             run.font.color.rgb = hex_to_rgb('#6B7280')
 

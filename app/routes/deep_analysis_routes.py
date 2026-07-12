@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from app.services.deep_analysis_service import DeepAnalysisService
 from app.utils.validators import validate_ioc, detect_ioc_type
 import logging
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from app.utils.responses import safe_error_response
 
@@ -104,7 +104,7 @@ def deep_analyze():
             'deep_analysis': result,
             'modules_executed': result.get('modules_executed', []),
             'processing_time': result.get('processing_time', 0),
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': utcnow().isoformat()
         }), 200
         
     except Exception as e:

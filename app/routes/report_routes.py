@@ -14,7 +14,7 @@ from app.services.report_generator import report_generator
 from app.services.session_manager import session_manager
 from app.models.ioc import IOC, IOCAnalysis, db
 import logging
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from io import BytesIO
 
 from app.utils.responses import safe_error_response
@@ -369,7 +369,7 @@ def _generate_single_analysis_pdf(analysis: IOCAnalysis) -> BytesIO:
         # Footer
         story.append(Spacer(1, 0.5*inch))
         story.append(Paragraph(
-            f"Generado por SOC Agent - {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            f"Generado por SOC Agent - {utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
             styles['Normal']
         ))
         

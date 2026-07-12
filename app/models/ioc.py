@@ -11,12 +11,12 @@ CAMBIOS v3:
 - Nuevos campos: criminal_ip_data, pulsedive_data, urlscan_data, malwarebazaar_data
 - Eliminados: ipqualityscore_data (API removida)
 """
-from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSON, JSONB, UUID
 from sqlalchemy.orm import validates
 from app import db
+from app.utils.time_utils import utcnow
 import uuid
 
 
@@ -31,7 +31,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='analyst', index=True)  # analyst, admin, viewer
     is_active = db.Column(db.Boolean, default=True, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     last_login = db.Column(db.DateTime)
 
     # Relaciones
@@ -76,9 +76,9 @@ class IOC(db.Model):
     uuid = db.Column(UUID(as_uuid=True), unique=True, default=uuid.uuid4, nullable=False)
     value = db.Column(db.String(500), nullable=False)
     ioc_type = db.Column(db.String(20), nullable=False)  # ip, hash, domain, url
-    first_seen = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    last_analyzed = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow, index=True)
+    first_seen = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+    last_analyzed = db.Column(db.DateTime, default=utcnow,
+                              onupdate=utcnow, index=True)
     times_analyzed = db.Column(db.Integer, default=1)
     is_whitelisted = db.Column(db.Boolean, default=False, index=True)
     whitelist_reason = db.Column(db.Text)
@@ -187,7 +187,7 @@ class IOCAnalysis(db.Model):
     sources_used = db.Column(JSONB, default=list)  # Lista de APIs consultadas
     errors = db.Column(JSONB, default=list)
     processing_time = db.Column(db.Float)  # en segundos
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
 
     # Índices adicionales
     __table_args__ = (
@@ -288,7 +288,7 @@ class IncidentIOC(db.Model):
     analysis_id = db.Column(db.Integer, db.ForeignKey('ioc_analyses.id', ondelete='SET NULL'))
 
     role = db.Column(db.String(20), default='related')  # primary, related, context
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=utcnow)
     notes = db.Column(db.Text)
 
     # Relaciones
@@ -338,9 +338,9 @@ class Incident(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+    updated_at = db.Column(db.DateTime, default=utcnow,
+                           onupdate=utcnow, index=True)
     resolved_at = db.Column(db.DateTime)
 
     # Notas y seguimiento
@@ -387,7 +387,7 @@ class Incident(db.Model):
         from sqlalchemy import text
         # Advisory lock previene race condition en requests concurrentes
         db.session.execute(text("SELECT pg_advisory_xact_lock(735201)"))
-        today = datetime.utcnow().strftime('%Y%m%d')
+        today = utcnow().strftime('%Y%m%d')
         count = Incident.query.filter(
             Incident.ticket_id.like(f'SOC-{today}-%')
         ).count()
@@ -401,7 +401,7 @@ class Incident(db.Model):
             'type': event_type,
             'description': description,
             'user': user,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': utcnow().isoformat()
         }]
 
     def to_dict(self, include_iocs=False):
@@ -439,7 +439,7 @@ class APIUsage(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     api_name = db.Column(db.String(50), nullable=False, index=True)
-    date = db.Column(db.Date, default=lambda: datetime.utcnow().date(), index=True)
+    date = db.Column(db.Date, default=lambda: utcnow().date(), index=True)
     requests_count = db.Column(db.Integer, default=0)
     errors_count = db.Column(db.Integer, default=0)
     last_request_at = db.Column(db.DateTime)

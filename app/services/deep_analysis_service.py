@@ -15,6 +15,7 @@ import re
 import json
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
+from app.utils.time_utils import utcnow
 from flask import current_app
 
 logger = logging.getLogger(__name__)
@@ -165,7 +166,7 @@ class DeepAnalysisService:
         Returns:
             Dict con análisis completo
         """
-        start_time = datetime.utcnow()
+        start_time = utcnow()
         logger.info(f"🔍 Starting deep analysis for {ioc_type}: {ioc}")
         
         results = {
@@ -265,7 +266,7 @@ class DeepAnalysisService:
             results['final_report'] = final_report
             
             # Calcular tiempo total
-            results['processing_time'] = (datetime.utcnow() - start_time).total_seconds()
+            results['processing_time'] = (utcnow() - start_time).total_seconds()
             logger.info(f"✅ Deep analysis completed in {results['processing_time']:.2f}s")
             
             return results
@@ -273,7 +274,7 @@ class DeepAnalysisService:
         except Exception as e:
             logger.error(f"Deep analysis failed: {e}")
             results['errors'].append(f"critical: {str(e)}")
-            results['processing_time'] = (datetime.utcnow() - start_time).total_seconds()
+            results['processing_time'] = (utcnow() - start_time).total_seconds()
             return results
     
     # =========================================================================
@@ -305,7 +306,7 @@ class DeepAnalysisService:
             searched_at = data.get('searched_at')
             if not searched_at:
                 return None
-            age = datetime.utcnow() - datetime.fromisoformat(searched_at)
+            age = utcnow() - datetime.fromisoformat(searched_at)
             if age > timedelta(hours=self.WEB_SEARCH_TTL_HOURS):
                 return None
             return data
@@ -332,7 +333,7 @@ class DeepAnalysisService:
             if not analysis:
                 return
 
-            web_results['searched_at'] = datetime.utcnow().isoformat()
+            web_results['searched_at'] = utcnow().isoformat()
             analysis.web_search_data = web_results
             db.session.commit()
             logger.info(f"Web search persistida en analysis {analysis.id}")

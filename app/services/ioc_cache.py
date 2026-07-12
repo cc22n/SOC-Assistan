@@ -13,7 +13,8 @@ Estrategia:
 - Forzar re-analisis disponible via parametro
 """
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
+from app.utils.time_utils import utcnow
 from typing import Optional, Dict, Any
 
 from app.models.ioc import IOC, IOCAnalysis
@@ -107,7 +108,7 @@ def get_cached_analysis(
         # Verificar si el cache sigue vigente
         # analysis.created_at may be naive (no tzinfo) if stored without tz;
         # compare against naive utcnow for consistency with existing DB values.
-        now_naive = datetime.utcnow()
+        now_naive = utcnow()
         cache_expiry = analysis.created_at + timedelta(hours=ttl_hours)
         if now_naive > cache_expiry:
             age = now_naive - analysis.created_at
@@ -184,7 +185,7 @@ def get_cache_stats() -> Dict[str, Any]:
     try:
         from sqlalchemy import func
 
-        now = datetime.utcnow()  # naive UTC to match DB column (no tzinfo)
+        now = utcnow()  # naive UTC to match DB column (no tzinfo)
         one_hour = now - timedelta(hours=1)
         one_day = now - timedelta(hours=24)
 

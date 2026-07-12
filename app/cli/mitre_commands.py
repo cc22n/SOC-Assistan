@@ -59,7 +59,7 @@ def seed_mitre():
     from app import db
     from app.models.mitre import MITRE_TECHNIQUES_DB, MALWARE_TO_TECHNIQUES
     from app.services.mitre_service import MITRETechnique, MITREMalwareMapping, MITREUpdateLog
-    from datetime import datetime
+    from app.utils.time_utils import utcnow
 
     click.echo('Seeding MITRE data from hardcoded values...')
 
@@ -76,7 +76,7 @@ def seed_mitre():
             is_subtechnique='.' in tid,
             parent_id=tid.split('.')[0] if '.' in tid else None,
             url=f'https://attack.mitre.org/techniques/{tid.replace(".", "/")}/',
-            updated_at=datetime.utcnow()
+            updated_at=utcnow()
         )
         db.session.add(tech)
         count_t += 1
@@ -89,7 +89,7 @@ def seed_mitre():
         mapping = MITREMalwareMapping(
             malware_name=malware,
             technique_ids=techniques,
-            updated_at=datetime.utcnow()
+            updated_at=utcnow()
         )
         db.session.add(mapping)
         count_m += 1

@@ -27,6 +27,7 @@ Uso:
 import logging
 import threading
 from datetime import datetime, timedelta
+from app.utils.time_utils import utcnow
 from enum import Enum
 from typing import Dict, Optional
 
@@ -81,7 +82,7 @@ class APICircuitBreaker:
     def _get_state(self) -> CircuitState:
         """Evalua si debemos transitar de OPEN -> HALF_OPEN (llamar sin lock)."""
         if self._state == CircuitState.OPEN:
-            if self._opened_at and datetime.utcnow() >= self._opened_at + timedelta(seconds=self.timeout):
+            if self._opened_at and utcnow() >= self._opened_at + timedelta(seconds=self.timeout):
                 self._state = CircuitState.HALF_OPEN
                 self._success_count = 0
                 self._probe_in_flight = False  # fresh probe window
@@ -126,19 +127,19 @@ class APICircuitBreaker:
         with self._lock:
             state = self._get_state()
             self._failure_count += 1
-            self._last_failure_time = datetime.utcnow()
+            self._last_failure_time = utcnow()
 
             if state == CircuitState.HALF_OPEN:
                 # Fallo en prueba -> volver a OPEN
                 self._probe_in_flight = False
                 self._state = CircuitState.OPEN
-                self._opened_at = datetime.utcnow()
+                self._opened_at = utcnow()
                 self._success_count = 0
                 logger.warning(f"[Circuit:{self.api_name}] HALF_OPEN -> OPEN (probe failed)")
 
             elif state == CircuitState.CLOSED and self._failure_count >= self.fail_threshold:
                 self._state = CircuitState.OPEN
-                self._opened_at = datetime.utcnow()
+                self._opened_at = utcnow()
                 logger.warning(
                     f"[Circuit:{self.api_name}] CLOSED → OPEN "
                     f"({self._failure_count} failures, timeout={self.timeout}s)"
@@ -150,7 +151,7 @@ class APICircuitBreaker:
             state = self._get_state()
             time_until_retry = None
             if state == CircuitState.OPEN and self._opened_at:
-                remaining = (self._opened_at + timedelta(seconds=self.timeout) - datetime.utcnow()).total_seconds()
+                remaining = (self._opened_at + timedelta(seconds=self.timeout) - utcnow()).total_seconds()
                 time_until_retry = max(0, round(remaining))
             return {
                 'api': self.api_name,

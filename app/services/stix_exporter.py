@@ -18,7 +18,7 @@ Uso:
 import json
 import uuid
 import logging
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Dict, List, Optional, Any
 
 logger = logging.getLogger(__name__)
@@ -154,8 +154,8 @@ class STIXExporter:
             'type': 'identity',
             'spec_version': STIX_SPEC_VERSION,
             'id': SOC_AGENT_IDENTITY_ID,
-            'created': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            'modified': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'created': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'name': 'SOC Agent Platform',
             'identity_class': 'system',
             'description': 'Automated threat intelligence analysis platform',
@@ -180,13 +180,13 @@ class STIXExporter:
             'type': 'indicator',
             'spec_version': STIX_SPEC_VERSION,
             'id': f'indicator--{uuid.uuid5(uuid.NAMESPACE_URL, ioc.value)}',
-            'created': ioc.first_seen.strftime('%Y-%m-%dT%H:%M:%S.000Z') if ioc.first_seen else datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            'modified': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'created': ioc.first_seen.strftime('%Y-%m-%dT%H:%M:%S.000Z') if ioc.first_seen else utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'name': f'{ioc.ioc_type.upper()}: {ioc.value}',
             'description': f'IOC analyzed by SOC Agent. Risk: {analysis.risk_level if analysis else "Unknown"}. Score: {analysis.confidence_score if analysis else 0}/100.',
             'pattern': pattern,
             'pattern_type': 'stix',
-            'valid_from': ioc.first_seen.strftime('%Y-%m-%dT%H:%M:%S.000Z') if ioc.first_seen else datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'valid_from': ioc.first_seen.strftime('%Y-%m-%dT%H:%M:%S.000Z') if ioc.first_seen else utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'indicator_types': labels,
             'confidence': confidence,
             'created_by_ref': SOC_AGENT_IDENTITY_ID,
@@ -228,8 +228,8 @@ class STIXExporter:
             'type': 'attack-pattern',
             'spec_version': STIX_SPEC_VERSION,
             'id': f'attack-pattern--{uuid.uuid5(uuid.NAMESPACE_URL, technique_id)}',
-            'created': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            'modified': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'created': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'name': name or technique_id,
             'external_references': [{
                 'source_name': 'mitre-attack',
@@ -245,8 +245,8 @@ class STIXExporter:
             'type': 'relationship',
             'spec_version': STIX_SPEC_VERSION,
             'id': f'relationship--{uuid.uuid4()}',
-            'created': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            'modified': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'created': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'relationship_type': relationship_type,
             'source_ref': source_id,
             'target_ref': target_id,
@@ -259,12 +259,12 @@ class STIXExporter:
             'type': 'report',
             'spec_version': STIX_SPEC_VERSION,
             'id': f'report--{uuid.uuid5(uuid.NAMESPACE_URL, f"analysis-{analysis.id}")}',
-            'created': analysis.created_at.strftime('%Y-%m-%dT%H:%M:%S.000Z') if analysis.created_at else datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            'modified': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'created': analysis.created_at.strftime('%Y-%m-%dT%H:%M:%S.000Z') if analysis.created_at else utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'name': f'SOC Agent Analysis: {ioc.value}',
             'description': f'Automated threat intelligence analysis. Risk Level: {analysis.risk_level}. Confidence: {analysis.confidence_score}/100. Sources: {", ".join(analysis.sources_used or [])}.',
             'report_types': ['threat-report'],
-            'published': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'published': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'object_refs': object_refs,
             'created_by_ref': SOC_AGENT_IDENTITY_ID,
         }
@@ -275,8 +275,8 @@ class STIXExporter:
             'type': 'grouping',
             'spec_version': STIX_SPEC_VERSION,
             'id': f'grouping--{uuid.uuid5(uuid.NAMESPACE_URL, f"incident-{incident.id}")}',
-            'created': incident.created_at.strftime('%Y-%m-%dT%H:%M:%S.000Z') if incident.created_at else datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
-            'modified': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'created': incident.created_at.strftime('%Y-%m-%dT%H:%M:%S.000Z') if incident.created_at else utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
             'name': f'{incident.ticket_id}: {incident.title}',
             'description': incident.description or '',
             'context': 'suspicious-activity',

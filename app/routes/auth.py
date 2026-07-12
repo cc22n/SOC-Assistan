@@ -44,8 +44,8 @@ def login():
         login_user(user, remember=remember)
 
         # Actualizar last_login
-        from datetime import datetime
-        user.last_login = datetime.utcnow()
+        from app.utils.time_utils import utcnow
+        user.last_login = utcnow()
         db.session.commit()
 
         from app.models.audit import AuditEvent

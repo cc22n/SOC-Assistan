@@ -6,7 +6,7 @@ Cubre: /health, /analyze/enhanced, /chat/message, /sessions, /apis/status,
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 BASE = '/api/v2'
 HEADERS = {'Content-Type': 'application/json'}
@@ -35,7 +35,7 @@ MOCK_ANALYSIS_RESULT = {
     'sources_used': ['virustotal', 'abuseipdb'],
     'mitre_techniques': [],
     'processing_time': 1.23,
-    'timestamp': datetime.utcnow().isoformat(),
+    'timestamp': utcnow().isoformat(),
 }
 
 MOCK_CHAT_RESULT = {
@@ -218,7 +218,7 @@ class TestAnalyzeValidation:
     def test_analyze_cache_hit_returns_cached(self, analyst_client):
         """Si hay cache, devuelve datos cacheados sin llamar al orquestador."""
         cached = {**MOCK_ANALYSIS_RESULT, 'analysis_id': 99, 'ioc': '1.1.1.1', 'type': 'ip',
-                  'cache_age_minutes': 5, 'timestamp': datetime.utcnow().isoformat()}
+                  'cache_age_minutes': 5, 'timestamp': utcnow().isoformat()}
         with patch('app.services.ioc_cache.get_cached_analysis', return_value=cached):
             resp = post_json(analyst_client, f'{BASE}/analyze/enhanced', {
                 'ioc': '1.1.1.1',

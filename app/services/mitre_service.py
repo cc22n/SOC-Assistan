@@ -13,7 +13,8 @@ Fuente: https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/ent
 """
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils.time_utils import utcnow
 from typing import Dict, List, Optional, Any
 
 from app import db
@@ -51,7 +52,7 @@ class MITRETechnique(db.Model):
     data_sources = db.Column(db.JSON, default=list)
     detection = db.Column(db.Text)
     deprecated = db.Column(db.Boolean, default=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -80,7 +81,7 @@ class MITREMalwareMapping(db.Model):
     technique_ids = db.Column(db.JSON, default=list)
     aliases = db.Column(db.JSON, default=list)
     description = db.Column(db.Text)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow)
 
     __table_args__ = (
         db.UniqueConstraint('malware_name', name='unique_malware_name'),
@@ -95,7 +96,7 @@ class MITREUpdateLog(db.Model):
     __tablename__ = 'mitre_update_log'
 
     id = db.Column(db.Integer, primary_key=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     techniques_count = db.Column(db.Integer, default=0)
     malware_count = db.Column(db.Integer, default=0)
     source = db.Column(db.String(100))  # 'stix_github', 'hardcoded_fallback'
@@ -336,7 +337,7 @@ class MITREService:
             tech.data_sources = obj.get('x_mitre_data_sources', [])
             tech.detection = obj.get('x_mitre_detection', '')[:5000] if obj.get('x_mitre_detection') else None
             tech.deprecated = False
-            tech.updated_at = datetime.utcnow()
+            tech.updated_at = utcnow()
 
             count += 1
 
@@ -410,7 +411,7 @@ class MITREService:
             mapping.technique_ids = list(set(info['techniques']))
             mapping.aliases = info['aliases']
             mapping.description = info['description']
-            mapping.updated_at = datetime.utcnow()
+            mapping.updated_at = utcnow()
             count += 1
 
         db.session.flush()
@@ -438,7 +439,7 @@ class MITREService:
         ).first()
         if not last:
             return True
-        return datetime.utcnow() - last.updated_at > timedelta(days=CACHE_TTL_DAYS)
+        return utcnow() - last.updated_at > timedelta(days=CACHE_TTL_DAYS)
 
     def needs_update(self) -> bool:
         """True si nunca se cargaron datos o están obsoletos"""

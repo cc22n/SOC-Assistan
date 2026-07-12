@@ -7,7 +7,8 @@ Tablas:
 - SessionIOC: IOCs vinculados a una sesión
 - SessionMessage: Mensajes del chat en una sesión
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils.time_utils import utcnow
 from typing import List, Optional, Dict, Any
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime,
@@ -117,7 +118,7 @@ class InvestigationSession(db.Model):
         if self.status != 'active' or not self.last_activity_at:
             return None
 
-        elapsed = datetime.utcnow() - self.last_activity_at.replace(tzinfo=None)
+        elapsed = utcnow() - self.last_activity_at.replace(tzinfo=None)
         remaining = self.auto_close_hours - (elapsed.total_seconds() / 3600)
         return max(0, round(remaining, 2))
 
@@ -132,22 +133,22 @@ class InvestigationSession(db.Model):
 
     def update_activity(self):
         """Actualiza timestamp de última actividad"""
-        self.last_activity_at = datetime.utcnow()
+        self.last_activity_at = utcnow()
 
     def close(self):
         """Cierra la sesión"""
         self.status = 'closed'
-        self.closed_at = datetime.utcnow()
+        self.closed_at = utcnow()
 
     def generate_title(self, ioc_value: str = None, ioc_type: str = None) -> str:
         """Genera título automático basado en el primer IOC"""
         if ioc_value and ioc_type:
             # Truncar IOC largo
             display_ioc = ioc_value[:20] + '...' if len(ioc_value) > 20 else ioc_value
-            date_str = datetime.utcnow().strftime('%d %b %Y')
+            date_str = utcnow().strftime('%d %b %Y')
             return f"Investigación {ioc_type} {display_ioc} - {date_str}"
         else:
-            date_str = datetime.utcnow().strftime('%d %b %Y %H:%M')
+            date_str = utcnow().strftime('%d %b %Y %H:%M')
             return f"Nueva investigación - {date_str}"
 
 
@@ -327,7 +328,7 @@ def close_expired_sessions() -> int:
     """
     expired = InvestigationSession.query.filter(
         InvestigationSession.status == 'active',
-        InvestigationSession.last_activity_at < datetime.utcnow() - timedelta(hours=24)
+        InvestigationSession.last_activity_at < utcnow() - timedelta(hours=24)
     ).all()
 
     count = 0

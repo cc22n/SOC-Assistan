@@ -16,7 +16,7 @@ Endpoints:
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from sqlalchemy import desc
 from app import db
 from app.models.ioc import Incident, IncidentIOC, IOC, IOCAnalysis, User
@@ -361,7 +361,7 @@ def change_status(incident_id):
         incident.status = new_status
 
         if new_status == 'resolved':
-            incident.resolved_at = datetime.utcnow()
+            incident.resolved_at = utcnow()
 
         description = f'Estado: {old_status} -> {new_status}'
         if reason:

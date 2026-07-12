@@ -16,7 +16,7 @@ import re
 import logging
 import html
 from functools import wraps
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from flask import request, abort, jsonify, session, current_app
 
 logger = logging.getLogger('security')
@@ -327,7 +327,7 @@ def init_security(app):
         # ============================================
         if 'initialized' not in session:
             session['initialized'] = True
-            session['created_at'] = datetime.utcnow().isoformat()
+            session['created_at'] = utcnow().isoformat()
 
         return None
 

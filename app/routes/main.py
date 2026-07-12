@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 from app.models.ioc import IOC, IOCAnalysis, Incident, APIUsage
 from app import db, cache
+from app.utils.time_utils import utcnow
 
 main_bp = Blueprint('main', __name__)
 
@@ -28,7 +29,7 @@ def index():
 @login_required
 def dashboard():
     """Dashboard del analista SOC"""
-    today = datetime.utcnow().date()
+    today = utcnow().date()
     week_ago = today - timedelta(days=7)
 
     is_admin = current_user.role == 'admin'
@@ -189,7 +190,7 @@ def api_health():
     metrics = get_metrics_summary()
 
     # Cuotas diarias (mismo cálculo que api_stats)
-    today = datetime.utcnow().date()
+    today = utcnow().date()
     today_usage = APIUsage.query.filter_by(date=today).all()
     usage_data = {}
     for usage in today_usage:

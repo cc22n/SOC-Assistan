@@ -154,11 +154,12 @@ class TestWebSearchCache:
             assert 'searched_at' in cached
 
     def test_expired_cache_returns_none(self, app, db_session, sample_ioc, sample_analysis):
-        from datetime import datetime, timedelta
+        from datetime import timedelta
+        from app.utils.time_utils import utcnow
         from app.services.deep_analysis_service import DeepAnalysisService
         with app.app_context():
             svc = DeepAnalysisService()
-            old = (datetime.utcnow() - timedelta(hours=svc.WEB_SEARCH_TTL_HOURS + 1)).isoformat()
+            old = (utcnow() - timedelta(hours=svc.WEB_SEARCH_TTL_HOURS + 1)).isoformat()
             sample_analysis.web_search_data = {'raw_results': [], 'searched_at': old}
             db_session.session.commit()
 

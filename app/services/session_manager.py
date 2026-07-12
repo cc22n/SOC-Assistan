@@ -12,7 +12,8 @@ Este módulo maneja toda la lógica de negocio para:
 import json
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils.time_utils import utcnow
 from typing import Dict, List, Optional, Tuple, Any
 
 from flask import current_app
@@ -486,7 +487,7 @@ class SessionManager:
         # Si superamos el umbral y no hay resumen reciente
         if message_count > self.SUMMARY_THRESHOLD * 2:
             if not session.summary_updated_at or \
-               (datetime.utcnow() - session.summary_updated_at.replace(tzinfo=None)) > timedelta(hours=1):
+               (utcnow() - session.summary_updated_at.replace(tzinfo=None)) > timedelta(hours=1):
                 self._generate_compressed_summary(session_id)
     
     def _generate_compressed_summary(self, session_id: int):
@@ -535,7 +536,7 @@ RESUMEN:"""
                 
                 # Guardar resumen
                 session.compressed_summary = summary
-                session.summary_updated_at = datetime.utcnow()
+                session.summary_updated_at = utcnow()
                 db.session.commit()
                 
                 logger.info(f"Generated compressed summary for session {session_id}")
@@ -586,7 +587,7 @@ RESUMEN:"""
         
         return {
             'export_version': '1.0',
-            'export_date': datetime.utcnow().isoformat(),
+            'export_date': utcnow().isoformat(),
             'session': session.to_dict(),
             'iocs': iocs_data,
             'messages': messages_data,
@@ -676,7 +677,7 @@ RESUMEN:"""
         # Footer
         lines.append("## Metadatos de Exportación")
         lines.append("")
-        lines.append(f"- **Exportado:** {datetime.utcnow().strftime('%d %b %Y %H:%M UTC')}")
+        lines.append(f"- **Exportado:** {utcnow().strftime('%d %b %Y %H:%M UTC')}")
         lines.append(f"- **ID de sesión:** {session.uuid}")
         lines.append(f"- **Duración:** {self._calculate_session_duration(session):.1f} horas")
         
@@ -687,7 +688,7 @@ RESUMEN:"""
         if not session.created_at:
             return 0
         
-        end_time = session.closed_at or session.last_activity_at or datetime.utcnow()
+        end_time = session.closed_at or session.last_activity_at or utcnow()
         if hasattr(end_time, 'replace'):
             end_time = end_time.replace(tzinfo=None)
         

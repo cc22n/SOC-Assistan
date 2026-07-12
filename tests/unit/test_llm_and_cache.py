@@ -4,7 +4,8 @@ Cubre: app/services/llm_service.py, app/services/ioc_cache.py
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils.time_utils import utcnow
 
 
 # ==============================================================================
@@ -302,7 +303,7 @@ class TestGetCachedAnalysis:
                 processing_time=1.5,
             )
             # Set created_at to 10 minutes ago (well within TTL)
-            analysis.created_at = datetime.utcnow() - timedelta(minutes=10)
+            analysis.created_at = utcnow() - timedelta(minutes=10)
             db_session.session.add(analysis)
             db_session.session.commit()
 
@@ -331,7 +332,7 @@ class TestGetCachedAnalysis:
                 processing_time=0.5,
             )
             # Set created_at to 48 hours ago (well past all TTLs)
-            analysis.created_at = datetime.utcnow() - timedelta(hours=48)
+            analysis.created_at = utcnow() - timedelta(hours=48)
             db_session.session.add(analysis)
             db_session.session.commit()
 
@@ -356,7 +357,7 @@ class TestGetCachedAnalysis:
                 sources_used=['shodan'],
                 processing_time=2.0,
             )
-            analysis.created_at = datetime.utcnow() - timedelta(hours=2)
+            analysis.created_at = utcnow() - timedelta(hours=2)
             db_session.session.add(analysis)
             db_session.session.commit()
 
