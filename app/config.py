@@ -178,6 +178,24 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
 
+    # ==========================================================================
+    # Rate limiting (Flask-Limiter) — Redis compartido entre workers gunicorn.
+    # Sin esto, cada worker (--workers 3 en Dockerfile) cuenta con su propio
+    # memory://, así que los límites reales son ~3x los configurados.
+    # ==========================================================================
+    RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI') or os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    RATELIMIT_STORAGE_OPTIONS = {'socket_connect_timeout': 2}
+    # Si Redis cae, degrada a memoria en vez de tirar 500s (verificado contra
+    # flask_limiter.constants.ConfigVars en la versión instalada, 3.5.0).
+    RATELIMIT_IN_MEMORY_FALLBACK_ENABLED = True
+
+    # ==========================================================================
+    # Cache (Flask-Caching) — mismo motivo: SimpleCache es por proceso/worker.
+    # ==========================================================================
+    CACHE_TYPE = 'RedisCache'
+    CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    CACHE_DEFAULT_TIMEOUT = 300
+
     @classmethod
     def init_app(cls, app=None):
         """Valida variables de entorno críticas antes de arrancar en producción."""
