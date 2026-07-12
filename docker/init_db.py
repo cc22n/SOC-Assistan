@@ -33,6 +33,11 @@ with app.app_context():
     else:
         sys.exit('[init_db] Postgres no respondió tras 60s; abortando.')
 
+    # El modelo IOC define un índice GIN con gin_trgm_ops (búsqueda fuzzy):
+    # la extensión debe existir antes de create_all() o falla en Postgres limpio
+    db.session.execute(text('CREATE EXTENSION IF NOT EXISTS pg_trgm'))
+    db.session.commit()
+
     db.create_all()
 
     sql_path = Path(__file__).resolve().parents[1] / 'migrations' / 'add_performance_indexes_and_audit.sql'

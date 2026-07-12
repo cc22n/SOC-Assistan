@@ -41,6 +41,13 @@ jobs:
           pip install -r requirements.txt
           pip install pytest==9.0.2
 
+      # El modelo IOC define un indice GIN con gin_trgm_ops (busqueda fuzzy),
+      # que requiere la extension pg_trgm antes de db.create_all()
+      - name: Enable pg_trgm extension
+        env:
+          PGPASSWORD: "1234"
+        run: psql -h localhost -U soc_admin -d soc_agent_test -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm;'
+
       - name: Run unit tests
         env:
           FLASK_ENV: testing
