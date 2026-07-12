@@ -11,6 +11,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
+from sqlalchemy.orm import joinedload
 
 from app.models.ioc import IOC, IOCAnalysis, Incident, APIUsage
 from app import db, cache
@@ -117,7 +118,9 @@ def history():
         except ValueError:
             pass
 
-    pagination = query.order_by(
+    pagination = query.options(
+        joinedload(IOCAnalysis.ioc), joinedload(IOCAnalysis.analyst)
+    ).order_by(
         IOCAnalysis.created_at.desc()
     ).paginate(
         page=page,

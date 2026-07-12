@@ -171,9 +171,14 @@ def list_incidents():
     - per_page: int (default 20, máx 100)
     """
     try:
+        from sqlalchemy import func
+        from sqlalchemy.orm import joinedload
+
         # Non-admin users can only see their own incidents (created_by or assigned_to).
         # Admins see all incidents; my_only=true los restringe a los propios.
-        query = Incident.visible_to(current_user)
+        query = Incident.visible_to(current_user).options(
+            joinedload(Incident.assignee), joinedload(Incident.creator)
+        )
         if current_user.role == 'admin' and request.args.get('my_only', 'false').lower() == 'true':
             query = query.filter(
                 (Incident.created_by == current_user.id) |
@@ -205,9 +210,17 @@ def list_incidents():
             .all()
         )
 
+        ids = [i.id for i in incidents]
+        counts = dict(
+            db.session.query(IncidentIOC.incident_id, func.count(IncidentIOC.id))
+            .filter(IncidentIOC.incident_id.in_(ids))
+            .group_by(IncidentIOC.incident_id).all()
+        ) if ids else {}
+        incidents_data = [i.to_dict(ioc_count=counts.get(i.id, 0)) for i in incidents]
+
         return jsonify({
             'success': True,
-            'incidents': [i.to_dict() for i in incidents],
+            'incidents': incidents_data,
             'pagination': {
                 'page': page,
                 'per_page': per_page,
@@ -638,10 +651,13 @@ def get_stats():
     """Estadisticas de incidentes para el dashboard"""
     try:
         from sqlalchemy import func
+        from sqlalchemy.orm import joinedload
 
         # Scope queries to the current user's incidents unless admin.
         visibility = Incident.visibility_criterion(current_user)
-        base_q = Incident.visible_to(current_user)
+        base_q = Incident.visible_to(current_user).options(
+            joinedload(Incident.assignee), joinedload(Incident.creator)
+        )
 
         # Aggregate status counts in a single GROUP BY query instead of 5 counts.
         status_base = db.session.query(Incident.status, func.count(Incident.id))
@@ -675,7 +691,13 @@ def get_stats():
 
         # Recientes (respetando el mismo scope)
         recent = base_q.order_by(desc(Incident.created_at)).limit(5).all()
-        stats['recent'] = [i.to_dict() for i in recent]
+        recent_ids = [i.id for i in recent]
+        recent_counts = dict(
+            db.session.query(IncidentIOC.incident_id, func.count(IncidentIOC.id))
+            .filter(IncidentIOC.incident_id.in_(recent_ids))
+            .group_by(IncidentIOC.incident_id).all()
+        ) if recent_ids else {}
+        stats['recent'] = [i.to_dict(ioc_count=recent_counts.get(i.id, 0)) for i in recent]
 
         return jsonify({'success': True, 'stats': stats}), 200
 

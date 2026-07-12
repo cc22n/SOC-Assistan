@@ -404,7 +404,7 @@ class Incident(db.Model):
             'timestamp': utcnow().isoformat()
         }]
 
-    def to_dict(self, include_iocs=False):
+    def to_dict(self, include_iocs=False, ioc_count=None):
         data = {
             'id': self.id,
             'uuid': str(self.uuid),
@@ -423,10 +423,19 @@ class Incident(db.Model):
             'resolved_at': self.resolved_at.isoformat() if self.resolved_at else None,
             'timeline': self.timeline or [],
             'related_iocs': self.related_iocs or [],
-            'ioc_count': self.linked_iocs.count() if self.linked_iocs else 0
+            'ioc_count': ioc_count if ioc_count is not None else (
+                self.linked_iocs.count() if self.linked_iocs else 0
+            )
         }
         if include_iocs:
-            data['linked_iocs'] = [link.to_dict() for link in self.linked_iocs.all()]
+            from sqlalchemy.orm import joinedload
+            links = (
+                IncidentIOC.query
+                .filter_by(incident_id=self.id)
+                .options(joinedload(IncidentIOC.ioc), joinedload(IncidentIOC.analysis))
+                .all()
+            )
+            data['linked_iocs'] = [link.to_dict() for link in links]
         return data
 
     def __repr__(self):

@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Tuple, Any
 
 from flask import current_app
 from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models.session import (
@@ -275,7 +276,13 @@ class SessionManager:
     
     def get_session_iocs(self, session_id: int) -> List[SessionIOC]:
         """Obtiene todos los IOCs de una sesión"""
-        return SessionIOC.query.filter_by(session_id=session_id).order_by(SessionIOC.added_at).all()
+        return (
+            SessionIOC.query
+            .filter_by(session_id=session_id)
+            .options(joinedload(SessionIOC.ioc), joinedload(SessionIOC.analysis))
+            .order_by(SessionIOC.added_at)
+            .all()
+        )
     
     # =========================================================================
     # GESTIÓN DE MENSAJES
