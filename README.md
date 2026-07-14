@@ -38,6 +38,22 @@ The system enables analysts to:
 
 ---
 
+## Screenshots
+
+**AI chat analyzing an IOC** — 18 threat-intel APIs + LLM synthesis, with cross-session memory ("Seen before" badge links to the previous investigation):
+
+![Chat Analyst analyzing an IOC](docs/screenshots/chat-analysis.png)
+
+**Dashboard** — risk distribution, analysis timeline and top threats:
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+**Analysis history** — filterable, exportable, per-analyst:
+
+![Analysis history](docs/screenshots/history.png)
+
+---
+
 ## Architecture
 
 ```

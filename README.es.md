@@ -38,6 +38,22 @@ El sistema permite a los analistas:
 
 ---
 
+## Capturas de pantalla
+
+**Chat IA analizando un IOC** — 18 APIs de threat intel + síntesis LLM, con memoria entre sesiones (el badge "Visto antes" enlaza a la investigación previa):
+
+![Chat Analyst analizando un IOC](docs/screenshots/chat-analysis.png)
+
+**Dashboard** — distribución de riesgo, timeline de análisis y top amenazas:
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+**Historial de análisis** — filtrable, exportable, por analista:
+
+![Historial de análisis](docs/screenshots/history.png)
+
+---
+
 ## Arquitectura
 
 ```
