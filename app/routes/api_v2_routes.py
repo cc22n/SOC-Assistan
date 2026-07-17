@@ -394,7 +394,7 @@ def get_session(session_id):
         session = sm.get_session(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             from app.models.audit import AuditEvent
             AuditEvent.log('unauthorized_access', resource_type='session',
                            resource_id=session_id, success=False,
@@ -415,7 +415,7 @@ def update_session(session_id):
         session = sm.get_session(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         updated = sm.update_session(session_id=session_id, title=data.get('title'),
                                     description=data.get('description'))
@@ -432,7 +432,7 @@ def close_session(session_id):
         session = sm.get_session(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         closed = sm.close_session(session_id)
         if closed:
@@ -451,7 +451,7 @@ def get_session_messages(session_id):
         session = sm.get_session(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         limit = request.args.get('limit', 50, type=int)
         messages = sm.get_session_messages(session_id, limit=limit)
@@ -468,7 +468,7 @@ def get_session_iocs(session_id):
         session = sm.get_session(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         iocs = sm.get_session_iocs(session_id)
         return jsonify({'success': True, 'iocs': [i.to_dict() for i in iocs], 'total': len(iocs)}), 200
@@ -486,7 +486,7 @@ def export_session(session_id):
         session = sm.get_session(session_id)
         if not session:
             return jsonify({'error': 'Sesion no encontrada'}), 404
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
 
         fmt = request.args.get('format', 'json').lower()
