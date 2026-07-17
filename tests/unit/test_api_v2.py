@@ -549,3 +549,50 @@ class TestWhitelist:
         data = resp.get_json()
         assert data.get('whitelisted') is True
         assert data['whitelist_reason'] == 'IP interna'
+
+
+# ==============================================================================
+# RBAC en endpoints costosos: /llm/test y /apis/<api_name>/test
+# Disparan llamadas reales de pago a LLMs/APIs externas → solo analyst+.
+# ==============================================================================
+
+class TestCostlyEndpointsRBAC:
+
+    def _viewer_client(self, app, db_session, username='test_viewer', email='viewer@soc-test.local'):
+        from app.models.ioc import User
+        viewer = User(username=username, email=email, role='viewer', is_active=True)
+        viewer.set_password('ViewerPass123!')
+        db_session.session.add(viewer)
+        db_session.session.commit()
+
+        c = app.test_client()
+        with c.session_transaction() as sess:
+            sess['_user_id'] = str(viewer.id)
+            sess['_fresh'] = True
+        return c
+
+    def test_viewer_cannot_test_llm(self, app, db_session):
+        """El rol viewer no puede disparar /llm/test (403 vía require_role)."""
+        c = self._viewer_client(app, db_session)
+        resp = post_json(c, f'{BASE}/llm/test', {'provider': 'groq'})
+        assert resp.status_code == 403
+
+    def test_analyst_not_blocked_by_role_on_llm_test(self, analyst_client):
+        """Un analyst pasa el chequeo de rol de /llm/test (puede fallar por otra
+        razón con el request vacío, pero NO debe ser 403)."""
+        resp = post_json(analyst_client, f'{BASE}/llm/test', {})
+        assert resp.status_code != 403
+
+    def test_viewer_cannot_test_api(self, app, db_session):
+        """El rol viewer no puede disparar /apis/<api_name>/test (403 vía require_role)."""
+        c = self._viewer_client(app, db_session, username='test_viewer_api',
+                                 email='viewer_api@soc-test.local')
+        resp = post_json(c, f'{BASE}/apis/virustotal/test', {'test_ioc': '8.8.8.8'})
+        assert resp.status_code == 403
+
+    def test_analyst_not_blocked_by_role_on_api_test(self, analyst_client):
+        """Un analyst pasa el chequeo de rol de /apis/<api_name>/test (puede fallar
+        por API inexistente, pero NO debe ser 403)."""
+        resp = post_json(analyst_client, f'{BASE}/apis/nonexistent_api/test',
+                         {'test_ioc': '8.8.8.8'})
+        assert resp.status_code != 403
