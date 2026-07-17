@@ -137,6 +137,70 @@ class TestVirusTotalClient:
             result = client.check_domain('unknown.xyz')
         assert result['found'] is False
 
+    def test_check_url_success_uses_urls_endpoint_with_unpadded_b64(self, app_ctx):
+        import base64
+        from app.services.new_api_clients import VirusTotalClient
+        client = VirusTotalClient()
+
+        mock_resp = make_response(200, {
+            'data': {'attributes': {
+                'last_analysis_stats': {'malicious': 8, 'suspicious': 1, 'harmless': 40, 'undetected': 3},
+                'reputation': -8, 'categories': {'vendor': 'phishing'},
+                'last_final_url': 'https://evil.com/phish', 'title': 'Fake Login'
+            }}
+        })
+        target_url = 'https://evil.com/phish?x=1'
+        expected_id = base64.urlsafe_b64encode(target_url.encode()).decode().strip('=')
+
+        with patch('requests.get', return_value=mock_resp) as mock_get:
+            result = client.check_url(target_url)
+
+        called_url = mock_get.call_args[0][0]
+        assert called_url == f"{client.base_url}/urls/{expected_id}"
+        assert '=' not in expected_id
+        assert result['malicious'] == 8
+        assert result['suspicious'] == 1
+        assert result['reputation'] == -8
+        assert result['final_url'] == 'https://evil.com/phish'
+        assert result['title'] == 'Fake Login'
+
+    def test_check_url_not_found(self, app_ctx):
+        from app.services.new_api_clients import VirusTotalClient
+        client = VirusTotalClient()
+
+        with patch('requests.get', return_value=make_response(404, {})):
+            result = client.check_url('https://neverseen.example.com/x')
+        assert result['found'] is False
+
+    def test_check_url_invalid_key(self, app_ctx):
+        from app.services.new_api_clients import VirusTotalClient
+        client = VirusTotalClient()
+
+        with patch('requests.get', return_value=make_response(401, {})):
+            result = client.check_url('https://evil.com/x')
+        assert 'error' in result
+        assert 'inválida' in result['error']
+
+    def test_check_url_no_key(self, app, app_ctx):
+        from flask import current_app
+        from app.services.new_api_clients import VirusTotalClient
+        original = current_app.config['API_KEYS'].get('virustotal')
+        current_app.config['API_KEYS']['virustotal'] = None
+        try:
+            client = VirusTotalClient()
+            result = client.check_url('https://evil.com/x')
+            assert 'error' in result
+        finally:
+            current_app.config['API_KEYS']['virustotal'] = original
+
+    def test_check_url_exception(self, app_ctx):
+        from app.services.new_api_clients import VirusTotalClient
+        client = VirusTotalClient()
+
+        with patch('requests.get', side_effect=Exception('Connection timeout')):
+            result = client.check_url('https://evil.com/x')
+        assert 'error' in result
+
 
 # ==============================================================================
 # ABUSEIPDB CLIENT
