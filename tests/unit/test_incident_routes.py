@@ -274,6 +274,21 @@ class TestAddNote:
 
 
 # ==============================================================================
+# VINCULAR IOCs
+# ==============================================================================
+
+class TestLinkIocs:
+
+    def test_link_iocs_invalid_role_returns_400(self, analyst_client, sample_incident, sample_ioc):
+        """role fuera del enum permitido (primary/related/context) → 400."""
+        resp = post_json(analyst_client, f'{BASE}/{sample_incident.id}/iocs', {
+            'ioc_ids': [sample_ioc.id],
+            'role': 'admin'
+        })
+        assert resp.status_code == 400
+
+
+# ==============================================================================
 # ESTADÍSTICAS
 # ==============================================================================
 

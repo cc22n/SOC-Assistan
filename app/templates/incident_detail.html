@@ -231,12 +231,12 @@ function renderIncident(inc) {
                 <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div class="flex items-center gap-2">
                         <span class="risk-badge ${riskClass[ioc.risk_level] || ''} text-xs">${ioc.risk_level || 'N/A'}</span>
-                        <span class="font-mono text-sm">${ioc.ioc_value || 'N/A'}</span>
+                        <span class="font-mono text-sm">${escapeHtml(ioc.ioc_value || 'N/A')}</span>
                         <span class="text-xs text-gray-400">${(ioc.ioc_type || '').toUpperCase()}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-gray-500">${ioc.confidence_score || '-'}/100</span>
-                        <span class="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded">${ioc.role}</span>
+                        <span class="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded">${escapeHtml(ioc.role || '')}</span>
                     </div>
                 </div>
             `;

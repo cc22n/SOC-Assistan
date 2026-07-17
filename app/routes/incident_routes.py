@@ -483,6 +483,8 @@ def link_iocs(incident_id):
 
         ioc_ids = data.get('ioc_ids', [])
         role = data.get('role', 'related')
+        if role not in ('primary', 'related', 'context'):
+            return jsonify({'error': 'role inválido'}), 400
         notes = data.get('notes')
 
         if not ioc_ids:
