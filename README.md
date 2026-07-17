@@ -218,6 +218,10 @@ Then open `http://localhost:5000`. The app container waits for PostgreSQL, creat
 
 > Note: without API keys the app runs, but IOC lookups will return empty results. `DATABASE_URL`, `REDIS_URL` and `FLASK_ENV` are set by `docker-compose.yml` and always point to the bundled services.
 
+#### TLS in production
+
+`docker-compose.yml` exposes the app container on port 5000 over plain HTTP — gunicorn does not terminate TLS itself. `ProductionConfig` sets `SESSION_COOKIE_SECURE=True`, which means the browser will not send the session cookie back over an insecure connection, so the app must sit behind something that terminates HTTPS before traffic reaches gunicorn. Put a reverse proxy (nginx, Caddy) or a managed load balancer in front of the container to handle the TLS certificate and forward plain HTTP to `localhost:5000` internally, or terminate TLS at a service like Cloudflare in front of the deployment. Exactly how you configure that proxy depends on your environment, so it's not covered step by step here.
+
 ### Manual installation
 
 ### Prerequisites

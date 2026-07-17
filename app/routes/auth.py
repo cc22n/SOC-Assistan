@@ -84,6 +84,13 @@ def logout():
 @limiter.limit("3 per minute", methods=["POST"])
 def register():
     """Crear usuario — solo admin, o bootstrap inicial cuando no hay usuarios."""
+    if request.method == 'POST':
+        # Advisory lock previene race condition TOCTOU: dos POST concurrentes
+        # contra una tabla users vacia podrian leer count()==0 ambos y crear
+        # dos cuentas admin sin autenticacion. Se limita a POST (el GET solo
+        # renderiza el form y no necesita serializarse).
+        from sqlalchemy import text
+        db.session.execute(text("SELECT pg_advisory_xact_lock(735202)"))
     is_bootstrap = User.query.count() == 0
 
     # Fuera del bootstrap, solo admins autenticados pueden crear usuarios

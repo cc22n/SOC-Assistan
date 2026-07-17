@@ -14,8 +14,10 @@ services:
     env_file:
       - path: .env.docker
         required: false
+    # En produccion, sobreescribe POSTGRES_PASSWORD via .env.docker o una
+    # variable de entorno del host — no dejes el default de desarrollo.
     environment:
-      - DATABASE_URL=postgresql://soc_admin:soc_secure_password@db:5432/soc_agent
+      - DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:-soc_secure_password}@db:5432/soc_agent
       - REDIS_URL=redis://redis:6379/0
       - FLASK_ENV=production
     depends_on:
@@ -38,9 +40,10 @@ services:
     environment:
       POSTGRES_DB: soc_agent
       POSTGRES_USER: soc_admin
-      POSTGRES_PASSWORD: soc_secure_password
-    ports:
-      - "5433:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soc_secure_password}
+    # Publicar solo para debug local (psql desde el host). En produccion, no exponer.
+    # ports:
+    #   - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
