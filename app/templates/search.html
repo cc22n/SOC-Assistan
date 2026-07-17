@@ -95,7 +95,7 @@
                                 {{ analysis.ioc.value if analysis.ioc else '-' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="risk-badge risk-{{ analysis.risk_level|lower }}">
+                                <span class="risk-badge risk-{{ analysis.risk_level|lower|replace('í','i') }}">
                                     {{ analysis.risk_level }}
                                 </span>
                             </td>
