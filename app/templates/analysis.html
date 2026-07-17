@@ -466,7 +466,7 @@ function showTab(source) {
         if (key === 'status' || key === 'raw') continue;
         html += `<div class="flex justify-between py-1.5 border-b border-gray-50">
             <span class="text-gray-500 text-xs">${formatKey(key)}</span>
-            <span class="text-gray-800 text-xs text-right max-w-[60%] truncate" title="${escapeHtml(String(formatValue(value)))}">${formatValue(value)}</span>
+            <span class="text-gray-800 text-xs text-right max-w-[60%] truncate" title="${escapeHtml(String(formatValue(value)))}">${escapeHtml(String(formatValue(value)))}</span>
         </div>`;
     }
     html += '</div>';
