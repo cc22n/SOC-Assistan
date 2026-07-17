@@ -7,6 +7,30 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 
+# ==============================================================================
+# RATE LIMITING DE /deep/analyze
+# Es más costoso que /analyze/enhanced (LLM + Tavily + N APIs): debe tener
+# rate limiting equivalente. Se verifica la fuente en vez de disparar un
+# request HTTP completo, para no tener que mockear todo el servicio.
+# ==============================================================================
+
+class TestDeepAnalyzeRateLimiting:
+
+    def test_deep_analyze_has_rate_limit_and_login_decorators(self):
+        import inspect
+        from app.routes import deep_analysis_routes
+
+        assert hasattr(deep_analysis_routes, 'limiter'), \
+            "deep_analysis_routes debe importar `limiter` de app"
+
+        source = inspect.getsource(deep_analysis_routes)
+        decorator_block = source.split("def deep_analyze")[0].splitlines()[-6:]
+        decorator_block_str = '\n'.join(decorator_block)
+
+        assert '@login_required' in decorator_block_str
+        assert '@limiter.limit' in decorator_block_str
+
+
 @pytest.fixture(scope='function')
 def svc(app):
     """DeepAnalysisService dentro de un app context."""

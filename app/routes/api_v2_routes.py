@@ -715,6 +715,8 @@ def llm_providers():
 
 @bp.route('/llm/test', methods=['POST'])
 @login_required
+@require_role('analyst')
+@limiter.limit("20 per hour")
 @require_json
 def test_llm():
     """Probar un proveedor LLM"""
@@ -757,6 +759,8 @@ def test_llm():
 
 @bp.route('/apis/<api_name>/test', methods=['POST'])
 @login_required
+@require_role('analyst')
+@limiter.limit("20 per hour")
 @require_json
 def test_api(api_name):
     """Probar una API de threat intelligence"""

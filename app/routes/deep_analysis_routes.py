@@ -10,6 +10,7 @@ import logging
 from app.utils.time_utils import utcnow
 
 from app.utils.responses import safe_error_response
+from app import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ def get_deep_service():
 
 @bp.route('/analyze', methods=['POST'])
 @login_required
+@limiter.limit("30 per hour")
+@limiter.limit("5 per minute")
 def deep_analyze():
     """
     Ejecuta análisis profundo de un IOC.
