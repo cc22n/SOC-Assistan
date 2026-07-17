@@ -84,7 +84,7 @@ def _resolve_method(api_name: str, client: Any, ioc: str, ioc_type: str) -> Opti
         ('virustotal', 'ip'):       lambda: client.check_ip(ioc),
         ('virustotal', 'domain'):   lambda: client.check_domain(ioc),
         ('virustotal', 'hash'):     lambda: client.check_hash(ioc),
-        ('virustotal', 'url'):      lambda: client.check_domain(ioc),
+        ('virustotal', 'url'):      lambda: client.check_url(ioc),
 
         ('abuseipdb', 'ip'):        lambda: client.check_ip(ioc),
 

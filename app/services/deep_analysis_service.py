@@ -190,7 +190,35 @@ class DeepAnalysisService:
             )
             results['base_analysis'] = base_analysis
             results['modules_executed'].append('base_apis')
-            
+
+            # ─────────────────────────────────────────────────────────────────
+            # PASO 1.5: Persistir IOC + IOCAnalysis (y vincular a la sesión)
+            # ─────────────────────────────────────────────────────────────────
+            # Deep analysis nunca persistía su resultado en BD: una pregunta de
+            # seguimiento en el chat no encontraba el IOC (SessionIOC vacío) y
+            # perdía todo el contexto. Reutilizamos el MISMO helper que usa el
+            # flujo normal de chat (_handle_new_ioc_analysis) para no duplicar
+            # la lógica de creación/upsert de IOC + IOCAnalysis. Este paso es
+            # el punto compartido por el chat (con session_id) y el endpoint
+            # REST /api/v2/deep/analyze (a veces sin session_id) — si no hay
+            # sesión, el helper igual persiste IOC+IOCAnalysis y solo omite el
+            # SessionIOC. Además, al existir ya la fila IOCAnalysis aquí,
+            # _persist_web_search (Paso 2) deja de ser un no-op.
+            try:
+                session_obj = None
+                if session_id:
+                    session_obj = self.orchestrator.session_manager.get_session(session_id)
+                analysis_obj = self.orchestrator._save_analysis_to_session(
+                    session_obj, ioc, ioc_type, base_analysis, user_id, None
+                )
+                if analysis_obj:
+                    results['ioc_analysis_id'] = analysis_obj.id
+                    results['modules_executed'].append('persisted')
+                else:
+                    logger.warning(f"Deep analysis persistence returned no analysis_obj for {ioc}")
+            except Exception as e:
+                logger.warning(f"Deep analysis persistence failed (non-fatal) for {ioc}: {e}")
+
             # ─────────────────────────────────────────────────────────────────
             # PASO 2: Búsqueda web OSINT
             # ─────────────────────────────────────────────────────────────────

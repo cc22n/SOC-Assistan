@@ -14,6 +14,7 @@ pip install google-genai requests --break-system-packages
 import requests
 import logging
 import json
+import base64
 from typing import Dict, Optional, Any
 from flask import current_app
 
@@ -129,6 +130,41 @@ class VirusTotalClient:
             return {'error': f'HTTP {response.status_code}'}
         except Exception as e:
             logger.error(f"VirusTotal domain error: {e}")
+            return {'error': str(e)}
+
+    def check_url(self, url: str) -> Dict:
+        """Analiza una URL en VirusTotal (endpoint /urls/{url_id})"""
+        if not self.api_key:
+            return {'error': 'API key no configurada'}
+
+        try:
+            url_id = base64.urlsafe_b64encode(url.encode()).decode().strip('=')
+            response = requests.get(
+                f"{self.base_url}/urls/{url_id}",
+                headers=self._get_headers(),
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                data = response.json().get('data', {}).get('attributes', {})
+                stats = data.get('last_analysis_stats', {})
+                return {
+                    'malicious': stats.get('malicious', 0),
+                    'suspicious': stats.get('suspicious', 0),
+                    'harmless': stats.get('harmless', 0),
+                    'undetected': stats.get('undetected', 0),
+                    'reputation': data.get('reputation', 0),
+                    'categories': data.get('categories', {}),
+                    'final_url': data.get('last_final_url') or data.get('url'),
+                    'title': data.get('title')
+                }
+            elif response.status_code == 404:
+                return {'found': False, 'message': 'URL no encontrada'}
+            elif response.status_code == 401:
+                return {'error': 'API key inválida'}
+            return {'error': f'HTTP {response.status_code}'}
+        except Exception as e:
+            logger.error(f"VirusTotal URL error: {e}")
             return {'error': str(e)}
 
 
