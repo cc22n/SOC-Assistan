@@ -166,6 +166,20 @@ def update_mitre():
 def export_analysis_stix(analysis_id):
     """Exporta un análisis como STIX 2.1 Bundle"""
     try:
+        from app.models.ioc import IOCAnalysis
+        from app import db
+
+        analysis = db.session.get(IOCAnalysis, analysis_id)
+        if not analysis:
+            return jsonify({'error': f'Analysis {analysis_id} not found'}), 404
+
+        if analysis.user_id != current_user.id and current_user.role != 'admin':
+            from app.models.audit import AuditEvent
+            AuditEvent.log('unauthorized_access', resource_type='analysis',
+                           resource_id=analysis_id, success=False,
+                           details={'reason': 'IDOR attempt'}, _commit=True)
+            return jsonify({'error': 'No autorizado'}), 403
+
         from app.services.stix_exporter import STIXExporter
         exporter = STIXExporter()
 
@@ -199,6 +213,20 @@ def export_analysis_stix(analysis_id):
 def export_incident_stix(incident_id):
     """Exporta un incidente como STIX 2.1 Bundle"""
     try:
+        from app.models.ioc import Incident
+        from app import db
+
+        incident = db.session.get(Incident, incident_id)
+        if not incident:
+            return jsonify({'error': f'Incident {incident_id} not found'}), 404
+
+        if not incident.is_visible_to(current_user):
+            from app.models.audit import AuditEvent
+            AuditEvent.log('unauthorized_access', resource_type='incident',
+                           resource_id=incident_id, success=False,
+                           details={'reason': 'IDOR attempt'}, _commit=True)
+            return jsonify({'error': 'No autorizado'}), 403
+
         from app.services.stix_exporter import STIXExporter
         exporter = STIXExporter()
 
