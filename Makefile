@@ -18,7 +18,7 @@ install:
 
 init:
 	@echo "🗄️  Inicializando base de datos..."
-	python init_db.py
+	python docker/init_db.py
 	@echo "✅ Base de datos inicializada"
 
 run:
@@ -40,7 +40,9 @@ clean:
 
 reset-db:
 	@echo "⚠️  Reseteando base de datos..."
-	python init_db.py reset
+	@echo "NOTA: docker/init_db.py no implementa un reset destructivo (no hay drop_all);"
+	@echo "esto solo re-aplica el init idempotente (create_all + indices)."
+	python docker/init_db.py
 
 prod:
 	@echo "🚀 Iniciando en modo producción..."
