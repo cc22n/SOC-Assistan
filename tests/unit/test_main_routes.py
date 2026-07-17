@@ -181,6 +181,45 @@ class TestSearchSafety:
 
 
 # ==============================================================================
+# ACERCA DE
+# ==============================================================================
+
+class TestAboutPage:
+
+    def test_about_loads(self, client):
+        """GET /about devuelve 200 (ruta pública, sin auth)."""
+        resp = client.get('/about')
+        assert resp.status_code == 200
+
+    def test_about_loads_authenticated(self, analyst_client, db_session):
+        """GET /about con usuario autenticado → 200."""
+        resp = analyst_client.get('/about')
+        assert resp.status_code == 200
+
+
+# ==============================================================================
+# BÚSQUEDA DE IOCs (/search)
+# ==============================================================================
+
+class TestSearchPage:
+
+    def test_search_without_query_loads(self, analyst_client, db_session):
+        """GET /search sin query → 200 (estado vacío inicial)."""
+        resp = analyst_client.get('/search')
+        assert resp.status_code == 200
+
+    def test_search_with_query_loads(self, analyst_client, db_session, sample_ioc):
+        """GET /search?q=... → 200 con resultados."""
+        resp = analyst_client.get('/search?q=185.220')
+        assert resp.status_code == 200
+
+    def test_search_redirects_without_auth(self, client):
+        """Búsqueda sin auth → redirect a login."""
+        resp = client.get('/search', follow_redirects=False)
+        assert resp.status_code == 302
+
+
+# ==============================================================================
 # SEGURIDAD DE HEADERS
 # ==============================================================================
 

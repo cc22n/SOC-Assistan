@@ -203,6 +203,29 @@ class TestAnalyzeValidation:
         assert 'confidence_score' in data
         assert 'risk_level' in data
 
+    def test_analyze_recommendation_saved_as_string(self, analyst_client, db_session):
+        """El campo recommendation debe guardarse como string (join de la lista),
+        nunca como lista cruda — evita corrupción tipo {"a","b"} en Postgres.
+        """
+        from app.models.ioc import IOCAnalysis
+
+        with patch('app.routes.api_v2_routes.get_orchestrator') as mock_orch:
+            mock_orch.return_value.analyze_with_intelligence.return_value = MOCK_ANALYSIS_RESULT
+            with patch('app.services.ioc_cache.get_cached_analysis', return_value=None):
+                resp = post_json(analyst_client, f'{BASE}/analyze/enhanced', {
+                    'ioc': '185.220.101.34',
+                    'type': 'ip',
+                    'use_llm_planning': False,
+                })
+
+        assert resp.status_code == 200
+        analysis = IOCAnalysis.query.order_by(IOCAnalysis.id.desc()).first()
+        assert analysis is not None
+        assert isinstance(analysis.recommendation, str)
+        assert analysis.recommendation == '\n'.join(
+            MOCK_ANALYSIS_RESULT['llm_analysis']['recommendations']
+        )
+
     def test_analyze_valid_domain_returns_200(self, analyst_client):
         """Dominio válido con mocks → 200."""
         with patch('app.routes.api_v2_routes.get_orchestrator') as mock_orch:

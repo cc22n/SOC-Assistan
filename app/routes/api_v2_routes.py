@@ -161,7 +161,7 @@ def analyze_enhanced(data: AnalyzeRequest):
             user_id=current_user.id,
             confidence_score=analysis_result['confidence_score'],
             risk_level=analysis_result['risk_level'],
-            recommendation=analysis_result.get('llm_analysis', {}).get('recommendations', []),
+            recommendation='\n'.join(str(r) for r in (analysis_result.get('llm_analysis', {}).get('recommendations') or [])),
             virustotal_data=analysis_result['api_results'].get('virustotal'),
             abuseipdb_data=analysis_result['api_results'].get('abuseipdb'),
             shodan_data=analysis_result['api_results'].get('shodan'),
