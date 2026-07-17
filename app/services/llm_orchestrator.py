@@ -1234,7 +1234,13 @@ Responde de forma clara, profesional y útil."""
         return 'unknown'
 
     def _save_analysis_to_session(self, session, ioc, ioc_type, analysis, user_id, user_message_id):
-        """Guarda el análisis en BD y lo vincula a la sesión (ACTUALIZADO v5)"""
+        """
+        Guarda el análisis en BD y lo vincula a la sesión (ACTUALIZADO v5).
+
+        `session` es opcional: si es None (p.ej. deep analysis disparado desde el
+        endpoint REST sin session_id), se persisten IOC + IOCAnalysis igual, pero
+        se omite la vinculación SessionIOC (no hay sesión a la que vincular).
+        """
         try:
             from app.models.ioc import IOC, IOCAnalysis
             from app import db
@@ -1290,13 +1296,14 @@ Responde de forma clara, profesional y útil."""
             db.session.add(analysis_obj)
             db.session.flush()
 
-            self.session_manager.add_ioc_to_session(
-                session_id=session.id,
-                ioc_id=ioc_obj.id,
-                analysis_id=analysis_obj.id,
-                role='analyzed',
-                message_id=user_message_id
-            )
+            if session:
+                self.session_manager.add_ioc_to_session(
+                    session_id=session.id,
+                    ioc_id=ioc_obj.id,
+                    analysis_id=analysis_obj.id,
+                    role='analyzed',
+                    message_id=user_message_id
+                )
 
             db.session.commit()
             return analysis_obj

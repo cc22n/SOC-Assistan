@@ -196,3 +196,174 @@ class TestWebSearchCache:
             assert svc._get_cached_web_search('99.99.99.99', 'ip') is None
             # persistir sin filas ancla es un no-op silencioso
             svc._persist_web_search('99.99.99.99', 'ip', {'raw_results': []})
+
+
+# ==============================================================================
+# PERSISTENCIA DEL RESULTADO DE DEEP ANALYSIS (IOC + IOCAnalysis + SessionIOC)
+#
+# Antes de este fix, deep_analyze() calculaba base_analysis (score, risk_level,
+# APIs) pero nunca creaba filas IOC/IOCAnalysis/SessionIOC: una pregunta de
+# seguimiento en el chat ("¿qué puertos tiene?") no encontraba el IOC vía
+# _get_session_ioc_data y perdía todo el contexto del deep analysis.
+# ==============================================================================
+
+MOCK_BASE_ANALYSIS = {
+    'confidence_score': 75,
+    'risk_level': 'ALTO',
+    'api_results': {
+        'virustotal': {'malicious': 30},
+        'abuseipdb': {'abuse_confidence': 70},
+    },
+    'llm_analysis': {'summary': 'IP maliciosa detectada.'},
+    'sources_used': ['virustotal', 'abuseipdb'],
+    'mitre_techniques': [],
+    'processing_time': 1.23,
+}
+
+
+class TestDeepAnalyzePersistence:
+    """Verifica que deep_analyze() persiste su resultado reutilizando el mismo
+    helper que usa el flujo normal de chat (_save_analysis_to_session), sin
+    llamar APIs/LLM/Tavily reales."""
+
+    @staticmethod
+    def _make_service(base_analysis=None):
+        from app.services.deep_analysis_service import DeepAnalysisService
+        svc = DeepAnalysisService()
+
+        # Paso 6 (reporte final) siempre llama al LLM: mockeado.
+        svc._llm_service = MagicMock()
+        svc._llm_service._call_generic_openai_style.return_value = {'analysis': '{}'}
+
+        # El orchestrator queda REAL (para reusar _save_analysis_to_session tal
+        # cual), solo se mockea la llamada cara a APIs externas + LLM planning.
+        real_orchestrator = svc.orchestrator
+        real_orchestrator.analyze_with_intelligence = MagicMock(
+            return_value=dict(base_analysis or MOCK_BASE_ANALYSIS)
+        )
+        return svc
+
+    def test_new_ioc_creates_ioc_and_analysis_rows(self, app, db_session, analyst_user):
+        """REST sin session_id: igual persiste IOC + IOCAnalysis."""
+        with app.app_context():
+            svc = self._make_service()
+
+            result = svc.deep_analyze(
+                ioc='203.0.113.77',
+                ioc_type='ip',
+                user_id=analyst_user.id,
+                session_id=None,
+                include_web_search=False,
+                include_correlation=False,
+                include_apt_analysis=False,
+                include_hypothesis=False,
+            )
+
+            from app.models.ioc import IOC, IOCAnalysis
+
+            ioc_obj = IOC.query.filter_by(value='203.0.113.77', ioc_type='ip').first()
+            assert ioc_obj is not None, "deep_analyze debe crear la fila IOC"
+
+            analysis = IOCAnalysis.query.filter_by(ioc_id=ioc_obj.id).first()
+            assert analysis is not None, "deep_analyze debe crear la fila IOCAnalysis"
+            assert analysis.risk_level == 'ALTO'
+            assert analysis.confidence_score == 75
+            assert result.get('ioc_analysis_id') == analysis.id
+            assert 'persisted' in result['modules_executed']
+
+    def test_persistence_links_session_ioc_when_session_id_given(self, app, db_session, analyst_user):
+        """Chat con sesión: además crea el SessionIOC, para que el seguimiento
+        (_get_session_ioc_data) encuentre el IOC."""
+        with app.app_context():
+            from app.models.session import InvestigationSession, SessionIOC
+            from app import db
+
+            session_obj = InvestigationSession(user_id=analyst_user.id, title='test session')
+            db.session.add(session_obj)
+            db.session.commit()
+
+            svc = self._make_service()
+
+            svc.deep_analyze(
+                ioc='198.51.100.23',
+                ioc_type='ip',
+                user_id=analyst_user.id,
+                session_id=session_obj.id,
+                include_web_search=False,
+                include_correlation=False,
+                include_apt_analysis=False,
+                include_hypothesis=False,
+            )
+
+            from app.models.ioc import IOC
+
+            ioc_obj = IOC.query.filter_by(value='198.51.100.23', ioc_type='ip').first()
+            assert ioc_obj is not None
+
+            sioc = SessionIOC.query.filter_by(session_id=session_obj.id, ioc_id=ioc_obj.id).first()
+            assert sioc is not None, "debe vincular el IOC a la sesión vía SessionIOC"
+            assert sioc.analysis_id is not None
+
+            # Simula la pregunta de seguimiento en el chat tras el deep analysis
+            ioc_value, ioc_type, api_data = svc.orchestrator._get_session_ioc_data(
+                session_obj.id, '198.51.100.23'
+            )
+            assert ioc_value == '198.51.100.23'
+            assert ioc_type == 'ip'
+
+    def test_existing_ioc_is_updated_not_duplicated(self, app, db_session, sample_ioc, analyst_user):
+        """Si el IOC ya existe (mismo value+type), el helper hace upsert del IOC
+        (no duplica la fila IOC); el IOCAnalysis nuevo se agrega al historial,
+        igual que en el flujo normal de chat."""
+        with app.app_context():
+            svc = self._make_service(
+                base_analysis=dict(MOCK_BASE_ANALYSIS, risk_level='CRÍTICO', confidence_score=95)
+            )
+
+            svc.deep_analyze(
+                ioc=sample_ioc.value,
+                ioc_type=sample_ioc.ioc_type,
+                user_id=analyst_user.id,
+                session_id=None,
+                include_web_search=False,
+                include_correlation=False,
+                include_apt_analysis=False,
+                include_hypothesis=False,
+            )
+
+            from app.models.ioc import IOC, IOCAnalysis
+
+            matching_iocs = IOC.query.filter_by(
+                value=sample_ioc.value, ioc_type=sample_ioc.ioc_type
+            ).all()
+            assert len(matching_iocs) == 1, "no debe duplicar la fila IOC"
+
+            analyses = IOCAnalysis.query.filter_by(ioc_id=sample_ioc.id).all()
+            assert len(analyses) >= 1
+            latest = max(analyses, key=lambda a: a.id)
+            assert latest.risk_level == 'CRÍTICO'
+
+    def test_persistence_failure_does_not_break_deep_analysis(self, app, db_session, analyst_user):
+        """Si la persistencia falla (p.ej. BD caída), el deep analysis debe
+        seguir devolviendo el reporte en vez de romperse."""
+        with app.app_context():
+            svc = self._make_service()
+            svc.orchestrator._save_analysis_to_session = MagicMock(
+                side_effect=RuntimeError('DB down')
+            )
+
+            result = svc.deep_analyze(
+                ioc='203.0.113.200',
+                ioc_type='ip',
+                user_id=analyst_user.id,
+                session_id=None,
+                include_web_search=False,
+                include_correlation=False,
+                include_apt_analysis=False,
+                include_hypothesis=False,
+            )
+
+            assert 'base_analysis' in result
+            assert result['base_analysis']['risk_level'] == 'ALTO'
+            assert 'ioc_analysis_id' not in result
+            assert 'persisted' not in result['modules_executed']
