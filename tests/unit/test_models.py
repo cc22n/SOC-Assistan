@@ -341,3 +341,84 @@ class TestIncidentModel:
             db_session.session.add(inc)
             db_session.session.commit()
             assert inc.status == 'open'
+
+
+# ==============================================================================
+# INVESTIGATION SESSION
+# ==============================================================================
+
+class TestInvestigationSessionModel:
+
+    def test_is_visible_to_owner(self, db_session, analyst_user, app):
+        """El dueño de la sesión la ve, aunque no sea admin."""
+        from app.models.session import InvestigationSession
+        with app.app_context():
+            session = InvestigationSession(user_id=analyst_user.id, status='active')
+            db_session.session.add(session)
+            db_session.session.commit()
+            assert session.is_visible_to(analyst_user) is True
+
+    def test_is_visible_to_other_user_denied(self, db_session, analyst_user, other_user, app):
+        """Un usuario que no es dueño ni admin no ve la sesión."""
+        from app.models.session import InvestigationSession
+        with app.app_context():
+            session = InvestigationSession(user_id=analyst_user.id, status='active')
+            db_session.session.add(session)
+            db_session.session.commit()
+            assert session.is_visible_to(other_user) is False
+
+    def test_is_visible_to_admin_sees_all(self, db_session, analyst_user, admin_user, app):
+        """Admin ve cualquier sesión, sin importar el dueño."""
+        from app.models.session import InvestigationSession
+        with app.app_context():
+            session = InvestigationSession(user_id=analyst_user.id, status='active')
+            db_session.session.add(session)
+            db_session.session.commit()
+            assert session.is_visible_to(admin_user) is True
+
+    def test_close_expired_sessions_respects_auto_close_hours(self, db_session, analyst_user, app):
+        """
+        close_expired_sessions() debe cerrar una sesión con auto_close_hours=1
+        cuya última actividad fue hace 2 horas, aunque no hayan pasado 24h reales.
+        Antes del fix, el filtro SQL exigía last_activity_at < ahora-24h y esta
+        sesión nunca se recogía como candidata.
+        """
+        from datetime import timedelta
+        from app.models.session import InvestigationSession, close_expired_sessions
+
+        with app.app_context():
+            session = InvestigationSession(
+                user_id=analyst_user.id,
+                status='active',
+                auto_close_hours=1,
+                last_activity_at=utcnow() - timedelta(hours=2)
+            )
+            db_session.session.add(session)
+            db_session.session.commit()
+            session_id = session.id
+
+            closed_count = close_expired_sessions()
+
+            assert closed_count >= 1
+            refreshed = InvestigationSession.query.get(session_id)
+            assert refreshed.status == 'closed'
+
+    def test_close_expired_sessions_keeps_recent_active(self, db_session, analyst_user, app):
+        """Una sesión activa con actividad reciente no debe cerrarse."""
+        from app.models.session import InvestigationSession, close_expired_sessions
+
+        with app.app_context():
+            session = InvestigationSession(
+                user_id=analyst_user.id,
+                status='active',
+                auto_close_hours=24,
+                last_activity_at=utcnow()
+            )
+            db_session.session.add(session)
+            db_session.session.commit()
+            session_id = session.id
+
+            close_expired_sessions()
+
+            refreshed = InvestigationSession.query.get(session_id)
+            assert refreshed.status == 'active'

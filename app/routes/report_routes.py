@@ -41,7 +41,7 @@ def generate_session_pdf(session_id):
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         
         include_details = request.args.get('include_api_details', 'false').lower() == 'true'
@@ -83,7 +83,7 @@ def generate_session_docx(session_id):
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         
         include_details = request.args.get('include_api_details', 'false').lower() == 'true'
@@ -123,7 +123,7 @@ def preview_session_report(session_id):
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
-        if session.user_id != current_user.id and current_user.role != 'admin':
+        if not session.is_visible_to(current_user):
             return jsonify({'error': 'No autorizado'}), 403
         
         # Obtener datos

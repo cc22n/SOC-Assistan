@@ -153,26 +153,8 @@ def _rebuild_api_results(analysis: IOCAnalysis) -> Dict[str, Any]:
     """Reconstruye el dict de resultados de APIs desde los campos de la BD"""
     results = {}
 
-    api_fields = {
-        'virustotal': 'virustotal_data',
-        'abuseipdb': 'abuseipdb_data',
-        'shodan': 'shodan_data',
-        'otx': 'otx_data',
-        'greynoise': 'greynoise_data',
-        'threatfox': 'threatfox_data',
-        'urlhaus': 'urlhaus_data',
-        'malwarebazaar': 'malwarebazaar_data',
-        'google_safebrowsing': 'google_safebrowsing_data',
-        'securitytrails': 'securitytrails_data',
-        'hybrid_analysis': 'hybrid_analysis_data',
-        'criminal_ip': 'criminal_ip_data',
-        'pulsedive': 'pulsedive_data',
-        'urlscan': 'urlscan_data',
-        'shodan_internetdb': 'shodan_internetdb_data',
-        'ip_api': 'ip_api_data',
-    }
-
-    for api_name, field_name in api_fields.items():
+    for api_name in IOCAnalysis.api_source_names():
+        field_name = f'{api_name}_data'
         data = getattr(analysis, field_name, None)
         if data:
             results[api_name] = data

@@ -567,8 +567,7 @@ class ReportGenerator:
                 run.font.color.rgb = primary_color
 
             iocs = session_data.get('iocs', [])
-            critical_count = sum(
-                1 for i in iocs if i.get('risk_level') == 'CRITICO' or i.get('risk_level') == 'CRÍTICO')
+            critical_count = sum(1 for i in iocs if i.get('risk_level') == 'CRÍTICO')
             high_count = sum(1 for i in iocs if i.get('risk_level') == 'ALTO')
 
             if critical_count > 0:

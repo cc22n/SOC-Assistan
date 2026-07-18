@@ -7,7 +7,6 @@ Tablas:
 - SessionIOC: IOCs vinculados a una sesión
 - SessionMessage: Mensajes del chat en una sesión
 """
-from datetime import timedelta
 from app.utils.time_utils import utcnow
 from typing import List, Optional, Dict, Any
 from sqlalchemy import (
@@ -82,6 +81,10 @@ class InvestigationSession(db.Model):
 
     def __repr__(self):
         return f'<InvestigationSession {self.id}: {self.title or "Sin título"}>'
+
+    def is_visible_to(self, user) -> bool:
+        """Regla de visibilidad: admin ve todo; el resto solo si es el dueño de la sesión."""
+        return getattr(user, 'role', None) == 'admin' or self.user_id == user.id
 
     def to_dict(self, include_iocs: bool = False, include_messages: bool = False) -> Dict[str, Any]:
         """Convierte la sesión a diccionario"""
@@ -325,14 +328,20 @@ def close_expired_sessions() -> int:
     """
     Cierra todas las sesiones que han expirado.
     Retorna el número de sesiones cerradas.
+
+    El filtro SQL solo acota por status='active' (usa el índice parcial
+    idx_sessions_user_active) y deja que `session.is_expired` -que respeta
+    el `auto_close_hours` configurable por sesión- decida el cierre real.
+    No se hardcodea una cota de 24h en SQL porque eso excluiría sesiones
+    con auto_close_hours < 24 que ya deberían haber expirado.
     """
-    expired = InvestigationSession.query.filter(
+    candidates = InvestigationSession.query.filter(
         InvestigationSession.status == 'active',
-        InvestigationSession.last_activity_at < utcnow() - timedelta(hours=24)
+        InvestigationSession.last_activity_at.isnot(None)
     ).all()
 
     count = 0
-    for session in expired:
+    for session in candidates:
         if session.is_expired:
             session.close()
             count += 1
