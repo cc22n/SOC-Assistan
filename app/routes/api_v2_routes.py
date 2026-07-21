@@ -181,6 +181,7 @@ def analyze_enhanced(data: AnalyzeRequest):
             censys_data=analysis_result['api_results'].get('censys'),
             ipinfo_data=analysis_result['api_results'].get('ipinfo'),
             ipgeolocation_data=analysis_result['api_results'].get('ipgeolocation'),
+            crtsh_data=analysis_result['api_results'].get('crtsh'),
             llm_analysis=analysis_result.get('llm_analysis'),
             mitre_techniques=analysis_result.get('mitre_techniques', []),
             sources_used=analysis_result.get('sources_used', []),
@@ -574,20 +575,15 @@ def export_session(session_id):
 @bp.route('/apis/status', methods=['GET'])
 @login_required
 def apis_status():
-    """Estado de las APIs - ACTUALIZADO sin IPQualityScore/Censys"""
+    """Estado de las APIs de threat intel (excluye web_search/Tavily, que no se despacha por IOC)"""
     try:
-        from app.models.ioc import APIUsage
+        from app.models.ioc import APIUsage, IOCAnalysis
         from datetime import date
 
         today = date.today()
-        apis = [
-            'virustotal', 'abuseipdb', 'shodan', 'otx', 'greynoise',
-            'urlhaus', 'threatfox', 'malwarebazaar',
-            'google_safebrowsing', 'securitytrails', 'hybrid_analysis',
-            'criminal_ip', 'pulsedive', 'urlscan',
-            'shodan_internetdb', 'ip_api',
-            'censys', 'ipinfo'
-        ]
+        # Derivado de las columnas *_data del modelo (ver CLAUDE.md) para que
+        # nunca se desincronice al agregar una API nueva.
+        apis = [a for a in IOCAnalysis.api_source_names() if a != 'web_search']
 
         api_key_map = {
             'virustotal': 'virustotal', 'abuseipdb': 'abuseipdb', 'shodan': 'shodan',
@@ -597,7 +593,8 @@ def apis_status():
             'hybrid_analysis': 'hybrid_analysis',
             'criminal_ip': 'criminal_ip', 'pulsedive': 'pulsedive', 'urlscan': 'urlscan',
             'shodan_internetdb': None, 'ip_api': None,
-            'censys': 'censys', 'ipinfo': 'ipinfo'
+            'censys': 'censys', 'ipinfo': 'ipinfo', 'ipgeolocation': 'ipgeolocation',
+            'crtsh': None,
         }
 
         # Single query for all API usages today (avoids 18 individual queries)

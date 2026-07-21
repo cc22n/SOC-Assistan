@@ -23,7 +23,7 @@
 
 ## ¿Qué es SOC Agent?
 
-SOC Agent es una plataforma web de threat intelligence diseñada para analistas de Centros de Operaciones de Seguridad (SOC). Integra **19 APIs de threat intelligence**, **búsqueda OSINT web (Tavily)** y **5 proveedores de LLM** para analizar Indicadores de Compromiso (IOCs) como IPs, dominios, hashes y URLs.
+SOC Agent es una plataforma web de threat intelligence diseñada para analistas de Centros de Operaciones de Seguridad (SOC). Integra **20 APIs de threat intelligence**, **búsqueda OSINT web (Tavily)** y **5 proveedores de LLM** para analizar Indicadores de Compromiso (IOCs) como IPs, dominios, hashes y URLs.
 
 El sistema permite a los analistas:
 - Analizar IOCs contra múltiples fuentes simultáneamente
@@ -76,7 +76,7 @@ El sistema permite a los analistas:
 │  └─────────────────────────────────────────────────────┘    │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌────────────────────────────────────┐   │
-│  │ PostgreSQL   │  │ 19 APIs de Threat Intel            │   │
+│  │ PostgreSQL   │  │ 20 APIs de Threat Intel            │   │
 │  │ (Usuarios,   │  │ VirusTotal, AbuseIPDB, Shodan,     │   │
 │  │  IOCs,       │  │ GreyNoise, OTX, ThreatFox,         │   │
 │  │  Análisis,   │  │ URLhaus, MalwareBazaar,             │   │
@@ -104,6 +104,7 @@ El sistema permite a los analistas:
 | **URLs** | URLhaus, URLScan, Google Safe Browsing |
 | **Inteligencia** | AlienVault OTX |
 | **Geolocalización** | IP-API (sin key), IPinfo, IPGeolocation.io |
+| **Transparencia de certificados** | crt.sh (sin key) |
 | **OSINT Web** | Tavily Search (búsqueda web para LLMs, usada por Deep Analysis) |
 
 ### Proveedores LLM (5)
@@ -141,7 +142,7 @@ El orchestrator enruta automáticamente cada análisis al proveedor óptimo seg�
 - Selector de proveedor LLM (xAI, OpenAI, Groq, Gemini, Claude)
 
 ### Deep Analysis + Agente OSINT Web
-- Pipeline completo: 19 APIs + búsqueda web + correlación de IOCs + atribución APT + hipótesis de ataque
+- Pipeline completo: 20 APIs + búsqueda web + correlación de IOCs + atribución APT + hipótesis de ataque
 - **Agente de búsqueda de 2 pasos**: un LLM planifica queries dirigidas a partir de los hallazgos de las APIs (familia de malware, ASN — no el IOC crudo), Tavily busca con contenido extraído restringido a dominios de seguridad confiables, y un segundo LLM sintetiza los hallazgos **con citas obligatorias**
 - Reintento amplio cuando las queries dirigidas no encuentran nada; fallback estático si no hay LLM disponible
 - El contenido web se trata como no confiable (guard anti prompt-injection); no se afirma nada sin fuente
@@ -307,6 +308,7 @@ No necesitas todas las APIs para usar SOC Agent. El sistema funciona con las que
 | ThreatFox | Sin key | — |
 | MalwareBazaar | Sin key | — |
 | IPGeolocation.io | 1000 req/día | [ipgeolocation.io](https://ipgeolocation.io/signup.html) |
+| crt.sh | Sin key | — |
 | Tavily (OSINT web) | 1000 créditos/mes | [tavily.com](https://app.tavily.com/) |
 
 Para LLMs, [Groq](https://console.groq.com/) ofrece acceso gratuito. [Anthropic](https://console.anthropic.com/) y [OpenAI](https://platform.openai.com/) son de pago.
@@ -339,7 +341,7 @@ soc-agent/
 │   │   ├── api.py               # Esquemas de request (Pydantic v2)
 │   │   └── api_responses.py     # Esquemas de respuesta de APIs TI
 │   ├── services/
-│   │   ├── new_api_clients.py   # 19 clientes de API + Tavily, con circuit breakers
+│   │   ├── new_api_clients.py   # 20 clientes de API + Tavily, con circuit breakers
 │   │   ├── llm_orchestrator.py  # Routing LLM, memoria del chat + grafo de correlación
 │   │   ├── deep_analysis_service.py # Análisis profundo + agente de búsqueda de 2 pasos
 │   │   ├── async_executor.py    # Ejecución paralela de APIs (asyncio)
@@ -384,7 +386,7 @@ soc-agent/
 | **Seguridad** | Flask-WTF (CSRF), Flask-Limiter, middleware propio, audit log |
 | **Resiliencia** | Circuit breakers, caché TTL por tipo de IOC, métricas de requests |
 | **Reportes** | ReportLab (PDF), python-docx (DOCX) |
-| **APIs** | 19 APIs de Threat Intelligence + Tavily (OSINT web) |
+| **APIs** | 20 APIs de Threat Intelligence + Tavily (OSINT web) |
 | **IA** | 5 proveedores LLM con routing inteligente (xAI, OpenAI, Groq, Gemini, Anthropic) |
 
 ---

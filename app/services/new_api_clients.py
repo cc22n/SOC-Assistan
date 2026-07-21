@@ -248,6 +248,16 @@ class ShodanClient:
                 return {'found': False, 'message': 'IP no encontrada en Shodan'}
             elif response.status_code == 401:
                 return {'error': 'API key inválida'}
+            elif response.status_code == 403:
+                # El plan "oss"/free de Shodan permite consultar la mayoría de
+                # IPs pero bloquea algunas ("Requires membership or higher to
+                # access") sin que la key sea inválida. Propagar el mensaje
+                # real de Shodan en vez de un "HTTP 403" genérico.
+                try:
+                    detail = response.json().get('error', 'Acceso restringido por el plan de la cuenta')
+                except ValueError:
+                    detail = 'Acceso restringido por el plan de la cuenta'
+                return {'error': detail, 'plan_limited': True}
             return {'error': f'HTTP {response.status_code}'}
         except Exception as e:
             logger.error(f"Shodan error: {e}")
@@ -1287,6 +1297,56 @@ class IPGeolocationClient:
             return {'error': f'HTTP {response.status_code}'}
         except Exception as e:
             logger.error(f"IPGeolocation error: {e}")
+            return {'error': str(e)}
+
+
+class CrtShClient:
+    """
+    Cliente para crt.sh (Certificate Transparency logs, Sectigo).
+    Sin API key. Enumera subdominios históricos a partir de certificados
+    SSL/TLS emitidos para el dominio (dato que ninguna otra API del stack cubre:
+    SecurityTrails solo da DNS actual, no histórico de CT logs).
+    """
+
+    def __init__(self):
+        self.base_url = "https://crt.sh"
+
+    def check_domain(self, domain: str) -> Dict:
+        """Busca certificados para `%.{domain}` y extrae subdominios únicos."""
+        try:
+            response = requests.get(
+                self.base_url,
+                params={'q': f'%.{domain}', 'output': 'json'},
+                timeout=15
+            )
+
+            if response.status_code != 200:
+                return {'error': f'HTTP {response.status_code}'}
+
+            try:
+                certs = response.json()
+            except ValueError:
+                # crt.sh a veces responde 200 con cuerpo vacío/no-JSON bajo carga
+                return {'found': False, 'subdomains': [], 'total_certificates': 0}
+
+            if not certs:
+                return {'found': False, 'subdomains': [], 'total_certificates': 0}
+
+            subdomains = set()
+            for cert in certs:
+                for name in str(cert.get('name_value', '')).split('\n'):
+                    name = name.strip().lower()
+                    if name:
+                        subdomains.add(name)
+
+            return {
+                'found': True,
+                'subdomains': sorted(subdomains)[:200],
+                'total_subdomains': len(subdomains),
+                'total_certificates': len(certs),
+            }
+        except Exception as e:
+            logger.error(f"crt.sh error: {e}")
             return {'error': str(e)}
 
 

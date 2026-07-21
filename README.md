@@ -23,7 +23,7 @@
 
 ## What is SOC Agent?
 
-SOC Agent is a web-based threat intelligence platform designed for Security Operations Center (SOC) analysts. It integrates **19 threat intelligence APIs**, **web OSINT search (Tavily)** and **5 LLM providers** to analyze Indicators of Compromise (IOCs) such as IPs, domains, hashes, and URLs.
+SOC Agent is a web-based threat intelligence platform designed for Security Operations Center (SOC) analysts. It integrates **20 threat intelligence APIs**, **web OSINT search (Tavily)** and **5 LLM providers** to analyze Indicators of Compromise (IOCs) such as IPs, domains, hashes, and URLs.
 
 The system enables analysts to:
 - Analyze IOCs against multiple sources simultaneously
@@ -76,7 +76,7 @@ The system enables analysts to:
 │  └─────────────────────────────────────────────────────┘    │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌────────────────────────────────────┐   │
-│  │ PostgreSQL   │  │ 19 Threat Intel APIs               │   │
+│  │ PostgreSQL   │  │ 20 Threat Intel APIs               │   │
 │  │ (Users,      │  │ VirusTotal, AbuseIPDB, Shodan,     │   │
 │  │  IOCs,       │  │ GreyNoise, OTX, ThreatFox,         │   │
 │  │  Analyses,   │  │ URLhaus, MalwareBazaar,             │   │
@@ -104,6 +104,7 @@ The system enables analysts to:
 | **URLs** | URLhaus, URLScan, Google Safe Browsing |
 | **Intelligence** | AlienVault OTX |
 | **Geolocation** | IP-API (no key required), IPinfo, IPGeolocation.io |
+| **Certificate Transparency** | crt.sh (no key required) |
 | **Web OSINT** | Tavily Search (LLM-oriented web search, used by Deep Analysis) |
 
 ### LLM Providers (5)
@@ -141,7 +142,7 @@ The orchestrator automatically routes each analysis to the optimal provider base
 - LLM provider selector (xAI, OpenAI, Groq, Gemini, Claude)
 
 ### Deep Analysis + Web OSINT Agent
-- Full pipeline: 19 APIs + web search + IOC correlation + APT attribution + attack hypothesis
+- Full pipeline: 20 APIs + web search + IOC correlation + APT attribution + attack hypothesis
 - **2-step web search agent**: an LLM plans targeted queries from API findings (malware family, ASN — not the raw IOC), Tavily searches with extracted page content restricted to trusted security domains, and a second LLM synthesizes findings **with mandatory citations**
 - Broad-retry fallback when targeted queries find nothing; static fallback when no LLM is available
 - Web content treated as untrusted (anti prompt-injection guard); claims without a source are not asserted
@@ -311,6 +312,7 @@ You don't need all APIs to use SOC Agent. The system works with whatever APIs yo
 | ThreatFox | No key required | — |
 | MalwareBazaar | No key required | — |
 | IPGeolocation.io | 1000 req/day | [ipgeolocation.io](https://ipgeolocation.io/signup.html) |
+| crt.sh | No key required | — |
 | Tavily (web OSINT) | 1000 credits/month | [tavily.com](https://app.tavily.com/) |
 
 For LLMs, [Groq](https://console.groq.com/) offers free access. [Anthropic](https://console.anthropic.com/) and [OpenAI](https://platform.openai.com/) are paid.
@@ -343,7 +345,7 @@ soc-agent/
 │   │   ├── api.py               # Request schemas (Pydantic v2)
 │   │   └── api_responses.py     # Response schemas for TI APIs
 │   ├── services/
-│   │   ├── new_api_clients.py   # 19 API clients + Tavily, with circuit breakers
+│   │   ├── new_api_clients.py   # 20 API clients + Tavily, with circuit breakers
 │   │   ├── llm_orchestrator.py  # Smart LLM routing, chat memory + correlation graph
 │   │   ├── deep_analysis_service.py # Deep analysis + 2-step web search agent
 │   │   ├── async_executor.py    # Parallel API execution (asyncio)

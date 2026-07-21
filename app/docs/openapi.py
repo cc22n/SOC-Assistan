@@ -30,7 +30,7 @@ def generate_openapi_spec():
             "title": "SOC Agent API",
             "description": (
                 "API REST para la plataforma de Threat Intelligence SOC Agent.\n\n"
-                "Integra 19 APIs de threat intelligence y 4 proveedores LLM para "
+                "Integra 20 APIs de threat intelligence y 4 proveedores LLM para "
                 "análisis de IOCs (IPs, dominios, hashes, URLs).\n\n"
                 "**Autenticación:** Todas las rutas (excepto `/health`) requieren sesión activa via cookie."
             ),
@@ -728,7 +728,7 @@ SWAGGER_HTML = """
         <p>Threat Intelligence Platform - API Documentation</p>
         <div class="badges">
             <span class="badge">v5.0</span>
-            <span class="badge">19 APIs</span>
+            <span class="badge">20 APIs</span>
             <span class="badge">4 LLM Providers</span>
             <span class="badge">OpenAPI 3.0</span>
         </div>

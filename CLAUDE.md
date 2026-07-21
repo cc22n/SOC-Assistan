@@ -1,6 +1,6 @@
 # SOC Agent — Guía para agentes
 
-Plataforma Flask de threat intelligence para analistas SOC. 19 APIs de threat intel + Tavily (OSINT web) + 5 LLMs con routing. Entry point real: `wsgi.py` (no hay `run.py`).
+Plataforma Flask de threat intelligence para analistas SOC. 20 APIs de threat intel + Tavily (OSINT web) + 5 LLMs con routing. Entry point real: `wsgi.py` (no hay `run.py`).
 
 ## Comandos
 
@@ -25,9 +25,9 @@ flask db migrate -m "descripcion corta"   # autogenerate contra soc_agent (dev)
 flask db upgrade                           # aplica a soc_agent (dev)
 ```
 
-`soc_agent_test` NO necesita el `ALTER TABLE`/migración manual: los tests siguen usando `db.create_all()` en `tests/unit/conftest.py`, que lee directo la metadata de los modelos y se autocura en cada corrida. Solo `soc_agent` (dev) y producción pasan por `flask db upgrade`.
+`soc_agent_test` en teoría no necesita el `ALTER TABLE`/migración manual porque `tests/unit/conftest.py` llama `db.create_all()` en cada corrida — pero **eso solo crea tablas que no existen**, nunca agrega columnas a una tabla ya existente. Si algún flujo (CI, u otro agente "espejando CI exacto") corre `flask db downgrade base && flask db upgrade head` contra `soc_agent_test`, esa BD también queda 100% gobernada por las migraciones — cualquier columna que no esté en `migrations/versions/` desaparece igual que en dev. Ya pasó una vez (columna `crtsh_data` agregada solo con `ALTER TABLE` manual, sin migración → un downgrade+upgrade de espejo-CI la borró de `soc_agent_test` y rompió 47 tests reproduciblemente). **Tratar siempre `soc_agent_test` como si estuviera sujeta a `flask db upgrade`, nunca asumir que el `create_all()` de conftest la salva.**
 
-`autogenerate` no ordena bien tablas con FK circulares (ver `incidents`/`investigation_sessions` en la migración base) ni detecta objetos que no son metadata de modelos (extensiones como `pg_trgm`) — revisar el diff generado, no aplicarlo a ciegas. Los `.sql` sueltos en `migrations/` (fuera de `versions/`) son historial pre-Alembic, ya no se ejecutan desde ningún lado (ver `migrations/LEGACY_SQL.md`).
+`autogenerate` no ordena bien tablas con FK circulares (ver `incidents`/`investigation_sessions` en la migración base) ni detecta objetos que no son metadata de modelos (extensiones como `pg_trgm`) — revisar el diff generado, no aplicarlo a ciegas. Además, la baseline (`b9a306dbac54`) tiene drift real contra la BD viva: pedirle `flask db migrate` hoy genera decenas de cambios no relacionados (borra índices GIN legítimos como `idx_censys_data`/`idx_ioc_value_trgm`, degrada JSONB→JSON en las tablas `mitre_*`, etc.). **Regla dura: si agregaste una columna con `ALTER TABLE` manual (o cualquier cambio de esquema fuera de Alembic), escribe tú mismo un archivo de migración mínimo a mano en `migrations/versions/`** (`down_revision` = la head actual, un solo `op.add_column(...)`/`op.drop_column(...)`) — no uses el autogenerate para eso, arrastra todo el drift de arriba. Verifica el archivo de verdad: dropea la columna, corre `flask db upgrade` contra dev **y** contra test (`FLASK_ENV=testing flask db upgrade`), confirma que la recrea, antes de darlo por bueno. Los `.sql` sueltos en `migrations/` (fuera de `versions/`) son historial pre-Alembic, ya no se ejecutan desde ningún lado (ver `migrations/LEGACY_SQL.md`).
 
 En Windows con Postgres en español, agrega `?client_encoding=utf8` a la URL de psycopg2 o los errores de conexión dan `UnicodeDecodeError`.
 
@@ -50,7 +50,7 @@ En Windows con Postgres en español, agrega `?client_encoding=utf8` a la URL de 
 
 - `app/services/llm_orchestrator.py` — routing LLM, chat, memoria entre sesiones (`_get_ioc_history`), grafo de correlación (`_get_related_iocs`)
 - `app/services/deep_analysis_service.py` — deep analysis + agente OSINT de 2 pasos (planner LLM → Tavily → síntesis con citas), caché web TTL 24h
-- `app/services/new_api_clients.py` — clientes de las 19 APIs + `TavilySearchClient`
+- `app/services/new_api_clients.py` — clientes de las 20 APIs + `TavilySearchClient`
 - `app/services/async_executor.py` — ejecución paralela; mapa (api, tipo) → método
 - `app/routes/api_v2_routes.py` — API REST principal (`/api/v2`)
 - `tests/unit/conftest.py` — fixtures (usuarios por rol, clients autenticados, sample_ioc/analysis)

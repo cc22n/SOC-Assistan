@@ -200,6 +200,7 @@ _API_CONFIG: Dict[str, Dict] = {
     'ip_api':            {'fail_threshold': 5, 'timeout': 30},
     'ipinfo':            {'fail_threshold': 5, 'timeout': 60},
     'censys':            {'fail_threshold': 3, 'timeout': 180},
+    'crtsh':             {'fail_threshold': 5, 'timeout': 60},
 }
 
 

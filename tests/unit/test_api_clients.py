@@ -3,7 +3,7 @@ Tests para new_api_clients.py — mock all external HTTP calls
 Cubre: VirusTotalClient, AbuseIPDBClient, ShodanClient, GreyNoiseClient,
        OTXClient, HybridAnalysisClient, URLhausClient, ThreatFoxClient,
        MalwareBazaarClient, IPAPIClient, IPinfoClient, IPGeolocationClient,
-       GoogleSafeBrowsingClient, UnifiedThreatIntelClient
+       GoogleSafeBrowsingClient, CrtShClient, UnifiedThreatIntelClient
 """
 import pytest
 from unittest.mock import patch, MagicMock
@@ -791,6 +791,67 @@ class TestGoogleSafeBrowsingClient:
 
         with patch('requests.post', side_effect=Exception('Timeout')):
             result = client.check_url('http://evil.com')
+        assert 'error' in result
+
+
+# ==============================================================================
+# CRT.SH CLIENT (Certificate Transparency, sin key)
+# ==============================================================================
+
+class TestCrtShClient:
+
+    def test_check_domain_found(self, app_ctx):
+        from app.services.new_api_clients import CrtShClient
+        client = CrtShClient()
+
+        mock_resp = make_response(200, [
+            {'name_value': 'www.example.com\nexample.com'},
+            {'name_value': 'mail.example.com'},
+            {'name_value': 'www.example.com'},  # duplicado entre certificados
+        ])
+        with patch('requests.get', return_value=mock_resp):
+            result = client.check_domain('example.com')
+
+        assert result['found'] is True
+        assert result['total_certificates'] == 3
+        assert result['total_subdomains'] == 3
+        assert set(result['subdomains']) == {'www.example.com', 'example.com', 'mail.example.com'}
+
+    def test_check_domain_no_results(self, app_ctx):
+        from app.services.new_api_clients import CrtShClient
+        client = CrtShClient()
+
+        with patch('requests.get', return_value=make_response(200, [])):
+            result = client.check_domain('nonexistent-domain-xyz.com')
+        assert result['found'] is False
+        assert result['subdomains'] == []
+
+    def test_check_domain_non_json_body(self, app_ctx):
+        """crt.sh a veces responde 200 con cuerpo vacío/no-JSON bajo carga."""
+        from app.services.new_api_clients import CrtShClient
+        client = CrtShClient()
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.side_effect = ValueError('No JSON')
+        with patch('requests.get', return_value=mock_resp):
+            result = client.check_domain('example.com')
+        assert result['found'] is False
+
+    def test_check_domain_http_error(self, app_ctx):
+        from app.services.new_api_clients import CrtShClient
+        client = CrtShClient()
+
+        with patch('requests.get', return_value=make_response(503, {})):
+            result = client.check_domain('example.com')
+        assert 'error' in result
+
+    def test_check_domain_exception(self, app_ctx):
+        from app.services.new_api_clients import CrtShClient
+        client = CrtShClient()
+
+        with patch('requests.get', side_effect=Exception('Timeout')):
+            result = client.check_domain('example.com')
         assert 'error' in result
 
 

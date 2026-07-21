@@ -55,7 +55,7 @@ class LLMOrchestrator:
         # Estrategias por tipo de IOC (ACTUALIZADO sin censys/ipqualityscore)
         self.strategies = {
             'ip': ['greynoise', 'abuseipdb', 'shodan', 'criminal_ip', 'pulsedive', 'otx'],
-            'domain': ['urlhaus', 'otx', 'securitytrails', 'virustotal', 'google_safebrowsing', 'urlscan'],
+            'domain': ['urlhaus', 'otx', 'securitytrails', 'virustotal', 'google_safebrowsing', 'urlscan', 'crtsh'],
             'url': ['urlhaus', 'google_safebrowsing', 'virustotal', 'urlscan', 'pulsedive'],
             'hash': ['virustotal', 'threatfox', 'hybrid_analysis', 'malwarebazaar', 'otx', 'pulsedive']
         }
@@ -87,7 +87,7 @@ class LLMOrchestrator:
             'whois': ['securitytrails'],
             'registrado': ['securitytrails'],
             'historial': ['securitytrails', 'otx'],
-            'subdominio': ['securitytrails'],
+            'subdominio': ['securitytrails', 'crtsh'],
 
             # Preguntas sobre phishing
             'phishing': ['google_safebrowsing', 'urlhaus', 'virustotal', 'urlscan', 'criminal_ip'],
@@ -164,7 +164,7 @@ class LLMOrchestrator:
                 GoogleSafeBrowsingClient, SecurityTrailsClient, HybridAnalysisClient,
                 MalwareBazaarClient, CriminalIPClient, PulsediveClient,
                 URLScanClient, ShodanInternetDBClient, IPAPIClient,
-                CensysClient, IPinfoClient, IPGeolocationClient
+                CensysClient, IPinfoClient, IPGeolocationClient, CrtShClient
             )
 
             self.api_clients = {
@@ -196,6 +196,9 @@ class LLMOrchestrator:
                 'censys': CensysClient(),
                 'ipinfo': IPinfoClient(),
                 'ipgeolocation': IPGeolocationClient(),
+
+                # APIs v3.3
+                'crtsh': CrtShClient(),
             }
 
             self._clients_initialized = True
@@ -382,6 +385,7 @@ class LLMOrchestrator:
             'censys': ['ip'],
             'ipinfo': ['ip'],
             'ipgeolocation': ['ip'],
+            'crtsh': ['domain'],
         }
 
         return ioc_type in compatibility.get(api_name, [])
@@ -1286,6 +1290,9 @@ Responde de forma clara, profesional y útil."""
                 censys_data=analysis['api_results'].get('censys'),
                 ipinfo_data=analysis['api_results'].get('ipinfo'),
                 ipgeolocation_data=analysis['api_results'].get('ipgeolocation'),
+
+                # APIs v3.3
+                crtsh_data=analysis['api_results'].get('crtsh'),
 
                 # LLM y metadata
                 llm_analysis=analysis.get('llm_analysis'),

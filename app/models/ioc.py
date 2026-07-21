@@ -175,6 +175,9 @@ class IOCAnalysis(db.Model):
     ipgeolocation_data = db.Column(JSONB)  # NUEVO v3.2 (geoloc + ASN + timezone)
     web_search_data = db.Column(JSONB)  # NUEVO v3.2 (OSINT web Tavily — Deep Analysis)
 
+    # APIs v3.3
+    crtsh_data = db.Column(JSONB)  # NUEVO v3.3 (crt.sh, Certificate Transparency, sin key)
+
     # =========================================================================
     # Análisis LLM y MITRE
     # =========================================================================
@@ -265,6 +268,7 @@ class IOCAnalysis(db.Model):
                 'ipinfo': self.ipinfo_data,
                 'ipgeolocation': self.ipgeolocation_data,
                 'web_search': self.web_search_data,
+                'crtsh': self.crtsh_data,
 
                 # LLM y MITRE
                 'llm_analysis': self.llm_analysis,
