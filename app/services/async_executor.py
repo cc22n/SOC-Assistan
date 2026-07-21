@@ -137,6 +137,8 @@ def _resolve_method(api_name: str, client: Any, ioc: str, ioc_type: str) -> Opti
         ('ipinfo', 'ip'):           lambda: client.check_ip(ioc),
 
         ('ipgeolocation', 'ip'):    lambda: client.check_ip(ioc),
+
+        ('crtsh', 'domain'):        lambda: client.check_domain(ioc),
     }
 
     return method_map.get((api_name, ioc_type))
@@ -270,7 +272,60 @@ def execute_apis_parallel(
         f"(speedup vs sequential: ~{n_apis * 2:.0f}s -> {elapsed:.1f}s)"
     )
 
+    _record_api_usage(results)
+
     return results
+
+
+def _record_api_usage(results: Dict[str, Any]) -> None:
+    """
+    Registra requests_count/errors_count por API en la tabla api_usage
+    (alimenta los gráficos "Uso de APIs" y "Estado de APIs" del dashboard).
+
+    Upsert atómico vía ON CONFLICT para evitar condiciones de carrera entre
+    requests concurrentes que compartan la misma fila (api_name, date).
+    Nunca lanza excepciones -- un fallo de tracking no debe tumbar el análisis.
+    """
+    if not results:
+        return
+
+    try:
+        from app import db
+        from app.models.ioc import APIUsage
+        from app.utils.time_utils import utcnow
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+        now = utcnow()
+        today = now.date()
+        rows = [
+            {
+                'api_name': api_name,
+                'date': today,
+                'requests_count': 1,
+                'errors_count': 1 if isinstance(result, dict) and 'error' in result else 0,
+                'last_request_at': now,
+            }
+            for api_name, result in results.items()
+        ]
+
+        stmt = pg_insert(APIUsage.__table__).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['api_name', 'date'],
+            set_={
+                'requests_count': APIUsage.__table__.c.requests_count + stmt.excluded.requests_count,
+                'errors_count': APIUsage.__table__.c.errors_count + stmt.excluded.errors_count,
+                'last_request_at': stmt.excluded.last_request_at,
+            },
+        )
+        db.session.execute(stmt)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"[ASYNC] Failed to record API usage: {e}")
+        try:
+            from app import db
+            db.session.rollback()
+        except Exception:
+            pass
 
 
 def _fallback_sequential(
