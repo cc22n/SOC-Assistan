@@ -132,26 +132,73 @@ class TestAddIocToSession:
 
             assert updated.analysis_id == sample_analysis.id
 
+    def test_highest_risk_level_set_on_create_with_analysis(
+        self, app, db_session, analyst_user, sample_ioc, sample_analysis
+    ):
+        """Reemplaza a trigger_session_risk_level (nunca aplicado en ningun
+        ambiente real, ver migrations/LEGACY_SQL.md)."""
+        with app.app_context():
+            session, _ = session_manager.get_or_create_session(analyst_user.id)
+
+            session_manager.add_ioc_to_session(session.id, sample_ioc.id, analysis_id=sample_analysis.id)
+
+            reloaded = session_manager.get_session(session.id)
+            assert reloaded.highest_risk_level == sample_analysis.risk_level  # 'ALTO'
+
+    def test_highest_risk_level_updates_when_analysis_added_later(
+        self, app, db_session, analyst_user, sample_ioc, sample_analysis
+    ):
+        with app.app_context():
+            session, _ = session_manager.get_or_create_session(analyst_user.id)
+            session_manager.add_ioc_to_session(session.id, sample_ioc.id)
+
+            reloaded = session_manager.get_session(session.id)
+            assert reloaded.highest_risk_level is None
+
+            session_manager.add_ioc_to_session(session.id, sample_ioc.id, analysis_id=sample_analysis.id)
+
+            reloaded = session_manager.get_session(session.id)
+            assert reloaded.highest_risk_level == 'ALTO'
+
+    def test_highest_risk_level_picks_the_highest_among_several(
+        self, app, db_session, analyst_user, sample_ioc, sample_analysis
+    ):
+        with app.app_context():
+            from app import db
+            from app.models.ioc import IOC, IOCAnalysis
+
+            second_ioc = IOC(value='9.9.9.9', ioc_type='ip')
+            db.session.add(second_ioc)
+            db.session.commit()
+
+            second_analysis = IOCAnalysis(
+                ioc_id=second_ioc.id, risk_level='CRÍTICO', confidence_score=95,
+            )
+            db.session.add(second_analysis)
+            db.session.commit()
+
+            session, _ = session_manager.get_or_create_session(analyst_user.id)
+            session_manager.add_ioc_to_session(session.id, sample_ioc.id, analysis_id=sample_analysis.id)  # ALTO
+            session_manager.add_ioc_to_session(session.id, second_ioc.id, analysis_id=second_analysis.id)  # CRÍTICO
+
+            reloaded = session_manager.get_session(session.id)
+            assert reloaded.highest_risk_level == 'CRÍTICO'
+
     def test_auto_title_updates_on_first_ioc(self, app, db_session, analyst_user, sample_ioc):
         """add_ioc_to_session decide actualizar el título mirando session.total_iocs == 1.
 
-        En producción total_iocs lo mantiene el trigger SQL trigger_session_ioc_stats
-        (migrations/add_investigation_sessions.sql), que no se aplica en la BD de test
-        (create_all() no ejecuta triggers crudos, ver CLAUDE.md). Se fija manualmente
-        para aislar y probar esa rama de la lógica, independiente del trigger.
+        total_iocs lo mantiene el propio add_ioc_to_session (ver
+        SessionManager._recompute_highest_risk_level y el incremento en
+        add_ioc_to_session) — ya no depende de un trigger SQL.
         """
-        from app import db
-
         with app.app_context():
             session, _ = session_manager.get_or_create_session(analyst_user.id)
             assert 'Nueva investigación' in (session.title or '')
 
-            session.total_iocs = 1
-            db.session.commit()
-
             session_manager.add_ioc_to_session(session.id, sample_ioc.id)
 
             reloaded = session_manager.get_session(session.id)
+            assert reloaded.total_iocs == 1
             assert sample_ioc.value in (reloaded.title or '')
 
 
@@ -195,6 +242,13 @@ class TestSaveMessage:
             from app.models.session import SessionMessage
             count = SessionMessage.query.filter_by(session_id=session.id).count()
             assert count == 1
+
+            reloaded = session_manager.get_session(session.id)
+            assert reloaded.total_messages == 1
+
+            session_manager.save_message(session.id, role='assistant', content='respuesta')
+            reloaded = session_manager.get_session(session.id)
+            assert reloaded.total_messages == 2
 
 
 # ==============================================================================

@@ -47,6 +47,9 @@ class SessionManager:
     MAX_RECENT_MESSAGES = 20  # Mensajes completos a enviar al LLM
     SUMMARY_THRESHOLD = 20    # Generar resumen después de N mensajes
     MAX_CONTEXT_TOKENS = 4000 # Límite aproximado de tokens de contexto
+
+    # Prioridad de risk_level para highest_risk_level (grafía canónica, ver CLAUDE.md)
+    _RISK_PRIORITY = ['CRÍTICO', 'ALTO', 'MEDIO', 'BAJO', 'LIMPIO']
     
     def __init__(self):
         self.llm_service = None  # Lazy loading
@@ -247,9 +250,13 @@ class SessionManager:
                 existing.analysis_id = analysis_id
             if notes:
                 existing.analyst_notes = notes
+            if analysis_id:
+                session = self.get_session(session_id)
+                if session:
+                    self._recompute_highest_risk_level(session)
             db.session.commit()
             return existing
-        
+
         # Crear nuevo
         session_ioc = SessionIOC(
             session_id=session_id,
@@ -259,20 +266,50 @@ class SessionManager:
             added_by_message_id=message_id,
             analyst_notes=notes
         )
-        
+
         db.session.add(session_ioc)
-        db.session.commit()
-        
-        # Actualizar título si es el primer IOC y no tiene título personalizado
+
+        # total_iocs/highest_risk_level ya no dependen de triggers SQL (nunca se
+        # aplicaron en ningun ambiente real, ver migrations/add_investigation_sessions.sql)
         session = self.get_session(session_id)
+        if session:
+            session.total_iocs = (session.total_iocs or 0) + 1
+            if analysis_id:
+                self._recompute_highest_risk_level(session)
+
+        db.session.commit()
+
+        # Actualizar título si es el primer IOC y no tiene título personalizado
         if session and session.total_iocs == 1:
             ioc = db.session.get(IOC, ioc_id)
             if ioc and 'Nueva investigación' in (session.title or ''):
                 session.title = session.generate_title(ioc.value, ioc.ioc_type)
                 db.session.commit()
-        
+
         logger.info(f"Added IOC {ioc_id} to session {session_id}")
         return session_ioc
+
+    def _recompute_highest_risk_level(self, session: InvestigationSession) -> None:
+        """
+        Recalcula highest_risk_level a partir de los risk_level de los analisis
+        vinculados a la sesion. Reemplaza a trigger_session_risk_level, que
+        nunca se aplico en ningun ambiente real (dev/test/CI) porque el .sql
+        que lo define nunca se ejecuta desde ningun lado.
+        """
+        risk_levels = {
+            row[0] for row in (
+                db.session.query(IOCAnalysis.risk_level)
+                .join(SessionIOC, SessionIOC.analysis_id == IOCAnalysis.id)
+                .filter(SessionIOC.session_id == session.id)
+                .all()
+            )
+            if row[0]
+        }
+        for risk in self._RISK_PRIORITY:
+            if risk in risk_levels:
+                session.highest_risk_level = risk
+                return
+        session.highest_risk_level = None
     
     def get_session_iocs(self, session_id: int) -> List[SessionIOC]:
         """Obtiene todos los IOCs de una sesión"""
@@ -322,12 +359,13 @@ class SessionManager:
         )
         
         db.session.add(message)
-        
-        # Actualizar actividad de sesión
+
+        # Actualizar actividad y contador de sesión (ver nota de triggers en add_ioc_to_session)
         session = self.get_session(session_id)
         if session:
             session.update_activity()
-        
+            session.total_messages = (session.total_messages or 0) + 1
+
         db.session.commit()
         
         # Verificar si necesitamos generar resumen

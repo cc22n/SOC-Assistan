@@ -51,7 +51,8 @@ class InvestigationSession(db.Model):
     closed_at = Column(DateTime(timezone=True), nullable=True)
     last_activity_at = Column(DateTime(timezone=True), default=func.now())
 
-    # Estadísticas (actualizadas por triggers en BD)
+    # Estadísticas (mantenidas por SessionManager.add_ioc_to_session/save_message,
+    # no por triggers de BD -- ver migrations/LEGACY_SQL.md)
     total_iocs = Column(Integer, default=0)
     total_messages = Column(Integer, default=0)
     highest_risk_level = Column(String(20), nullable=True)

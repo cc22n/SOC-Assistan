@@ -41,12 +41,15 @@ jobs:
           pip install -r requirements.txt
           pip install pytest==9.0.2
 
-      # El modelo IOC define un indice GIN con gin_trgm_ops (busqueda fuzzy),
-      # que requiere la extension pg_trgm antes de db.create_all()
-      - name: Enable pg_trgm extension
+      # Migracion base (migrations/versions/) crea el esquema completo,
+      # incluida la extension pg_trgm que requiere el indice GIN de IOC.value.
+      # Sirve ademas como chequeo de regresion: valida en cada push que la
+      # migracion aplica limpio contra una BD Postgres vacia.
+      - name: Apply database migrations
         env:
-          PGPASSWORD: "1234"
-        run: psql -h localhost -U soc_admin -d soc_agent_test -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm;'
+          FLASK_APP: wsgi.py
+          DATABASE_URL: postgresql://soc_admin:1234@localhost:5432/soc_agent_test?client_encoding=utf8
+        run: flask db upgrade
 
       - name: Run unit tests
         env:

@@ -1,17 +1,17 @@
 """
 Inicialización de BD para Docker.
 
-Espera a que Postgres acepte conexiones, crea el esquema con db.create_all()
-(el proyecto no usa Alembic) y aplica los índices de performance + tabla de
-auditoría, que son idempotentes (todo usa IF NOT EXISTS).
+Espera a que Postgres acepte conexiones y aplica las migraciones de Alembic
+(flask db upgrade) -- el esquema completo (incluida la extensión pg_trgm)
+vive en migrations/versions/, no en create_all() + SQL suelto.
 
 Se ejecuta en el CMD del contenedor antes de arrancar gunicorn.
 """
 import os
 import sys
 import time
-from pathlib import Path
 
+from flask_migrate import upgrade
 from sqlalchemy import text
 
 from app import create_app, db
@@ -33,14 +33,5 @@ with app.app_context():
     else:
         sys.exit('[init_db] Postgres no respondió tras 60s; abortando.')
 
-    # El modelo IOC define un índice GIN con gin_trgm_ops (búsqueda fuzzy):
-    # la extensión debe existir antes de create_all() o falla en Postgres limpio
-    db.session.execute(text('CREATE EXTENSION IF NOT EXISTS pg_trgm'))
-    db.session.commit()
-
-    db.create_all()
-
-    sql_path = Path(__file__).resolve().parents[1] / 'migrations' / 'add_performance_indexes_and_audit.sql'
-    db.session.execute(text(sql_path.read_text(encoding='utf-8')))
-    db.session.commit()
-    print('[init_db] Esquema e índices listos.', flush=True)
+    upgrade()
+    print('[init_db] Migraciones aplicadas.', flush=True)

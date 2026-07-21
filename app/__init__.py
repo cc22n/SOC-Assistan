@@ -98,6 +98,11 @@ def create_app(config_name='default'):
     with app.app_context():
         from app.models import ioc  # noqa: F401
         from app.models import audit  # noqa: F401
+        # mitre_service define sus modelos (mitre_techniques/mitre_malware_mappings/
+        # mitre_update_log) y solo se importaba de forma perezosa dentro de rutas/CLI
+        # -> nunca quedaban en db.metadata para create_all()/Alembic en una instalación
+        # fresca. Import explícito aquí, igual que ioc/audit arriba.
+        from app.services import mitre_service  # noqa: F401
 
     # Configurar login
     login_manager.login_view = 'auth.login'

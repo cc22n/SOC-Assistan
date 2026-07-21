@@ -15,9 +15,21 @@ flask run --debug                        # el CLI de Flask auto-carga .env
 
 En scripts sueltos de Python, `.env` NO se auto-carga: usa `from dotenv import load_dotenv; load_dotenv('.env')` antes de `create_app`.
 
-## Base de datos — SIN Alembic
+## Base de datos — Alembic
 
-El esquema se crea con `db.create_all()`. **Al agregar columnas a un modelo hay que aplicar `ALTER TABLE` manual en DOS bases**: `soc_agent` (dev) y `soc_agent_test` (los tests hacen `create_all()` pero eso no altera tablas existentes → fallan con UndefinedColumn). En Windows con Postgres en español, agrega `?client_encoding=utf8` a la URL de psycopg2 o los errores de conexión dan `UnicodeDecodeError`.
+Migraciones en `migrations/versions/` (Flask-Migrate). Al cambiar un modelo:
+
+```bash
+flask db migrate -m "descripcion corta"   # autogenerate contra soc_agent (dev)
+# revisar SIEMPRE el archivo generado en migrations/versions/ antes de aplicar
+flask db upgrade                           # aplica a soc_agent (dev)
+```
+
+`soc_agent_test` NO necesita el `ALTER TABLE`/migración manual: los tests siguen usando `db.create_all()` en `tests/unit/conftest.py`, que lee directo la metadata de los modelos y se autocura en cada corrida. Solo `soc_agent` (dev) y producción pasan por `flask db upgrade`.
+
+`autogenerate` no ordena bien tablas con FK circulares (ver `incidents`/`investigation_sessions` en la migración base) ni detecta objetos que no son metadata de modelos (extensiones como `pg_trgm`) — revisar el diff generado, no aplicarlo a ciegas. Los `.sql` sueltos en `migrations/` (fuera de `versions/`) son historial pre-Alembic, ya no se ejecutan desde ningún lado (ver `migrations/LEGACY_SQL.md`).
+
+En Windows con Postgres en español, agrega `?client_encoding=utf8` a la URL de psycopg2 o los errores de conexión dan `UnicodeDecodeError`.
 
 ## Convenciones obligatorias
 
