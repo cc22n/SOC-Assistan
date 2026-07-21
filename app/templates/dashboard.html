@@ -289,6 +289,19 @@
 let riskChart, apiChart, timelineChart, apiHealthChart, threatMap;
 let _statsController = null; // AbortController activo para loadAllStats
 
+// created_at llega en UTC naive sin 'Z' (ver app/utils/time_utils.py); forzar
+// UTC antes de parsear evita que el navegador lo interprete como hora local
+// y muestre la fecha/hora desfasada (mismo patrón usado en chat.html/incidents.html).
+function formatLocalDT(iso) {
+    if (!iso) return '-';
+    let str = iso;
+    if (!str.endsWith('Z') && !str.includes('+') && !str.includes('-', 10)) str += 'Z';
+    str = str.replace(/\+00:00$/, 'Z');
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
@@ -487,10 +500,15 @@ function updateApiChart(data) {
 }
 
 function updateTimeline(data) {
-    // Formatear fechas
+    // Formatear fechas. data.labels llega como 'YYYY-MM-DD' (día calendario
+    // de México, ver dashboard_stats.py). new Date('YYYY-MM-DD') se interpreta
+    // como medianoche UTC y toLocaleDateString la vuelve a convertir a hora
+    // local del navegador, restando un día en zonas detrás de UTC (México).
+    // Se arma la fecha desde las partes para que quede fija en el día correcto.
     const labels = data.labels.map(d => {
-        const date = new Date(d);
-        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+        const [y, m, day] = d.split('-').map(Number);
+        const date = new Date(y, m - 1, day);
+        return date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
     });
 
     timelineChart.data.labels = labels;
@@ -536,7 +554,7 @@ function updateRecentTable(analyses) {
             <td class="py-2">${escapeHtml(a.ioc_type)}</td>
             <td class="py-2"><span class="risk-badge risk-${a.risk_level.toLowerCase().replace('í','i')}">${a.risk_level}</span></td>
             <td class="py-2">${a.confidence}%</td>
-            <td class="py-2 text-gray-500">${new Date(a.created_at).toLocaleDateString()}</td>
+            <td class="py-2 text-gray-500">${formatLocalDT(a.created_at)}</td>
         </tr>
     `).join('');
 }

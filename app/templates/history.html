@@ -177,7 +177,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <i class="far fa-clock mr-1"></i>
-                                {{ analysis.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                {{ analysis.created_at | local_dt }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button onclick="viewDetails({{ analysis.id }})" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Ver detalles">

@@ -519,7 +519,7 @@ function addMessageToUI(role, content, analysis = null, intel = null) {
         if (intel?.iocHistory?.times_analyzed > 0) {
             const h = intel.iocHistory;
             const riskCls = (h.last_risk_level || 'medio').toLowerCase().replace('í', 'i');
-            const when = h.last_analyzed_at ? new Date(h.last_analyzed_at).toLocaleDateString() : '';
+            const when = h.last_analyzed_at ? formatLocalDate(h.last_analyzed_at) : '';
             html += `<div class="analysis-card"><div class="text-xs text-gray-600">🕘 <b>Visto antes:</b> ${h.times_analyzed} análisis previo${h.times_analyzed > 1 ? 's' : ''} · último: <span class="risk-badge risk-${riskCls}">${escapeHtml(h.last_risk_level || 'N/A')}</span> ${escapeHtml(when)}</div>`;
             if (h.previous_sessions?.length) {
                 html += `<div class="text-xs text-gray-500 mt-1">Sesiones: ${h.previous_sessions.map(s => escapeHtml(s.title || ('#' + s.session_id))).join(' · ')}</div>`;

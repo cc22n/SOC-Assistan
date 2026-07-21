@@ -7,7 +7,7 @@ Tablas:
 - SessionIOC: IOCs vinculados a una sesión
 - SessionMessage: Mensajes del chat en una sesión
 """
-from app.utils.time_utils import utcnow
+from app.utils.time_utils import utcnow, localnow
 from typing import List, Optional, Dict, Any
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime,
@@ -149,10 +149,10 @@ class InvestigationSession(db.Model):
         if ioc_value and ioc_type:
             # Truncar IOC largo
             display_ioc = ioc_value[:20] + '...' if len(ioc_value) > 20 else ioc_value
-            date_str = utcnow().strftime('%d %b %Y')
+            date_str = localnow().strftime('%d %b %Y')
             return f"Investigación {ioc_type} {display_ioc} - {date_str}"
         else:
-            date_str = utcnow().strftime('%d %b %Y %H:%M')
+            date_str = localnow().strftime('%d %b %Y %H:%M')
             return f"Nueva investigación - {date_str}"
 
 

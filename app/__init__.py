@@ -118,6 +118,10 @@ def create_app(config_name='default'):
     from app.cli import mitre_cli
     app.cli.add_command(mitre_cli)
 
+    # Filtro Jinja para mostrar fechas en hora local (México) en templates
+    # server-side rendered — los timestamps se guardan en UTC naive
+    register_template_filters(app)
+
     # Registrar manejadores de errores
     register_error_handlers(app)
 
@@ -229,6 +233,25 @@ def register_security_headers(app):
             "connect-src 'self'"
         )
         return response
+
+
+def register_template_filters(app: Flask) -> None:
+    """
+    Filtro `local_dt` para templates: convierte un datetime UTC naive
+    (formato de almacenamiento de app.utils.time_utils.utcnow()) a la zona
+    horaria configurada en DISPLAY_TIMEZONE y lo formatea con strftime.
+    Sin esto, {{ x.created_at.strftime(...) }} renderiza hora UTC cruda.
+    """
+    from datetime import timezone
+    from zoneinfo import ZoneInfo
+
+    @app.template_filter('local_dt')
+    def local_dt(value, fmt='%d/%m/%Y %H:%M'):
+        if value is None:
+            return '-'
+        tz = ZoneInfo(app.config.get('DISPLAY_TIMEZONE', 'America/Mexico_City'))
+        aware = value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+        return aware.astimezone(tz).strftime(fmt)
 
 
 def register_error_handlers(app):

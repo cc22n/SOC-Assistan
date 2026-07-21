@@ -27,11 +27,11 @@
                 </div>
                 <div class="flex justify-between py-2 border-b">
                     <span class="text-gray-500">Miembro desde</span>
-                    <span class="font-medium">{{ user.created_at.strftime('%d %b %Y') if user.created_at else 'N/A' }}</span>
+                    <span class="font-medium">{{ user.created_at | local_dt('%d %b %Y') if user.created_at else 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-b">
                     <span class="text-gray-500">Ultimo acceso</span>
-                    <span class="font-medium">{{ user.last_login.strftime('%d %b %Y %H:%M') if user.last_login else 'N/A' }}</span>
+                    <span class="font-medium">{{ user.last_login | local_dt('%d %b %Y %H:%M') if user.last_login else 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between py-2">
                     <span class="text-gray-500">Estado</span>

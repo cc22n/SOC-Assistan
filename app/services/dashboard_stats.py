@@ -159,8 +159,14 @@ class DashboardStatsService:
 
             since = utcnow() - timedelta(days=days)
 
+            # created_at se guarda en UTC naive; convertir a DISPLAY_TIMEZONE antes
+            # de truncar a día evita que análisis nocturnos (hora México) se agrupen
+            # en el día calendario siguiente (UTC va ~6-7h adelante de México).
+            tz_name = current_app.config.get('DISPLAY_TIMEZONE', 'America/Mexico_City')
+            local_ts = func.timezone(tz_name, func.timezone('UTC', IOCAnalysis.created_at))
+
             query = db.session.query(
-                func.date(IOCAnalysis.created_at).label('date'),
+                func.date(local_ts).label('date'),
                 func.count(IOCAnalysis.id).label('count'),
                 IOCAnalysis.risk_level
             ).filter(IOCAnalysis.created_at >= since)
@@ -169,7 +175,7 @@ class DashboardStatsService:
                 query = query.filter(IOCAnalysis.user_id == user_id)
 
             results = query.group_by(
-                func.date(IOCAnalysis.created_at),
+                func.date(local_ts),
                 IOCAnalysis.risk_level
             ).order_by('date').all()
 

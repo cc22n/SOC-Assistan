@@ -36,6 +36,10 @@ class Config:
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
 
+    # Zona horaria para mostrar fechas en templates renderizados server-side
+    # (los timestamps se guardan en UTC naive vía app.utils.time_utils.utcnow())
+    DISPLAY_TIMEZONE = os.environ.get('DISPLAY_TIMEZONE', 'America/Mexico_City')
+
     # ==========================================================================
     # Security - Cookies
     # ==========================================================================
@@ -115,6 +119,7 @@ class Config:
         'ipinfo': 333,              # 10K/mes ≈ 333/día (lite)
         'ipgeolocation': 1000,      # 1K/día forever free (1 crédito/lookup)
         'tavily': 33,               # 1K créditos/mes ≈ 33/día (búsqueda web)
+        'crtsh': 1000,              # sin key, sin límite oficial — tope conservador propio
     }
 
     # ==========================================================================
