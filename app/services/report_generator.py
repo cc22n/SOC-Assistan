@@ -175,7 +175,7 @@ class ReportGenerator:
 
             # Info de la sesión
             session_info = session_data['session']
-            risk_level = session_info.get('highest_risk_level', 'N/A')
+            risk_level = session_info.get('highest_risk_level') or 'N/A'
             risk_color = self.RISK_COLORS.get(risk_level, self.COLORS['info'])
 
             # Tabla de metadata
@@ -521,7 +521,7 @@ class ReportGenerator:
 
             # Tabla de metadata
             session_info = session_data['session']
-            risk_level = session_info.get('highest_risk_level', 'N/A')
+            risk_level = session_info.get('highest_risk_level') or 'N/A'
 
             meta_rows = [
                 ('Fecha de Inicio', (session_info.get('created_at', 'N/A') or 'N/A')[:19].replace('T', ' ')),

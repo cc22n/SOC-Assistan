@@ -141,6 +141,21 @@ class TestSessionDocx:
         resp = admin_client.get(f'{BASE}/session/{sample_session.id}/docx')
         assert resp.status_code == 200
 
+    def test_null_highest_risk_level_does_not_crash(self, analyst_client, db_session, analyst_user):
+        """Regresión: highest_risk_level=None (sin trigger SQL en test) causaba
+        TypeError en python-docx (cell.text = None). Ver fixture sample_session."""
+        from app.models.session import InvestigationSession
+
+        session_obj = InvestigationSession(
+            user_id=analyst_user.id, title='Sin riesgo aun', status='active',
+            highest_risk_level=None,
+        )
+        db_session.session.add(session_obj)
+        db_session.session.commit()
+
+        resp = analyst_client.get(f'{BASE}/session/{session_obj.id}/docx')
+        assert resp.status_code == 200
+
     def test_nonexistent_session_returns_404(self, analyst_client):
         resp = analyst_client.get(f'{BASE}/session/999999/docx')
         assert resp.status_code == 404
