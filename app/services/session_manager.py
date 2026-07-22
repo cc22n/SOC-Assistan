@@ -225,11 +225,13 @@ class SessionManager:
         analysis_id: int = None,
         role: str = 'analyzed',
         message_id: int = None,
-        notes: str = None
+        notes: str = None,
+        related_to_ioc_ids: list = None,
+        relationship_type: str = None
     ) -> Optional[SessionIOC]:
         """
         Agrega un IOC a una sesión.
-        
+
         Args:
             session_id: ID de la sesión
             ioc_id: ID del IOC
@@ -237,6 +239,9 @@ class SessionManager:
             role: Rol del IOC (primary/related/context/analyzed)
             message_id: ID del mensaje que agregó el IOC
             notes: Notas del analista
+            related_to_ioc_ids: IDs de IOCs de los que este es contexto/relacionado
+                (solo se aplica al crear -- no pisa un vínculo existente)
+            relationship_type: p.ej. 'mentioned_in_article' (agente OSINT nivel 3)
         """
         # Verificar si ya existe
         existing = SessionIOC.query.filter_by(
@@ -264,7 +269,9 @@ class SessionManager:
             analysis_id=analysis_id,
             role=role,
             added_by_message_id=message_id,
-            analyst_notes=notes
+            analyst_notes=notes,
+            related_to_ioc_ids=related_to_ioc_ids,
+            relationship_type=relationship_type
         )
 
         db.session.add(session_ioc)

@@ -238,6 +238,15 @@ class DeepAnalysisService:
                         results['web_search'] = web_results
                         results['modules_executed'].append('web_search')
                         self._persist_web_search(ioc, ioc_type, web_results)
+
+                    # Nivel 3: vincular IOCs mencionados en los artículos como
+                    # contexto de la sesión (regex, sin costo extra de API/LLM;
+                    # corre también sobre resultados cacheados, ver docstring).
+                    related = self._link_related_iocs_from_web_results(
+                        ioc, ioc_type, session_id, results['web_search']
+                    )
+                    if related:
+                        results['web_search']['related_iocs_found'] = related
                 except Exception as e:
                     logger.error(f"Web search error: {e}")
                     results['errors'].append(f"web_search: {str(e)}")
@@ -436,6 +445,70 @@ class DeepAnalysisService:
             results['summary'] = self._summarize_web_results(ioc, results)
 
         return results
+
+    # Tope duro de IOCs nuevos vinculados por búsqueda -- un artículo con
+    # varias IPs/dominios de ejemplo no debe inundar la sesión de ruido.
+    MAX_RELATED_IOCS_PER_SEARCH = 5
+
+    def _link_related_iocs_from_web_results(
+        self, ioc: str, ioc_type: str, session_id: Optional[int], web_results: Dict
+    ) -> List[Dict]:
+        """
+        "Nivel 3" del agente OSINT: extrae IOCs mencionados en el contenido de
+        los artículos (regex, sin costo de API/LLM extra -- ver
+        app.utils.validators.extract_iocs_from_text) y los deja vinculados a
+        la sesión como contexto. NO dispara ningún análisis automático sobre
+        ellos ni vuelve a buscar en la web por los nuevos (sin recursión):
+        el analista decide si investigarlos. No-op sin session_id (p. ej.
+        el endpoint REST puede llamarse sin sesión).
+        """
+        if not session_id:
+            return []
+
+        raw_results = web_results.get('raw_results') or []
+        if not raw_results:
+            return []
+
+        combined_text = '\n'.join(r.get('content', '') for r in raw_results if r.get('content'))
+        if not combined_text:
+            return []
+
+        try:
+            from app.utils.validators import extract_iocs_from_text
+            found = extract_iocs_from_text(combined_text)
+            found = [(v, t) for v, t in found if v.lower() != ioc.lower()]
+            if not found:
+                return []
+
+            from app.models.ioc import IOC
+            from app import db
+
+            origin = IOC.query.filter_by(value=ioc, ioc_type=ioc_type).first()
+            if not origin:
+                return []
+
+            linked = []
+            for value, found_type in found[:self.MAX_RELATED_IOCS_PER_SEARCH]:
+                target = IOC.query.filter_by(value=value, ioc_type=found_type).first()
+                if not target:
+                    target = IOC(value=value, ioc_type=found_type, first_seen=utcnow())
+                    db.session.add(target)
+                    db.session.flush()
+
+                session_ioc = self.orchestrator.session_manager.add_ioc_to_session(
+                    session_id=session_id,
+                    ioc_id=target.id,
+                    role='context',
+                    related_to_ioc_ids=[origin.id],
+                    relationship_type='mentioned_in_article',
+                )
+                if session_ioc:
+                    linked.append({'ioc': value, 'ioc_type': found_type})
+
+            return linked
+        except Exception as e:
+            logger.warning(f"Related IOC linking failed (non-fatal) for {ioc}: {e}")
+            return []
 
     def _plan_search_queries(self, ioc: str, ioc_type: str, api_results: Dict) -> List[str]:
         """

@@ -1616,6 +1616,15 @@ Usa emojis para severidad (🔴🟠🟡🟢)."""
             parts.append(f"{web_search['summary']}")
             parts.append("")
 
+        # IOCs nuevos mencionados en los artículos (agente OSINT nivel 3)
+        related_found = web_search.get('related_iocs_found')
+        if related_found:
+            parts.append(f"### 🔗 IOCs mencionados en los artículos")
+            for r in related_found:
+                parts.append(f"• `{r['ioc']}` ({r['ioc_type']})")
+            parts.append("_Agregados a la sesión como contexto — no se analizaron automáticamente._")
+            parts.append("")
+
         # Fuentes de referencia
         if web_search.get('threat_reports'):
             parts.append(f"### 📚 Fuentes")

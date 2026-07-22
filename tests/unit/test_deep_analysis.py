@@ -367,3 +367,142 @@ class TestDeepAnalyzePersistence:
             assert result['base_analysis']['risk_level'] == 'ALTO'
             assert 'ioc_analysis_id' not in result
             assert 'persisted' not in result['modules_executed']
+
+
+# ==============================================================================
+# NIVEL 3 DEL AGENTE OSINT: IOCs mencionados en artículos -> related_to_ioc_ids
+#
+# Extrae IOCs del contenido de los artículos (regex, sin costo de API/LLM) y
+# los deja vinculados a la sesión como contexto -- sin analizarlos ni volver
+# a buscar en la web por ellos (un solo salto, sin recursión).
+# ==============================================================================
+
+class TestLinkRelatedIocsFromWebResults:
+
+    @staticmethod
+    def _make_origin_ioc(value='1.2.3.4', ioc_type='ip'):
+        from app.models.ioc import IOC
+        from app import db
+        origin = IOC(value=value, ioc_type=ioc_type)
+        db.session.add(origin)
+        db.session.commit()
+        return origin
+
+    def test_no_session_id_is_noop(self, svc, db_session):
+        origin = self._make_origin_ioc()
+        web_results = {'raw_results': [{'content': 'contacted evil-c2.example.com'}]}
+        linked = svc._link_related_iocs_from_web_results(origin.value, origin.ioc_type, None, web_results)
+        assert linked == []
+
+    def test_no_raw_results_is_noop(self, svc, db_session, analyst_user):
+        from app.models.session import InvestigationSession
+        from app import db
+        origin = self._make_origin_ioc()
+        session_obj = InvestigationSession(user_id=analyst_user.id, title='t')
+        db.session.add(session_obj)
+        db.session.commit()
+
+        linked = svc._link_related_iocs_from_web_results(
+            origin.value, origin.ioc_type, session_obj.id, {'raw_results': []}
+        )
+        assert linked == []
+
+    def test_new_domain_mentioned_in_article_gets_linked_as_context(self, svc, db_session, analyst_user):
+        from app.models.session import InvestigationSession, SessionIOC
+        from app.models.ioc import IOC
+        from app import db
+
+        origin = self._make_origin_ioc('1.2.3.4', 'ip')
+        session_obj = InvestigationSession(user_id=analyst_user.id, title='t')
+        db.session.add(session_obj)
+        db.session.commit()
+
+        web_results = {'raw_results': [
+            {'content': 'The C2 infrastructure also communicates with evil-c2.example.com over HTTPS.'}
+        ]}
+
+        linked = svc._link_related_iocs_from_web_results(
+            origin.value, origin.ioc_type, session_obj.id, web_results
+        )
+
+        assert linked == [{'ioc': 'evil-c2.example.com', 'ioc_type': 'domain'}]
+
+        new_ioc = IOC.query.filter_by(value='evil-c2.example.com', ioc_type='domain').first()
+        assert new_ioc is not None
+
+        sioc = SessionIOC.query.filter_by(session_id=session_obj.id, ioc_id=new_ioc.id).first()
+        assert sioc is not None
+        assert sioc.role == 'context'
+        assert sioc.relationship_type == 'mentioned_in_article'
+        assert sioc.related_to_ioc_ids == [origin.id]
+
+    def test_origin_ioc_itself_is_excluded(self, svc, db_session, analyst_user):
+        from app.models.session import InvestigationSession, SessionIOC
+        from app import db
+
+        origin = self._make_origin_ioc('1.2.3.4', 'ip')
+        session_obj = InvestigationSession(user_id=analyst_user.id, title='t')
+        db.session.add(session_obj)
+        db.session.commit()
+
+        web_results = {'raw_results': [{'content': 'Traffic from 1.2.3.4 was observed on port 443.'}]}
+
+        linked = svc._link_related_iocs_from_web_results(
+            origin.value, origin.ioc_type, session_obj.id, web_results
+        )
+        assert linked == []
+        assert SessionIOC.query.filter_by(session_id=session_obj.id).count() == 0
+
+    def test_caps_at_max_related_iocs_per_search(self, svc, db_session, analyst_user):
+        from app.models.session import InvestigationSession
+
+        origin = self._make_origin_ioc('1.2.3.4', 'ip')
+        session_obj = InvestigationSession(user_id=analyst_user.id, title='t')
+        from app import db
+        db.session.add(session_obj)
+        db.session.commit()
+
+        domains = ' '.join(f'evil-{i}.example.com' for i in range(10))
+        web_results = {'raw_results': [{'content': domains}]}
+
+        linked = svc._link_related_iocs_from_web_results(
+            origin.value, origin.ioc_type, session_obj.id, web_results
+        )
+        assert len(linked) == svc.MAX_RELATED_IOCS_PER_SEARCH
+
+    def test_already_linked_ioc_is_not_duplicated(self, svc, db_session, analyst_user):
+        from app.models.session import InvestigationSession, SessionIOC
+        from app.models.ioc import IOC
+        from app import db
+
+        origin = self._make_origin_ioc('1.2.3.4', 'ip')
+        session_obj = InvestigationSession(user_id=analyst_user.id, title='t')
+        db.session.add(session_obj)
+        db.session.commit()
+
+        existing = IOC(value='evil-c2.example.com', ioc_type='domain')
+        db.session.add(existing)
+        db.session.flush()
+        db.session.add(SessionIOC(session_id=session_obj.id, ioc_id=existing.id, role='analyzed'))
+        db.session.commit()
+
+        web_results = {'raw_results': [{'content': 'Seen contacting evil-c2.example.com again.'}]}
+        svc._link_related_iocs_from_web_results(origin.value, origin.ioc_type, session_obj.id, web_results)
+
+        assert SessionIOC.query.filter_by(session_id=session_obj.id, ioc_id=existing.id).count() == 1
+
+    def test_extraction_failure_is_non_fatal(self, svc, db_session, analyst_user):
+        from app.models.session import InvestigationSession
+        from app import db
+
+        origin = self._make_origin_ioc('1.2.3.4', 'ip')
+        session_obj = InvestigationSession(user_id=analyst_user.id, title='t')
+        db.session.add(session_obj)
+        db.session.commit()
+
+        with patch('app.utils.validators.extract_iocs_from_text', side_effect=RuntimeError('boom')):
+            linked = svc._link_related_iocs_from_web_results(
+                origin.value, origin.ioc_type, session_obj.id,
+                {'raw_results': [{'content': 'evil.example.com'}]}
+            )
+        assert linked == []
