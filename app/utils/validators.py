@@ -169,7 +169,11 @@ def extract_iocs_from_text(text: str) -> list:
         'url': r'https?://[^\s<>"{}|\\^`\[\]]+',
         'ip': r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b',
         'hash': r'\b[a-fA-F0-9]{32,64}\b',
-        'domain': r'\b[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.([a-zA-Z]{2,})\b'
+        # Grupos no-capturantes (?:...): con capturantes, re.findall devuelve
+        # tuplas de sub-grupos en vez del match completo (bug real, ver
+        # test_extracts_domain) y el dominio quedaba truncado/invalidado.
+        'domain': r'\b[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?'
+                  r'(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}\b'
     }
 
     for ioc_type, pattern in patterns.items():

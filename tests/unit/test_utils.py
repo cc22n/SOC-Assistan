@@ -298,11 +298,15 @@ class TestExtractIocsFromText:
 
     def test_extracts_domain(self):
         from app.utils.validators import extract_iocs_from_text
-        # The domain regex uses capture groups so re.findall returns tuples,
-        # and only group[0] (a substring) is validated — domain extraction is
-        # currently non-functional but should not crash.
         iocs = extract_iocs_from_text('C2 domain: evil.com observed')
-        assert isinstance(iocs, list)
+        domains = [v for v, t in iocs if t == 'domain']
+        assert 'evil.com' in domains
+
+    def test_extracts_multilabel_domain(self):
+        from app.utils.validators import extract_iocs_from_text
+        iocs = extract_iocs_from_text('Also seen contacting evil-c2.sub.example.com over HTTPS.')
+        domains = [v for v, t in iocs if t == 'domain']
+        assert 'evil-c2.sub.example.com' in domains
 
     def test_deduplicates(self):
         from app.utils.validators import extract_iocs_from_text
