@@ -32,6 +32,42 @@ async def _run_in_thread(func: Callable, *args) -> Any:
     return await loop.run_in_executor(_executor, func, *args)
 
 
+def _call_with_instrumentation(api_name: str, method: Callable) -> Any:
+    """
+    Envuelve una llamada de API con circuit breaker + metricas de latencia.
+
+    Este es el UNICO punto real de despacho hacia las APIs de threat intel
+    (tanto el path async como el fallback secuencial pasan por aqui), asi
+    que es donde corresponde instrumentar -- antes de esto, circuit_breaker.py
+    y metrics.py estaban completos pero sin usarse: solo los llamaba
+    UnifiedThreatIntelClient._call, una clase que ningun caller real invoca.
+    Mismo patron que ese _call, aplicado donde realmente importa.
+    """
+    from app.utils.circuit_breaker import get_circuit_breaker
+    from app.utils.metrics import record_api_latency
+
+    cb = get_circuit_breaker(api_name)
+    if not cb.allow_request():
+        logger.debug(f"[ASYNC] {api_name} blocked -- circuit OPEN")
+        return {'error': 'service temporarily unavailable', 'circuit_state': 'OPEN'}
+
+    t0 = time.monotonic()
+    try:
+        result = method()
+        latency_ms = (time.monotonic() - t0) * 1000
+        success = not (isinstance(result, dict) and 'error' in result)
+        if success:
+            cb.record_success()
+        else:
+            cb.record_failure()
+        record_api_latency(api_name, latency_ms, success)
+        return result
+    except Exception:
+        record_api_latency(api_name, (time.monotonic() - t0) * 1000, success=False)
+        cb.record_failure()
+        raise
+
+
 async def _execute_single_api(
     api_name: str,
     client: Any,
@@ -53,7 +89,7 @@ async def _execute_single_api(
 
         # Ejecutar con timeout
         result = await asyncio.wait_for(
-            _run_in_thread(method),
+            _run_in_thread(_call_with_instrumentation, api_name, method),
             timeout=timeout
         )
 
@@ -348,7 +384,7 @@ def _fallback_sequential(
             continue
 
         try:
-            result = method()
+            result = _call_with_instrumentation(api_name, method)
             if result:
                 results[api_name] = result
         except Exception as e:

@@ -522,3 +522,101 @@ class TestFormatSummaryReport:
         analyses = [{'ioc': '1.1.1.1', 'type': 'ip', 'confidence_score': 75, 'risk_level': 'ALTO'}]
         report = format_summary_report(analyses)
         assert '%' in report
+
+
+# ==============================================================================
+# CIRCUIT BREAKER (app/utils/circuit_breaker.py)
+#
+# Sin cobertura hasta ahora pese a que el docstring de este archivo ya lo
+# mencionaba -- el unico caller real era UnifiedThreatIntelClient (dead
+# code). Ahora que async_executor.py lo usa en el path real de despacho de
+# APIs (ver test_async_executor.py), estos tests cubren la maquina de
+# estados directamente con APICircuitBreaker (no el registro global, para
+# no depender del fixture de reset de conftest.py).
+# ==============================================================================
+
+class TestCircuitBreakerStateMachine:
+
+    def test_starts_closed_and_allows_requests(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        cb = APICircuitBreaker('test_api', fail_threshold=3, timeout=60)
+        assert cb.state == CircuitState.CLOSED
+        assert cb.allow_request() is True
+
+    def test_opens_after_fail_threshold_consecutive_failures(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        cb = APICircuitBreaker('test_api', fail_threshold=3, timeout=60)
+        cb.record_failure()
+        cb.record_failure()
+        assert cb.state == CircuitState.CLOSED  # todavia no llega al umbral
+        cb.record_failure()
+        assert cb.state == CircuitState.OPEN
+        assert cb.allow_request() is False
+
+    def test_success_resets_failure_count_while_closed(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        cb = APICircuitBreaker('test_api', fail_threshold=3, timeout=60)
+        cb.record_failure()
+        cb.record_failure()
+        cb.record_success()
+        cb.record_failure()
+        cb.record_failure()
+        assert cb.state == CircuitState.CLOSED  # el exito reinicio el contador
+
+    def test_open_transitions_to_half_open_after_timeout(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        from app.utils.time_utils import utcnow
+        from datetime import timedelta
+
+        cb = APICircuitBreaker('test_api', fail_threshold=1, timeout=60)
+        cb.record_failure()
+        assert cb.state == CircuitState.OPEN
+        # Simular que ya paso el timeout (evita depender de un sleep real)
+        cb._opened_at = utcnow() - timedelta(seconds=61)
+        assert cb.state == CircuitState.HALF_OPEN
+
+    def test_half_open_success_closes_circuit(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        cb = APICircuitBreaker('test_api', fail_threshold=1, timeout=0, success_threshold=1)
+        cb.record_failure()
+        assert cb.state == CircuitState.HALF_OPEN
+        assert cb.allow_request() is True
+        cb.record_success()
+        assert cb.state == CircuitState.CLOSED
+
+    def test_half_open_failure_reopens_circuit(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        from app.utils.time_utils import utcnow
+        from datetime import timedelta
+
+        cb = APICircuitBreaker('test_api', fail_threshold=1, timeout=60)
+        cb.record_failure()
+        cb._opened_at = utcnow() - timedelta(seconds=61)
+        assert cb.state == CircuitState.HALF_OPEN
+        cb.record_failure()  # fallo durante la prueba -> reabre
+        # timeout=60 real: el circuito recien reabierto no vuelve a evaluarse
+        # a HALF_OPEN de inmediato, a diferencia de timeout=0.
+        assert cb.state == CircuitState.OPEN
+
+    def test_half_open_only_allows_one_probe_at_a_time(self):
+        from app.utils.circuit_breaker import APICircuitBreaker, CircuitState
+        cb = APICircuitBreaker('test_api', fail_threshold=1, timeout=0)
+        cb.record_failure()
+        assert cb.state == CircuitState.HALF_OPEN
+        assert cb.allow_request() is True   # primera probe
+        assert cb.allow_request() is False  # segunda probe bloqueada
+
+
+# ==============================================================================
+# METRICS (app/utils/metrics.py)
+# ==============================================================================
+
+class TestApiLatencyMetrics:
+
+    def test_record_and_summarize_api_latency(self):
+        from app.utils.metrics import record_api_latency, get_metrics_summary
+        record_api_latency('test_metric_api', 100.0, success=True)
+        record_api_latency('test_metric_api', 200.0, success=False)
+        summary = get_metrics_summary()
+        assert 'test_metric_api' in summary['apis']
+        assert summary['apis']['test_metric_api']['count'] == 2

@@ -94,6 +94,27 @@ def db_session(app):
 
 
 # ==============================================================================
+# REGISTROS GLOBALES EN MEMORIA (fuera de DB/request)
+# ==============================================================================
+
+@pytest.fixture(autouse=True)
+def _reset_circuit_breakers():
+    """
+    circuit_breaker._circuit_breakers es un dict global de proceso, no por
+    test. Desde que async_executor.py lo usa en el path real de despacho de
+    APIs, un test que simula varios fallos seguidos de la misma api_name
+    (patron comun para probar manejo de errores) podria abrir su circuito y
+    contaminar un test no relacionado que corra despues. Reset automatico
+    antes/despues de cada test, mismo espiritu que el TRUNCATE de db_session
+    pero para este registro en memoria.
+    """
+    from app.utils.circuit_breaker import _circuit_breakers
+    _circuit_breakers.clear()
+    yield
+    _circuit_breakers.clear()
+
+
+# ==============================================================================
 # CLIENTE HTTP
 # ==============================================================================
 
