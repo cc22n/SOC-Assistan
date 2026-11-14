@@ -203,8 +203,53 @@ def register_metrics_collector(app: Flask) -> None:
         return response
 
 
+def build_csp(nonce: str, upgrade_insecure: bool = False) -> str:
+    """
+    Content-Security-Policy estricta para scripts (ALTO-11).
+
+    script-src
+      'nonce-X' + 'strict-dynamic': solo ejecutan los <script> que el servidor marcó con el
+      nonce de ESTA respuesta (y lo que ellos carguen). Un <script> inyectado por XSS no lo
+      lleva y no corre. Los hosts de CDN quedan solo como respaldo para navegadores sin
+      soporte de strict-dynamic (CSP2); los modernos los ignoran.
+    script-src-attr 'none': prohíbe handlers inline (onclick=...); las plantillas usan
+      data-action + static/ui-actions.js.
+    style-src 'unsafe-inline': se mantiene A PROPÓSITO, porque Tailwind por CDN (Play CDN)
+      inyecta <style> en runtime y hay <style>/style="" en las plantillas. Riesgo mucho menor
+      que scripts; se elimina compilando Tailwind en build (pendiente).
+    """
+    directives = [
+        "default-src 'self'",
+        f"script-src 'nonce-{nonce}' 'strict-dynamic' https://cdn.jsdelivr.net "
+        "https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
+        "script-src-attr 'none'",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
+        "https://fonts.googleapis.com",
+        "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com",
+        "img-src 'self' data: https://*.tile.openstreetmap.org",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    ]
+    if upgrade_insecure:
+        directives.append("upgrade-insecure-requests")
+    return "; ".join(directives)
+
+
 def register_security_headers(app):
     """Agrega headers de seguridad a todas las respuestas"""
+    import secrets
+
+    @app.before_request
+    def _generate_csp_nonce():
+        g.csp_nonce = secrets.token_urlsafe(16)   # 128 bits, distinto en CADA petición
+
+    @app.context_processor
+    def _inject_csp_nonce():
+        # En plantillas: <script nonce="{{ csp_nonce() }}">. Fuera de una petición devuelve ''.
+        return {'csp_nonce': lambda: getattr(g, 'csp_nonce', '')}
 
     @app.after_request
     def set_security_headers(response):
@@ -217,15 +262,10 @@ def register_security_headers(app):
         if not app.debug:
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
 
-        # CSP - ajustado para Tailwind CDN, Chart.js, Font Awesome, Leaflet
-        response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; "
-            "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
-            "img-src 'self' data: https://*.tile.openstreetmap.org; "
-            "connect-src 'self'"
-        )
+        # CSP con nonce por petición (ver build_csp). Se usa el MISMO nonce que las plantillas.
+        nonce = getattr(g, 'csp_nonce', None) or secrets.token_urlsafe(16)
+        response.headers['Content-Security-Policy'] = build_csp(
+            nonce, upgrade_insecure=not (app.debug or app.testing))
         return response
 
 

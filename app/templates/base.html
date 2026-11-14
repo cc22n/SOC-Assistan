@@ -7,10 +7,13 @@
     <title>{% block title %}SOC Agent{% endblock %}</title>
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script nonce="{{ csp_nonce() }}" src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Despachador de acciones data-* (sustituye a los handlers inline; ver ui-actions.js) -->
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='ui-actions.js') }}"></script>
 
     <!-- Helper global anti-XSS y fetch interceptor para CSRF -->
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         function escapeHtml(t) {
             if (t === null || t === undefined) return '';
             return String(t).replace(/[&<>'"]/g, function(char) {
@@ -237,7 +240,7 @@
                             <div class="toast toast-{{ category }}" id="toast-{{ loop.index }}">
                                 <div class="flex items-center justify-between">
                                     <span>{{ message }}</span>
-                                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                                    <button data-remove-ancestor="2" class="ml-4">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
@@ -267,7 +270,7 @@
     </div>
 
     <!-- Scripts -->
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         // Sidebar toggle
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebar-toggle');

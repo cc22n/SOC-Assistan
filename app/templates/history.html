@@ -180,13 +180,13 @@
                                 {{ analysis.created_at | local_dt }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="viewDetails({{ analysis.id }})" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Ver detalles">
+                                <button data-action="viewDetails" data-args='[{{ analysis.id|int }}]' class="text-indigo-600 hover:text-indigo-900 mr-3" title="Ver detalles">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button onclick="reanalyze('{{ analysis.ioc.value }}', '{{ analysis.ioc.ioc_type }}')" class="text-green-600 hover:text-green-900 mr-3" title="Re-analizar">
+                                <button data-action="reanalyze" data-args='{{ [analysis.ioc.value, analysis.ioc.ioc_type]|tojson }}' class="text-green-600 hover:text-green-900 mr-3" title="Re-analizar">
                                     <i class="fas fa-redo"></i>
                                 </button>
-                                <button onclick="exportSingle({{ analysis.id }})" class="text-blue-600 hover:text-blue-900" title="Exportar">
+                                <button data-action="exportSingle" data-args='[{{ analysis.id|int }}]' class="text-blue-600 hover:text-blue-900" title="Exportar">
                                     <i class="fas fa-download"></i>
                                 </button>
                             </td>
@@ -269,7 +269,7 @@
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-gray-900">Detalles del Análisis</h3>
-            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <button data-action="closeModal" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -281,7 +281,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 function viewDetails(analysisId) {
     // Buscar datos en la tabla del DOM (ya renderizados por Jinja)
     const row = document.querySelector(`[data-analysis-id="${analysisId}"]`);
@@ -335,10 +335,10 @@ function _showAnalysisModal(analysisId, data) {
                 <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(data.recommendation || '-')}</p>
             </div>
             <div class="flex gap-2 mt-4">
-                <button onclick="exportAnalysis(${analysisId})" class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                <button data-action="exportSingle" data-args='[${Number(analysisId)}]' class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                     <i class="fas fa-download mr-2"></i>Exportar
                 </button>
-                <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+                <button data-action="closeModal" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
                     Cerrar
                 </button>
             </div>

@@ -4,10 +4,10 @@
 
 {% block head %}
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script nonce="{{ csp_nonce() }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <!-- Leaflet para mapas (CDN permitido por CSP) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
     /* Tarjetas de stats */
     .stat-card {
@@ -99,7 +99,7 @@
                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Solo mis datos</span>
                     </label>
                     <!-- Refresh -->
-                    <button onclick="loadAllStats()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
+                    <button data-action="loadAllStats" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
                         <i class="fas fa-sync-alt mr-1"></i> Actualizar
                     </button>
                 </div>
@@ -284,7 +284,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 // Variables globales para charts
 let riskChart, apiChart, timelineChart, apiHealthChart, threatMap;
 let _statsController = null; // AbortController activo para loadAllStats

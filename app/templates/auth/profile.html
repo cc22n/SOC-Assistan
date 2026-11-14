@@ -92,7 +92,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const r = await fetch('/dashboard/api/stats?days=365&user_only=true');

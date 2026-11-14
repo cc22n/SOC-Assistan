@@ -27,7 +27,7 @@
                     <h1 class="text-2xl font-bold text-gray-800" id="incidentTitle"></h1>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="changeStatusModal()" class="px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                    <button data-action="changeStatusModal" class="px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
                         <i class="fas fa-exchange-alt mr-1"></i>Cambiar Estado
                     </button>
                 </div>
@@ -62,13 +62,13 @@
                     <div class="mb-4 flex gap-2">
                         <input type="text" id="noteInput" placeholder="Agregar nota..." 
                             class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            onkeypress="if(event.key==='Enter')addNote()">
+                            data-enter="addNote">
                         <select id="noteType" class="text-sm border rounded-lg px-2">
                             <option value="note">Nota</option>
                             <option value="finding">Hallazgo</option>
                             <option value="action">Accion</option>
                         </select>
-                        <button onclick="addNote()" class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
+                        <button data-action="addNote" class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -118,13 +118,13 @@
                 <div class="bg-white rounded-lg shadow p-5">
                     <h3 class="font-semibold text-gray-800 mb-3">Acciones</h3>
                     <div class="space-y-2">
-                        <button onclick="changeStatus('investigating')" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-yellow-50 text-yellow-700 transition">
+                        <button data-action="changeStatus" data-args='["investigating"]' class="w-full text-left px-3 py-2 text-sm rounded hover:bg-yellow-50 text-yellow-700 transition">
                             <i class="fas fa-search w-5 mr-2"></i>Marcar en curso
                         </button>
-                        <button onclick="changeStatus('resolved')" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-green-50 text-green-700 transition">
+                        <button data-action="changeStatus" data-args='["resolved"]' class="w-full text-left px-3 py-2 text-sm rounded hover:bg-green-50 text-green-700 transition">
                             <i class="fas fa-check w-5 mr-2"></i>Marcar resuelto
                         </button>
-                        <button onclick="changeStatus('closed')" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 text-gray-600 transition">
+                        <button data-action="changeStatus" data-args='["closed"]' class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 text-gray-600 transition">
                             <i class="fas fa-archive w-5 mr-2"></i>Cerrar
                         </button>
                     </div>
@@ -146,15 +146,15 @@
         </select>
         <input type="text" id="statusReason" placeholder="Razon del cambio (opcional)" class="w-full px-3 py-2 border rounded-lg mb-3 text-sm">
         <div class="flex justify-end gap-2">
-            <button onclick="document.getElementById('status-modal').classList.add('hidden')" class="px-3 py-2 bg-gray-200 rounded-lg text-sm">Cancelar</button>
-            <button onclick="submitStatusChange()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Confirmar</button>
+            <button data-hide="status-modal" class="px-3 py-2 bg-gray-200 rounded-lg text-sm">Cancelar</button>
+            <button data-action="submitStatusChange" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Confirmar</button>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 let currentIncident = null;
 const incidentId = window.location.pathname.split('/').pop();
 

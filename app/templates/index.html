@@ -734,7 +734,7 @@
     </footer>
 
     <!-- Scroll animations -->
-    <script>
+    <script nonce="{{ csp_nonce() }}">
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {

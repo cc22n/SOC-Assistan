@@ -10,7 +10,7 @@
             <h1 class="text-3xl font-bold text-gray-800 mb-1">Incidentes de Seguridad</h1>
             <p class="text-gray-600">Gestion de incidentes detectados durante investigaciones</p>
         </div>
-        <button onclick="showCreateModal()" class="bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:from-red-700 hover:to-orange-700 transition shadow-lg">
+        <button data-action="showCreateModal" class="bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:from-red-700 hover:to-orange-700 transition shadow-lg">
             <i class="fas fa-plus mr-2"></i>Nuevo Incidente
         </button>
     </div>
@@ -42,10 +42,10 @@
     <!-- Filters -->
     <div class="mb-4 flex items-center gap-3">
         <label class="flex items-center gap-2 text-sm text-gray-600">
-            <input type="checkbox" id="filterMyOnly" class="rounded" onchange="loadIncidents()">
+            <input type="checkbox" id="filterMyOnly" class="rounded" data-change="loadIncidents">
             Solo mis incidentes
         </label>
-        <select id="filterSeverity" onchange="loadIncidents()" class="text-sm border rounded px-2 py-1">
+        <select id="filterSeverity" data-change="loadIncidents" class="text-sm border rounded px-2 py-1">
             <option value="">Todas las severidades</option>
             <option value="P1">P1 - Critica</option>
             <option value="P2">P2 - Alta</option>
@@ -129,7 +129,7 @@
     <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-4 border-b flex justify-between items-center bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-t-lg">
             <h3 class="text-lg font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Nuevo Incidente</h3>
-            <button onclick="hideCreateModal()" class="text-white hover:text-gray-200">
+            <button data-action="hideCreateModal" class="text-white hover:text-gray-200">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -197,8 +197,8 @@
         </div>
 
         <div class="p-4 border-t bg-gray-50 flex justify-end gap-3 rounded-b-lg">
-            <button onclick="hideCreateModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
-            <button onclick="submitIncident()" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
+            <button data-action="hideCreateModal" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+            <button data-action="submitIncident" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
                 <i class="fas fa-check mr-2"></i>Crear Incidente
             </button>
         </div>
@@ -207,7 +207,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 // ================================================================
 // KANBAN - Cargar y renderizar incidentes
 // ================================================================

@@ -29,9 +29,9 @@ class TestXssPlantillas:
     def test_analysis_tabs_no_interpolan_en_onclick_js(self):
         html = _tpl('analysis.html')
         # el patrón vulnerable: nombre dentro de un string JS de un handler inline
-        assert not re.search(r"""onclick="showTab\('\$\{""", html)
-        assert html.count('onclick="showTab(this.dataset.tab)"') == 2
-        assert html.count('data-tab="${escapeHtml(s)}"') == 2
+        assert 'onclick=' not in html                       # ya no hay handlers inline (CSP)
+        assert html.count('data-action="showTab"') == 2
+        assert html.count("data-args='[${escapeHtml(JSON.stringify(s))}]'") == 2
 
     def test_escapehtml_cubre_comillas(self):
         base = _tpl('base.html')

@@ -107,12 +107,12 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="password">Contrasena</label>
-                    <input type="password" id="password" name="password" placeholder="Min. 8 caracteres" required minlength="8" oninput="checkStrength()">
+                    <input type="password" id="password" name="password" placeholder="Min. 8 caracteres" required minlength="8" data-input="checkStrength">
                     <div class="password-strength" id="strengthBar"></div>
                 </div>
                 <div class="form-group">
                     <label for="password2">Confirmar</label>
-                    <input type="password" id="password2" name="password2" placeholder="Repetir" required minlength="8" oninput="checkMatch()">
+                    <input type="password" id="password2" name="password2" placeholder="Repetir" required minlength="8" data-input="checkMatch">
                     <p class="hint" id="matchHint"></p>
                 </div>
             </div>
@@ -141,7 +141,8 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='ui-actions.js') }}"></script>
+    <script nonce="{{ csp_nonce() }}">
     function checkStrength() {
         const pw = document.getElementById('password').value;
         const bar = document.getElementById('strengthBar');

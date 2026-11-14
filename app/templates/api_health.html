@@ -16,7 +16,7 @@
                 Actualizado: <span id="last-refresh">{{ metrics.collected_at }}</span>
             </p>
         </div>
-        <button onclick="location.reload()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm">
+        <button data-reload class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm">
             <i class="fas fa-sync-alt"></i> Actualizar
         </button>
     </div>
@@ -250,7 +250,7 @@
 
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 // Actualiza resumen de circuit breakers sin recargar la página completa
 async function refreshHealthSummary() {
     try {
