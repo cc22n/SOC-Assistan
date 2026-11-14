@@ -4,10 +4,30 @@ Rutas de autenticación
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse  # Cambiado de werkzeug.urls
+from werkzeug.security import check_password_hash, generate_password_hash
 from app.models.ioc import User
 from app import db, limiter
+from app.utils.login_throttle import (
+    MAX_USERNAME_LEN, lockout_remaining, minutes_left,
+)
 
 auth_bp = Blueprint('auth', __name__)
+
+_dummy_hash = None
+
+
+def _burn_password_hash(password: str) -> None:
+    """
+    Gasta el mismo tiempo que una verificación real cuando el usuario NO existe. Sin esto,
+    un usuario inexistente respondía en ~0.5 ms y uno existente en ~80 ms (hash scrypt), lo
+    que permite enumerar nombres de usuario midiendo la latencia. El hash de relleno se
+    genera con el mismo algoritmo/parámetros que los reales (generate_password_hash).
+    """
+    global _dummy_hash
+    if _dummy_hash is None:
+        import secrets
+        _dummy_hash = generate_password_hash(secrets.token_hex(16))
+    check_password_hash(_dummy_hash, password or '')
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -27,12 +47,30 @@ def login():
             flash('Por favor completa todos los campos', 'error')
             return render_template('auth/login.html')
 
+        # Bloqueo temporal por cuenta (credential stuffing desde muchas IPs). Se aplica igual
+        # exista o no el usuario, para no revelar qué cuentas existen. Los intentos durante
+        # el bloqueo se registran como 'login_blocked' y NO prolongan el bloqueo.
+        remaining = lockout_remaining(username)
+        if remaining is not None:
+            from app.models.audit import AuditEvent
+            AuditEvent.log('login_blocked', success=False,
+                           details={'username': username[:MAX_USERNAME_LEN], 'reason': 'account_locked'},
+                           _commit=True)
+            flash(f'Demasiados intentos fallidos. Inténtalo de nuevo en {minutes_left(remaining)} min.', 'error')
+            return render_template('auth/login.html'), 429
+
         user = User.query.filter_by(username=username).first()
 
-        if user is None or not user.check_password(password):
+        if user is None:
+            _burn_password_hash(password)
+            password_ok = False
+        else:
+            password_ok = user.check_password(password)
+
+        if not password_ok:
             from app.models.audit import AuditEvent
             AuditEvent.log('login_failed', success=False,
-                           details={'username': username, 'reason': 'invalid_credentials'},
+                           details={'username': username[:MAX_USERNAME_LEN], 'reason': 'invalid_credentials'},
                            _commit=True)
             flash('Usuario o contraseña incorrectos', 'error')
             return render_template('auth/login.html')
@@ -69,10 +107,13 @@ def login():
     return render_template('auth/login.html')
 
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
-    """Logout de usuario"""
+    """
+    Logout de usuario. Solo POST (con token CSRF): un GET permitía cerrar la sesión de
+    cualquiera desde un <img src="/auth/logout"> en otra página (logout CSRF).
+    """
     from app.models.audit import AuditEvent
     AuditEvent.log('logout', resource_type='user', resource_id=current_user.id, _commit=True)
     logout_user()

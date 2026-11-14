@@ -232,6 +232,16 @@ class ProductionConfig(Config):
                 "Example: postgresql://user:password@host:5432/dbname"
             )
 
+        # ALLOWED_HOSTS valida la cabecera Host. El valor por defecto (127.0.0.1,localhost)
+        # rechaza el dominio público detrás de un proxy: hay que declararlo explícitamente.
+        if not os.environ.get('ALLOWED_HOSTS'):
+            import logging
+            logging.getLogger(__name__).warning(
+                "ALLOWED_HOSTS no esta definido: solo se aceptaran peticiones con Host "
+                "127.0.0.1/localhost. Detras de un proxy con dominio propio, definelo "
+                "(p.ej. ALLOWED_HOSTS=soc.example.com) o toda peticion dara 400."
+            )
+
 
 class TestingConfig(Config):
     TESTING = True

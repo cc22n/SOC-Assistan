@@ -141,13 +141,13 @@ class TestOpenRedirect:
 class TestLogout:
 
     def test_logout_authenticated_user(self, analyst_client):
-        """Logout de usuario autenticado redirige al index."""
-        resp = analyst_client.get('/auth/logout', follow_redirects=False)
+        """Logout (POST) de usuario autenticado redirige al index."""
+        resp = analyst_client.post('/auth/logout', follow_redirects=False)
         assert resp.status_code == 302
 
     def test_logout_unauthenticated_redirects_to_login(self, client):
-        """Logout sin autenticar → redirige a login."""
-        resp = client.get('/auth/logout', follow_redirects=False)
+        """Logout (POST) sin autenticar → redirige a login."""
+        resp = client.post('/auth/logout', follow_redirects=False)
         assert resp.status_code == 302
         location = resp.headers.get('Location', '')
         assert 'login' in location

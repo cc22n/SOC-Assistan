@@ -29,6 +29,9 @@ services:
       - DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:-soc_secure_password}@db:5432/soc_agent
       - REDIS_URL=redis://redis:6379/0
       - FLASK_ENV=production
+      # Hosts aceptados en la cabecera Host (separados por coma; ".dominio.com" incluye subdominios).
+      # Detrás de un proxy con dominio propio, defínelo en .env.docker o en el entorno del host.
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-127.0.0.1,localhost}
     depends_on:
       db:
         condition: service_healthy

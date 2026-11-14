@@ -3,8 +3,9 @@
 # =============================================================================
 
 # Flask Core
-Flask==3.0.0
+Flask==3.1.3                # >=3.1.3: CVE-2026-27205 (la sesión no añadía "Vary: Cookie")
 Flask-SQLAlchemy==3.1.1
+SQLAlchemy>=2.0.45,<2.1     # TOPE OBLIGATORIO: SQLAlchemy 2.1 usa psycopg (v3) como driver por defecto de postgresql:// y la app usa psycopg2-binary -> la imagen no arrancaba ("No module named psycopg")
 Flask-Migrate==4.0.5
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
@@ -13,11 +14,12 @@ Flask-Limiter==3.5.0
 Flask-Caching==2.1.0
 
 # Security
-python-dotenv==1.0.0
-cryptography==41.0.7
+python-dotenv==1.2.2        # >=1.2.2: CVE-2026-28684 (symlink en set_key)
+tzdata>=2024.1               # ZoneInfo("America/Mexico_City") (DISPLAY_TIMEZONE): sin esto falla en Windows y en imagenes sin base de zonas horarias
+cryptography>=48.0.1,<51   # dependencia transitiva (google-auth); 41.0.7 tenía 14 CVEs (CVE-2023-50782, CVE-2024-0727, CVE-2024-26130, OpenSSL embebido...)
 
 # HTTP Clients
-requests>=2.32.0,<3.0.0
+requests>=2.33.0,<3.0.0     # 2.33.0 corrige CVE-2024-47081 y CVE-2026-25645
 
 # Database
 psycopg2-binary==2.9.9
@@ -28,13 +30,13 @@ reportlab==4.1.0
 python-docx==1.1.0
 
 # Validation
-email-validator==2.1.0
+email-validator>=2.1.1,<3.0  # 2.1.0 esta "yanked" en PyPI
 validators==0.22.0
 pydantic==2.12.5
 
 # Logging & Monitoring
 python-json-logger==2.0.7
-sentry-sdk[flask]==1.39.1
+sentry-sdk[flask]==1.45.1 # >=1.45.1: CVE-2024-40647 (variables de entorno expuestas a subprocesos)
 
 # Production Server
 gunicorn>=22.0.0,<24.0.0

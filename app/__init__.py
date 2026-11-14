@@ -108,6 +108,10 @@ def create_app(config_name='default'):
     # Configurar logging
     setup_logging(app)
 
+    # Validar la cabecera Host (ALLOWED_HOSTS). Va ANTES que el resto de before_request
+    # (Flask los ejecuta en orden de registro): un Host no permitido se rechaza sin tocar BD.
+    register_host_validation(app)
+
     # Registrar blueprints
     register_blueprints(app)
 
@@ -201,6 +205,28 @@ def register_metrics_collector(app: Flask) -> None:
         except Exception as _e:
             app.logger.debug(f"Metrics collector error: {_e}")
         return response
+
+
+def register_host_validation(app: Flask) -> None:
+    """
+    Rechaza con 400 las peticiones cuyo Host no esté en ALLOWED_HOSTS (Host Header Poisoning).
+    Detrás de un proxy, wsgi.py aplica ProxyFix(x_host=1) y request.host refleja
+    X-Forwarded-Host, de modo que se valida el host público real.
+    """
+    from flask import Response
+    from app.utils.hosts import host_allowed
+
+    @app.before_request
+    def _validate_host_header():
+        allowed = app.config.get('ALLOWED_HOSTS')
+        if not allowed:
+            return None
+        if host_allowed(flask_request.host, allowed):
+            return None
+        app.logger.warning(
+            "Host rechazado por ALLOWED_HOSTS: %r (ip=%s, path=%s)",
+            flask_request.host[:100], flask_request.remote_addr, flask_request.path[:100])
+        return Response('Invalid Host header', status=400, mimetype='text/plain')
 
 
 def build_csp(nonce: str, upgrade_insecure: bool = False) -> str:

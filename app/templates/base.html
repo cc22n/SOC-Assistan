@@ -162,9 +162,12 @@
                                 <div class="text-xs opacity-75">{{ current_user.role|title }}</div>
                             </div>
                         </a>
-                        <a href="{{ url_for('auth.logout') }}" class="hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded transition">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Salir
-                        </a>
+                        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded transition">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Salir
+                            </button>
+                        </form>
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded transition">
                             <i class="fas fa-sign-in-alt mr-2"></i>Login
