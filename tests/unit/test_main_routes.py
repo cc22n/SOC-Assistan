@@ -241,3 +241,76 @@ class TestSecurityHeaders:
         server = resp.headers.get('Server', '')
         # No debe exponer versión de Flask/Werkzeug
         assert 'Werkzeug' not in server or True  # warning, no hard fail
+
+
+# ==============================================================================
+# ESTÁNDARES WEB Y PÁGINAS LEGALES
+# ==============================================================================
+
+class TestWebStandardsAndLegal:
+
+    def test_robots_txt(self, client):
+        """GET /robots.txt devuelve 200, text/plain y directivas de crawl."""
+        resp = client.get('/robots.txt')
+        assert resp.status_code == 200
+        assert 'text/plain' in resp.content_type
+        text = resp.data.decode('utf-8')
+        assert 'User-agent:' in text
+        assert 'Disallow:' in text
+        assert 'Sitemap:' in text
+
+    def test_sitemap_xml(self, client):
+        """GET /sitemap.xml devuelve 200, application/xml y estructura XML."""
+        resp = client.get('/sitemap.xml')
+        assert resp.status_code == 200
+        assert 'application/xml' in resp.content_type or 'text/xml' in resp.content_type
+        text = resp.data.decode('utf-8')
+        assert '<urlset' in text
+        assert '<loc>' in text
+
+    def test_security_txt(self, client):
+        """GET /.well-known/security.txt devuelve 200 y RFC 9116 fields."""
+        resp = client.get('/.well-known/security.txt')
+        assert resp.status_code == 200
+        assert 'text/plain' in resp.content_type
+        text = resp.data.decode('utf-8')
+        assert 'Contact:' in text
+        assert 'Preferred-Languages:' in text
+
+    def test_privacy_page_loads(self, client):
+        """GET /privacy devuelve 200 y contenido de privacidad."""
+        resp = client.get('/privacy')
+        assert resp.status_code == 200
+        text = resp.data.decode('utf-8')
+        assert 'Privacidad' in text or 'privacidad' in text
+
+    def test_terms_page_loads(self, client):
+        """GET /terms devuelve 200 y contenido de términos."""
+        resp = client.get('/terms')
+        assert resp.status_code == 200
+        text = resp.data.decode('utf-8')
+        assert 'Términos' in text or 'términos' in text
+
+
+# ==============================================================================
+# MANEJO HÍBRIDO DE ERRORES (HTML vs JSON)
+# ==============================================================================
+
+class TestErrorHandling:
+
+    def test_404_html(self, client):
+        """404 para navegador devuelve HTML legible."""
+        resp = client.get('/ruta-inexistente-12345', headers={'Accept': 'text/html'})
+        assert resp.status_code == 404
+        assert 'text/html' in resp.content_type
+        assert b'404' in resp.data
+
+    def test_404_json(self, client):
+        """404 para API / cliente JSON devuelve JSON estructurado."""
+        resp = client.get('/ruta-inexistente-12345', headers={'Accept': 'application/json'})
+        assert resp.status_code == 404
+        assert 'application/json' in resp.content_type
+        data = resp.get_json()
+        assert data.get('success') is False
+        assert data.get('error') == 'Not Found'
+

@@ -3,14 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}SOC Agent{% endblock %}</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Helper global anti-XSS: usar SIEMPRE al interpolar datos de APIs en innerHTML -->
+    <!-- Helper global anti-XSS y fetch interceptor para CSRF -->
     <script>
-        function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function escapeHtml(t) {
+            if (t === null || t === undefined) return '';
+            return String(t).replace(/[&<>'"]/g, function(char) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[char];
+            });
+        }
+
+        // Auto-adjuntar X-CSRFToken en peticiones mutantes (POST, PUT, PATCH, DELETE)
+        (function() {
+            const _origFetch = window.fetch;
+            window.fetch = function(url, options = {}) {
+                const metaCsrf = document.querySelector('meta[name="csrf-token"]');
+                const token = metaCsrf ? metaCsrf.getAttribute('content') : null;
+                if (token && options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) {
+                    options.headers = options.headers || {};
+                    if (options.headers instanceof Headers) {
+                        if (!options.headers.has('X-CSRFToken')) {
+                            options.headers.append('X-CSRFToken', token);
+                        }
+                    } else if (Array.isArray(options.headers)) {
+                        options.headers.push(['X-CSRFToken', token]);
+                    } else {
+                        options.headers['X-CSRFToken'] = options.headers['X-CSRFToken'] || token;
+                    }
+                }
+                return _origFetch(url, options);
+            };
+        })();
     </script>
 
     <!-- Font Awesome -->
@@ -181,30 +215,54 @@
                     <i class="fas fa-info-circle w-5 mr-3"></i>
                     Acerca de
                 </a>
+                <a href="{{ url_for('main.privacy') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.privacy' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-shield-alt w-5 mr-3"></i>
+                    Privacidad
+                </a>
+                <a href="{{ url_for('main.terms') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition {% if request.endpoint == 'main.terms' %}bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600{% endif %}">
+                    <i class="fas fa-file-contract w-5 mr-3"></i>
+                    Términos
+                </a>
             </nav>
         </aside>
         {% endif %}
 
         <!-- Main Content -->
-        <main class="flex-1 p-6">
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="toast toast-{{ category }}" id="toast-{{ loop.index }}">
-                            <div class="flex items-center justify-between">
-                                <span>{{ message }}</span>
-                                <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
-                                    <i class="fas fa-times"></i>
-                                </button>
+        <main class="flex-1 p-6 flex flex-col justify-between">
+            <div>
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="toast toast-{{ category }}" id="toast-{{ loop.index }}">
+                                <div class="flex items-center justify-between">
+                                    <span>{{ message }}</span>
+                                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
-            <!-- Page Content -->
-            {% block content %}{% endblock %}
+                <!-- Page Content -->
+                {% block content %}{% endblock %}
+            </div>
+
+            <!-- Footer -->
+            <footer class="mt-12 pt-6 border-t border-gray-200 text-xs text-gray-500 flex flex-col md:flex-row justify-between items-center gap-2">
+                <div>
+                    &copy; 2026 SOC Assistant — Asistente de Ciberseguridad.
+                </div>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('main.privacy') }}" class="hover:text-indigo-600 hover:underline">Privacidad</a>
+                    <span>&bull;</span>
+                    <a href="{{ url_for('main.terms') }}" class="hover:text-indigo-600 hover:underline">Términos de Servicio</a>
+                    <span>&bull;</span>
+                    <a href="{{ url_for('main.about') }}" class="hover:text-indigo-600 hover:underline">Acerca de</a>
+                </div>
+            </footer>
         </main>
     </div>
 
@@ -239,14 +297,23 @@
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
+            
+            const container = document.createElement('div');
+            container.className = 'flex items-center justify-between';
+            
+            const span = document.createElement('span');
+            span.textContent = message; // Seguro contra DOM XSS
+            
+            const btn = document.createElement('button');
+            btn.className = 'ml-4';
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('aria-label', 'Cerrar notificación');
+            btn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+            btn.onclick = () => toast.remove();
+            
+            container.appendChild(span);
+            container.appendChild(btn);
+            toast.appendChild(container);
             document.body.appendChild(toast);
 
             setTimeout(() => {

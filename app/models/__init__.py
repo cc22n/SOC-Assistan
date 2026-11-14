@@ -8,7 +8,10 @@ from app.models.mitre import (
     MITRE_TECHNIQUES_DB,
     MALWARE_TO_TECHNIQUES,
     get_technique_info,
-    get_techniques_by_malware
+    get_techniques_by_malware,
+    MITRETechnique,
+    MITREMalwareMapping,
+    MITREUpdateLog
 )
 
 __all__ = [
@@ -18,6 +21,12 @@ __all__ = [
     'Incident',
     'APIUsage',
     'AuditEvent',
+    'InvestigationSession',
+    'SessionIOC',
+    'SessionMessage',
+    'MITRETechnique',
+    'MITREMalwareMapping',
+    'MITREUpdateLog',
     'MITRE_TECHNIQUES_DB',
     'MALWARE_TO_TECHNIQUES',
     'get_technique_info',

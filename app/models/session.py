@@ -7,6 +7,7 @@ Tablas:
 - SessionIOC: IOCs vinculados a una sesión
 - SessionMessage: Mensajes del chat en una sesión
 """
+from datetime import timezone
 from app.utils.time_utils import utcnow, localnow
 from typing import List, Optional, Dict, Any
 from sqlalchemy import (

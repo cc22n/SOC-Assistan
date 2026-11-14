@@ -104,19 +104,25 @@ class STIXExporter:
         # Grouping (el incidente)
         grouping = self._incident_to_grouping(incident)
 
-        # IOCs vinculados
+        # IOCs vinculados (Batch query sin N+1)
         linked = IncidentIOC.query.filter_by(incident_id=incident_id).all()
         indicator_ids = []
 
-        for link in linked:
-            ioc = db.session.get(IOC, link.ioc_id)
-            if not ioc:
-                continue
+        if linked:
+            ioc_ids = [l.ioc_id for l in linked if l.ioc_id]
+            analysis_ids = [l.analysis_id for l in linked if l.analysis_id]
+            iocs = {ioc.id: ioc for ioc in IOC.query.filter(IOC.id.in_(ioc_ids)).all()} if ioc_ids else {}
+            analyses = {a.id: a for a in IOCAnalysis.query.filter(IOCAnalysis.id.in_(analysis_ids)).all()} if analysis_ids else {}
 
-            analysis = db.session.get(IOCAnalysis, link.analysis_id) if link.analysis_id else None
-            indicator = self._ioc_to_indicator(ioc, analysis)
-            objects.append(indicator)
-            indicator_ids.append(indicator['id'])
+            for link in linked:
+                ioc = iocs.get(link.ioc_id)
+                if not ioc:
+                    continue
+
+                analysis = analyses.get(link.analysis_id)
+                indicator = self._ioc_to_indicator(ioc, analysis)
+                objects.append(indicator)
+                indicator_ids.append(indicator['id'])
 
         grouping['object_refs'] = indicator_ids
         objects.append(grouping)
@@ -124,21 +130,33 @@ class STIXExporter:
         return self._create_bundle(objects)
 
     def export_iocs_bulk(self, ioc_ids: List[int]) -> Dict:
-        """Exporta múltiples IOCs como STIX Bundle"""
+        """Exporta múltiples IOCs como STIX Bundle (Batch query sin N+1)"""
         from app.models.ioc import IOC, IOCAnalysis
         from app import db
 
         objects = [self.identity]
+        if not ioc_ids:
+            return self._create_bundle(objects)
+
+        iocs = {ioc.id: ioc for ioc in IOC.query.filter(IOC.id.in_(ioc_ids)).all()}
+        analyses = {}
+        if iocs:
+            all_analyses = (
+                IOCAnalysis.query
+                .filter(IOCAnalysis.ioc_id.in_(iocs.keys()))
+                .order_by(IOCAnalysis.created_at.desc())
+                .all()
+            )
+            for a in all_analyses:
+                if a.ioc_id not in analyses:
+                    analyses[a.ioc_id] = a
 
         for ioc_id in ioc_ids:
-            ioc = db.session.get(IOC, ioc_id)
+            ioc = iocs.get(ioc_id)
             if not ioc:
                 continue
 
-            analysis = IOCAnalysis.query.filter_by(ioc_id=ioc_id).order_by(
-                IOCAnalysis.created_at.desc()
-            ).first()
-
+            analysis = analyses.get(ioc_id)
             indicator = self._ioc_to_indicator(ioc, analysis)
             objects.append(indicator)
 

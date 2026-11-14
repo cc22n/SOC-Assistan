@@ -32,77 +32,10 @@ CACHE_TTL_DAYS = 30
 
 
 # =============================================================================
-# MODELO DE BD
+# MODELOS DE BD (Importados desde app.models.mitre para modularidad limpia)
 # =============================================================================
+from app.models.mitre import MITRETechnique, MITREMalwareMapping, MITREUpdateLog
 
-class MITRETechnique(db.Model):
-    """Técnica MITRE ATT&CK almacenada en BD"""
-    __tablename__ = 'mitre_techniques'
-
-    id = db.Column(db.Integer, primary_key=True)
-    technique_id = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    tactic = db.Column(db.String(50), index=True)
-    tactics = db.Column(db.JSON, default=list)  # Una técnica puede tener múltiples tácticas
-    platform = db.Column(db.JSON, default=list)  # Windows, Linux, macOS, etc.
-    is_subtechnique = db.Column(db.Boolean, default=False)
-    parent_id = db.Column(db.String(20))  # T1059 para T1059.001
-    url = db.Column(db.String(500))
-    data_sources = db.Column(db.JSON, default=list)
-    detection = db.Column(db.Text)
-    deprecated = db.Column(db.Boolean, default=False)
-    updated_at = db.Column(db.DateTime, default=utcnow)
-
-    def to_dict(self):
-        return {
-            'id': self.technique_id,
-            'name': self.name,
-            'tactic': self.tactic,
-            'tactics': self.tactics or [],
-            'description': (self.description or '')[:500],
-            'platform': self.platform or [],
-            'is_subtechnique': self.is_subtechnique,
-            'url': self.url,
-            'data_sources': self.data_sources or [],
-        }
-
-    def __repr__(self):
-        return f'<MITRETechnique {self.technique_id}: {self.name}>'
-
-
-class MITREMalwareMapping(db.Model):
-    """Mapeo de malware/software a técnicas MITRE"""
-    __tablename__ = 'mitre_malware_mappings'
-
-    id = db.Column(db.Integer, primary_key=True)
-    malware_name = db.Column(db.String(200), nullable=False, index=True)
-    malware_id = db.Column(db.String(20))  # S0001, etc.
-    technique_ids = db.Column(db.JSON, default=list)
-    aliases = db.Column(db.JSON, default=list)
-    description = db.Column(db.Text)
-    updated_at = db.Column(db.DateTime, default=utcnow)
-
-    __table_args__ = (
-        db.UniqueConstraint('malware_name', name='unique_malware_name'),
-    )
-
-    def __repr__(self):
-        return f'<MITREMalware {self.malware_name}>'
-
-
-class MITREUpdateLog(db.Model):
-    """Log de actualizaciones MITRE"""
-    __tablename__ = 'mitre_update_log'
-
-    id = db.Column(db.Integer, primary_key=True)
-    updated_at = db.Column(db.DateTime, default=utcnow, nullable=False)
-    techniques_count = db.Column(db.Integer, default=0)
-    malware_count = db.Column(db.Integer, default=0)
-    source = db.Column(db.String(100))  # 'stix_github', 'hardcoded_fallback'
-    version = db.Column(db.String(50))  # ATT&CK version
-    success = db.Column(db.Boolean, default=True)
-    error = db.Column(db.Text)
 
 
 # =============================================================================

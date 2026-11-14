@@ -27,9 +27,28 @@ _executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix='api-worker')
 
 
 async def _run_in_thread(func: Callable, *args) -> Any:
-    """Ejecuta una funcion sync en un thread del pool"""
+    """Ejecuta una funcion sync en un thread del pool propagando request_id y app_context"""
+    from flask import has_request_context, g, current_app
+    app = None
+    req_id = None
+    if has_request_context():
+        req_id = getattr(g, 'request_id', None)
+        try:
+            app = current_app._get_current_object()
+        except Exception:
+            pass
+
+    def _wrapped():
+        if app:
+            with app.app_context():
+                if req_id:
+                    from flask import g
+                    g.request_id = req_id
+                return func(*args)
+        return func(*args)
+
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(_executor, func, *args)
+    return await loop.run_in_executor(_executor, _wrapped)
 
 
 def _call_with_instrumentation(api_name: str, method: Callable) -> Any:

@@ -1,0 +1,50 @@
+﻿{% extends 'base.html' %}
+{% block title %}Política de Privacidad | SOC Agent{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8 border border-gray-100">
+    <div class="border-b border-gray-200 pb-4 mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-user-shield text-indigo-600 mr-3"></i>
+            Política de Privacidad y Manejo de Datos SOC
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">Última actualización: Septiembre 2026 | Cumplimiento ISO/IEC 27001 y RGPD</p>
+    </div>
+
+    <div class="prose max-w-none text-gray-700 space-y-6">
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">1. Tratamiento de Indicadores de Compromiso (IOCs)</h2>
+            <p>
+                SOC Agent procesa direcciones IP, hashes de malware, dominios y URLs enviados para enriquecimiento analítico.
+                Los IOCs ingresados se cotejan contra feeds de threat intelligence externos y bases de datos locales.
+                La plataforma no asocia datos de identidad personal con IOCs analizados salvo para trazabilidad del operador en el registro inmutable de auditoría.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">2. Uso de Modelos de Lenguaje (LLMs)</h2>
+            <p>
+                Los análisis generados con inteligencia artificial utilizan proveedores seguros (DeepSeek, OpenAI, Gemini, Kimi/Moonshot, xAI).
+                Antes del envío de contexto al proveedor LLM, se filtran datos confidenciales internos y se desinfectan cadenas para prevenir
+                inyecciones de prompt. Los datos no son utilizados por terceros para reentrenamiento de modelos sin consentimiento.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">3. Registros de Auditoría y Trazabilidad</h2>
+            <p>
+                Conforme a los estándares de seguridad de la información, todas las acciones críticas (inicios de sesión, análisis de amenazas,
+                cambios de estado de incidentes y exportación de inteligencia) se almacenan en un registro de eventos inmutable (Audit Log)
+                para prevenir accesos no autorizados y garantizar la no-repudiación.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">4. Contacto de Privacidad y Seguridad</h2>
+            <p>
+                Para ejercer derechos de acceso, rectificación o reportes de seguridad, contacte al equipo de seguridad de la información en:
+                <a href="mailto:security@soc-agent.local" class="text-indigo-600 hover:underline">security@soc-agent.local</a>.
+            </p>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+﻿{% extends 'base.html' %}
+{% block title %}Términos de Servicio | SOC Agent{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8 border border-gray-100">
+    <div class="border-b border-gray-200 pb-4 mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-file-contract text-indigo-600 mr-3"></i>
+            Términos de Servicio y Condiciones Operativas
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">Versión 2.0 | SOC Platform</p>
+    </div>
+
+    <div class="prose max-w-none text-gray-700 space-y-6">
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">1. Propósito y Alcance de Uso</h2>
+            <p>
+                SOC Agent es una plataforma defensiva para operaciones de ciberseguridad, respuesta a incidentes y análisis
+                de threat intelligence. Queda estrictamente prohibido utilizar esta plataforma para actividades maliciosas,
+                sondeo no autorizado de redes ajenas, abusos de denegación de servicio o vulneración de infraestructuras de terceros.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">2. Responsabilidad sobre Cuotas y Llaves API</h2>
+            <p>
+                El usuario y la organización son responsables de la custodia de sus llaves de API externas y del consumo de
+                cuotas asociadas. La plataforma implementa circuit breakers y rate limiting para mitigar saturación y costes imprevistos.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">3. Exactitud de la Inteligencia de Amenazas</h2>
+            <p>
+                Los puntajes de riesgo, veredictos de LLM y correlaciones provienen de fuentes automatizadas y modelos probabilísticos.
+                Deben considerarse soporte de decisión para el analista y no sustituyen el juicio pericial en la toma de acciones de bloqueo.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">4. Control de Acceso y Credenciales</h2>
+            <p>
+                Cada analista es responsable de salvaguardar sus credenciales. La suplantación de identidad o el intento de evasión
+                de controles de roles (RBAC) constituirá causa de revocación inmediata de privilegios y registro disciplinario en auditoría.
+            </p>
+        </section>
+    </div>
+</div>
+{% endblock %}

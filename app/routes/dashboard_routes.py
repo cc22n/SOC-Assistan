@@ -38,6 +38,17 @@ def index():
 # API ENDPOINTS PARA ESTADÍSTICAS
 # =============================================================================
 
+def _resolve_user_id():
+    """
+    Resuelve el user_id para filtrar estadísticas del dashboard.
+    Usuarios no-admin están aislados a sus propios datos para evitar fuga de inteligencia.
+    """
+    user_only = request.args.get('user_only', 'false').lower() == 'true'
+    if getattr(current_user, 'role', '') != 'admin' or user_only:
+        return current_user.id
+    return None
+
+
 @bp.route('/api/stats', methods=['GET'])
 @login_required
 def get_all_stats():
@@ -46,13 +57,12 @@ def get_all_stats():
     
     Query params:
     - days: Período en días (default: 30)
-    - user_only: Solo datos del usuario actual (default: false)
+    - user_only: Solo datos del usuario actual (default: false, forzado para no-admins)
     """
     try:
         days = request.args.get('days', 30, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
+        is_filtered = user_id is not None
         
         service = get_stats_service()
         stats = service.get_all_stats(user_id=user_id, days=days)
@@ -61,7 +71,7 @@ def get_all_stats():
             'success': True,
             'stats': stats,
             'period_days': days,
-            'user_filtered': user_only
+            'user_filtered': is_filtered
         }), 200
         
     except Exception as e:
@@ -74,8 +84,7 @@ def get_risk_distribution():
     """Distribución de niveles de riesgo"""
     try:
         days = request.args.get('days', 30, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
         
         service = get_stats_service()
         data = service.get_risk_distribution(user_id=user_id, days=days)
@@ -108,8 +117,7 @@ def get_timeline():
     """Timeline de análisis"""
     try:
         days = request.args.get('days', 30, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
         
         service = get_stats_service()
         data = service.get_analysis_timeline(user_id=user_id, days=days)
@@ -126,8 +134,7 @@ def get_geo_threats():
     """Amenazas por ubicación geográfica"""
     try:
         days = request.args.get('days', 30, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
         
         service = get_stats_service()
         data = service.get_geo_threats(user_id=user_id, days=days)
@@ -144,8 +151,7 @@ def get_summary():
     """Resumen de estadísticas para cards"""
     try:
         days = request.args.get('days', 30, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
         
         service = get_stats_service()
         data = service.get_summary_stats(user_id=user_id, days=days)
@@ -162,8 +168,7 @@ def get_recent():
     """Análisis recientes"""
     try:
         limit = request.args.get('limit', 10, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
         
         service = get_stats_service()
         data = service.get_recent_analyses(user_id=user_id, limit=limit)
@@ -180,8 +185,7 @@ def get_threats():
     """Top amenazas"""
     try:
         days = request.args.get('days', 30, type=int)
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = current_user.id if user_only else None
+        user_id = _resolve_user_id()
         
         service = get_stats_service()
         data = service.get_top_threats(user_id=user_id, days=days)

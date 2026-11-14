@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional
 
 from flask import request, g
 from flask_login import current_user
+from app.utils.time_utils import utcnow
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app import db
@@ -59,7 +60,7 @@ class AuditEvent(db.Model):
     success = db.Column(db.Boolean, default=True, nullable=False)
 
     # Cuándo
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
 
     __table_args__ = (
         db.Index('ix_audit_user_created', 'user_id', 'created_at'),
@@ -134,7 +135,11 @@ class AuditEvent(db.Model):
         except Exception as exc:
             logger.error(f"AuditEvent.log failed for action='{action}': {exc}", exc_info=True)
             try:
-                db.session.rollback()
+                if _commit:
+                    db.session.rollback()
+                else:
+                    if 'event' in locals() and event in db.session:
+                        db.session.expunge(event)
             except Exception:
                 pass
             return None
