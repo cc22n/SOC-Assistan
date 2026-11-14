@@ -365,3 +365,26 @@ def mock_abuseipdb_malicious():
 @pytest.fixture
 def mock_api_error():
     return {'error': 'API key inválida o límite excedido'}
+
+
+# ==============================================================================
+# HTTP: los tests parchean `requests.get/post`; en produccion http_get/http_post usan
+# una Session con pooling (app/utils/http_client.py). Esta fixture enruta esa sesion
+# hacia requests.get/post en el momento de la llamada, de modo que los parches de los
+# tests siguen funcionando SIN que el codigo de produccion conozca a unittest.mock
+# (ALTO-02: antes http_client.py hacia isinstance(requests.get, Mock) en runtime).
+# ==============================================================================
+
+@pytest.fixture(autouse=True)
+def _http_session_via_requests(monkeypatch):
+    import requests
+    from app.utils import http_client
+
+    class _Shim:
+        def get(self, url, **kw):
+            return requests.get(url, **kw)
+
+        def post(self, url, **kw):
+            return requests.post(url, **kw)
+
+    monkeypatch.setattr(http_client, 'get_http_session', lambda *a, **k: _Shim())

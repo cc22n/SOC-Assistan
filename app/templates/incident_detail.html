@@ -174,6 +174,7 @@ async function loadIncident() {
         
         currentIncident = data.incident;
         renderIncident(currentIncident);
+        applyAllowedTransitions(currentIncident);
         loadTimeline();
         
         document.getElementById('loading').classList.add('hidden');
@@ -217,6 +218,10 @@ function renderIncident(inc) {
     if (inc.resolved_at) {
         document.getElementById('metaResolvedRow').style.display = 'flex';
         document.getElementById('metaResolved').textContent = formatDate(inc.resolved_at);
+    } else {
+        // Reabierto: el servidor limpia resolved_at; la fila no debe conservar la fecha anterior
+        document.getElementById('metaResolvedRow').style.display = 'none';
+        document.getElementById('metaResolved').textContent = '-';
     }
     if (inc.session_id) {
         document.getElementById('metaSessionRow').style.display = 'flex';
@@ -315,6 +320,23 @@ async function addNote() {
     }
 }
 
+// Solo se ofrecen las transiciones que la máquina de estados del servidor permite
+// (Incident.STATUS_TRANSITIONS); el servidor las valida igualmente (409 si no).
+function applyAllowedTransitions(inc) {
+    const allowed = inc.allowed_transitions || [];
+    document.querySelectorAll('button[data-action="changeStatus"]').forEach(btn => {
+        let target = null;
+        try { target = JSON.parse(btn.getAttribute('data-args'))[0]; } catch (e) { /* sin args */ }
+        btn.classList.toggle('hidden', !!target && !allowed.includes(target));
+    });
+    const select = document.getElementById('newStatus');
+    if (select) {
+        [...select.options].forEach(opt => {
+            opt.disabled = opt.value !== inc.status && !allowed.includes(opt.value);
+        });
+    }
+}
+
 async function changeStatus(status) {
     try {
         const response = await fetch(`/api/v2/incidents/${incidentId}/status`, {
@@ -326,6 +348,9 @@ async function changeStatus(status) {
         if (data.success) {
             showToast(`Estado cambiado a ${status}`, 'success');
             loadIncident();
+        } else {
+            showToast(data.error || 'No se pudo cambiar el estado', 'error');
+            loadIncident();   // refresca las acciones permitidas
         }
     } catch (e) {
         showToast('Error cambiando estado', 'error');
@@ -352,6 +377,8 @@ async function submitStatusChange() {
             document.getElementById('status-modal').classList.add('hidden');
             showToast('Estado actualizado', 'success');
             loadIncident();
+        } else {
+            showToast(data.error || 'No se pudo cambiar el estado', 'error');
         }
     } catch (e) {
         showToast('Error', 'error');

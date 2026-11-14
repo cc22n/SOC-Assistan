@@ -16,10 +16,9 @@ Endpoints:
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from app.utils.time_utils import utcnow
 from sqlalchemy import desc
 from app import db
-from app.models.ioc import Incident, IncidentIOC, IOC, IOCAnalysis, User
+from app.models.ioc import Incident, IncidentIOC, IOC, IOCAnalysis, User, InvalidStatusTransition
 from app.utils.responses import safe_error_response as _safe_error  # (VULN-02 fix)
 from app.utils.auth import require_role
 import logging
@@ -79,7 +78,7 @@ def create_incident():
             return jsonify({'error': 'Titulo requerido'}), 400
 
         severity = data.get('severity', 'P3')
-        if severity not in ['P1', 'P2', 'P3', 'P4']:
+        if severity not in Incident.VALID_SEVERITIES:
             return jsonify({'error': 'Severidad invalida (P1-P4)'}), 400
 
         session_id = data.get('session_id')
@@ -320,7 +319,10 @@ def update_incident(incident_id):
             incident.description = data['description']
             changes.append('Descripcion actualizada')
 
-        if 'severity' in data and data['severity'] in ['P1', 'P2', 'P3', 'P4']:
+        if 'severity' in data:
+            # Antes una severidad inválida se ignoraba en silencio y se respondía éxito
+            if data['severity'] not in Incident.VALID_SEVERITIES:
+                return jsonify({'error': 'Severidad invalida (P1-P4)'}), 400
             old = incident.severity
             incident.severity = data['severity']
             changes.append(f'Severidad: {old} -> {data["severity"]}')
@@ -386,17 +388,21 @@ def change_status(incident_id):
         new_status = data.get('status', '').strip()
         reason = data.get('reason', '')
 
-        valid_statuses = ['open', 'investigating', 'resolved', 'closed']
-        if new_status not in valid_statuses:
-            return jsonify({'error': f'Estado invalido. Validos: {valid_statuses}'}), 400
+        if new_status not in Incident.VALID_STATUSES:
+            return jsonify({'error': f'Estado invalido. Validos: {list(Incident.VALID_STATUSES)}'}), 400
 
-        old_status = incident.status
-        incident.status = new_status
-
-        if new_status == 'resolved':
-            incident.resolved_at = utcnow()
+        try:
+            old_status, reopened = incident.transition_to(new_status)
+        except InvalidStatusTransition as e:
+            return jsonify({
+                'error': f'Transicion no permitida: {e.current} -> {e.requested}',
+                'current': e.current,
+                'allowed': e.allowed,
+            }), 409
 
         description = f'Estado: {old_status} -> {new_status}'
+        if reopened:
+            description += ' [reabierto]'
         if reason:
             description += f' ({reason})'
 

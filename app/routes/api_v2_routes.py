@@ -118,12 +118,15 @@ def analyze_enhanced(data: AnalyzeRequest):
                     try:
                         ioc_obj = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type).first()
                         if ioc_obj:
-                            sm.add_ioc_to_session(
-                                session_id=session_id,
-                                ioc_id=ioc_obj.id,
-                                analysis_id=cached['analysis_id'],
-                                role='analyzed'
-                            )
+                            # SAVEPOINT: si la vinculación falla solo se revierte ella
+                            with db.session.begin_nested():
+                                sm.add_ioc_to_session(
+                                    session_id=session_id,
+                                    ioc_id=ioc_obj.id,
+                                    analysis_id=cached['analysis_id'],
+                                    role='analyzed',
+                                    commit=False
+                                )
                             db.session.commit()
                     except Exception as e:
                         logger.error(f"Error linking cached IOC to session: {e}")
@@ -220,8 +223,11 @@ def analyze_enhanced(data: AnalyzeRequest):
 
         if session_id:
             try:
-                sm.add_ioc_to_session(session_id=session_id, ioc_id=ioc_obj.id, analysis_id=analysis.id,
-                                      role='analyzed')
+                # commit=False + SAVEPOINT: el análisis, el vínculo a la sesión y el commit final
+                # forman una sola transacción; si la vinculación falla, se conserva el análisis.
+                with db.session.begin_nested():
+                    sm.add_ioc_to_session(session_id=session_id, ioc_id=ioc_obj.id, analysis_id=analysis.id,
+                                          role='analyzed', commit=False)
             except Exception as e:
                 logger.error(f"Error adding IOC to session: {e}")
 

@@ -139,24 +139,10 @@ class DeepAnalysisService:
         return self._orchestrator
 
     def _call_llm(self, prompt: str) -> Any:
-        """Invoca LLM de forma uniforme soportando todos los proveedores y manteniendo compatibilidad con mocks."""
-        from unittest.mock import Mock
-        mock_fn = getattr(self.llm_service, '_call_generic_openai_style', None)
-        if isinstance(mock_fn, Mock):
-            try:
-                has_custom_return = getattr(mock_fn, '_mock_return_value', None) is not mock_fn._mock_default
-                has_side_effect = getattr(mock_fn, 'side_effect', None) is not None
-                if has_custom_return or has_side_effect or mock_fn.called:
-                    return mock_fn(prompt)
-            except Exception:
-                pass
-
-        if hasattr(self.llm_service, 'generate') and callable(getattr(self.llm_service, 'generate')):
-            return self.llm_service.generate(prompt)
-
-        if callable(mock_fn):
-            return mock_fn(prompt)
-
+        """Invoca el LLM de forma uniforme (LLMService.generate cubre todos los proveedores)."""
+        generate = getattr(self.llm_service, 'generate', None)
+        if callable(generate):
+            return generate(prompt)
         return {'error': 'No LLM method available'}
     
     # =========================================================================

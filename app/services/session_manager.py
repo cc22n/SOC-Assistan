@@ -227,7 +227,8 @@ class SessionManager:
         message_id: int = None,
         notes: str = None,
         related_to_ioc_ids: list = None,
-        relationship_type: str = None
+        relationship_type: str = None,
+        commit: bool = True
     ) -> Optional[SessionIOC]:
         """
         Agrega un IOC a una sesión.
@@ -242,6 +243,11 @@ class SessionManager:
             related_to_ioc_ids: IDs de IOCs de los que este es contexto/relacionado
                 (solo se aplica al crear -- no pisa un vínculo existente)
             relationship_type: p.ej. 'mentioned_in_article' (agente OSINT nivel 3)
+            commit: True (por defecto) confirma la transacción al terminar. Un llamador que
+                es dueño de una transacción mayor (p.ej. el endpoint de análisis, que además
+                guarda IOCAnalysis y auditoría) debe pasar False: el servicio solo hace
+                flush y el llamador decide el commit/rollback, para que la operación sea
+                atómica (ALTO-06: un commit intermedio dejaba estados parciales).
         """
         # Verificar si ya existe
         existing = SessionIOC.query.filter_by(
@@ -259,7 +265,7 @@ class SessionManager:
                 session = self.get_session(session_id)
                 if session:
                     self._recompute_highest_risk_level(session)
-            db.session.commit()
+            self._finish(commit)
             return existing
 
         # Crear nuevo
@@ -284,17 +290,25 @@ class SessionManager:
             if analysis_id:
                 self._recompute_highest_risk_level(session)
 
-        db.session.commit()
+        self._finish(commit)
 
         # Actualizar título si es el primer IOC y no tiene título personalizado
         if session and session.total_iocs == 1:
             ioc = db.session.get(IOC, ioc_id)
             if ioc and 'Nueva investigación' in (session.title or ''):
                 session.title = session.generate_title(ioc.value, ioc.ioc_type)
-                db.session.commit()
+                self._finish(commit)
 
         logger.info(f"Added IOC {ioc_id} to session {session_id}")
         return session_ioc
+
+    @staticmethod
+    def _finish(commit: bool) -> None:
+        """commit=True confirma; commit=False solo hace flush (el llamador es dueño de la transacción)."""
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
 
     def _recompute_highest_risk_level(self, session: InvestigationSession) -> None:
         """

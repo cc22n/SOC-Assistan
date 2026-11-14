@@ -350,6 +350,7 @@ def generate_openapi_spec():
                 "put": {
                     "tags": ["Incidents"],
                     "summary": "Cambiar estado de incidente",
+                    "description": "Máquina de estados: open -> investigating|resolved; investigating -> open|resolved|closed; resolved -> investigating|open|closed; closed -> investigating|open. Reabrir (resolved/closed -> open|investigating) limpia resolved_at. Una transición no permitida devuelve 409 con `current` y `allowed`.",
                     "operationId": "changeIncidentStatus",
                     "parameters": [{"name": "incident_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
                     "requestBody": {
@@ -367,7 +368,7 @@ def generate_openapi_spec():
                             }
                         }
                     },
-                    "responses": {"200": {"description": "Estado actualizado"}, "403": {"description": "No autorizado"}}
+                    "responses": {"200": {"description": "Estado actualizado"}, "400": {"description": "Estado inválido"}, "403": {"description": "No autorizado"}, "409": {"description": "Transición de estado no permitida (incluye `current` y `allowed`)"}}
                 }
             },
             "/incidents/{incident_id}/notes": {

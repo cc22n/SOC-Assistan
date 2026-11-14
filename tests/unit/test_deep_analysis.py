@@ -54,7 +54,7 @@ class TestPlanSearchQueries:
     def test_llm_list_response_is_used(self, svc):
         """El planner usa las queries del LLM (cap a 3)."""
         svc._llm_service = MagicMock()
-        svc._llm_service._call_generic_openai_style.return_value = [
+        svc._llm_service.generate.return_value = [
             'q1', 'q2', 'q3', 'q4'
         ]
         api_results = {'virustotal': {'malware_families': ['lockbit']}}
@@ -63,7 +63,7 @@ class TestPlanSearchQueries:
 
     def test_llm_dict_with_json_array_is_parsed(self, svc):
         svc._llm_service = MagicMock()
-        svc._llm_service._call_generic_openai_style.return_value = {
+        svc._llm_service.generate.return_value = {
             'analysis': 'Aquí van: ["lockbit C2", "lockbit report"]'
         }
         api_results = {'threatfox': {'malware': 'LockBit'}}
@@ -73,7 +73,7 @@ class TestPlanSearchQueries:
     def test_llm_failure_falls_back(self, svc):
         """Si el LLM lanza excepción, el fallback estático mantiene el flujo vivo."""
         svc._llm_service = MagicMock()
-        svc._llm_service._call_generic_openai_style.side_effect = RuntimeError('boom')
+        svc._llm_service.generate.side_effect = RuntimeError('boom')
         api_results = {'virustotal': {'malware_families': ['emotet']}}
         queries = svc._plan_search_queries('bad.example.com', 'domain', api_results)
         assert len(queries) == 2
@@ -110,7 +110,7 @@ class TestWebSearchOsint:
             ]
         }
         svc._llm_service = MagicMock()
-        svc._llm_service._call_generic_openai_style.return_value = {'analysis': 'Resumen con citas'}
+        svc._llm_service.generate.return_value = {'analysis': 'Resumen con citas'}
 
         with patch('app.services.new_api_clients.TavilySearchClient', return_value=mock_client):
             result = svc._web_search_osint(
@@ -130,7 +130,7 @@ class TestWebSearchOsint:
         # Todas las llamadas devuelven vacío
         mock_client.search.return_value = {'found': False, 'query': 'q', 'results': []}
         svc._llm_service = MagicMock()
-        svc._llm_service._call_generic_openai_style.return_value = ['q1', 'q2']
+        svc._llm_service.generate.return_value = ['q1', 'q2']
 
         with patch('app.services.new_api_clients.TavilySearchClient', return_value=mock_client):
             result = svc._web_search_osint(
@@ -233,7 +233,7 @@ class TestDeepAnalyzePersistence:
 
         # Paso 6 (reporte final) siempre llama al LLM: mockeado.
         svc._llm_service = MagicMock()
-        svc._llm_service._call_generic_openai_style.return_value = {'analysis': '{}'}
+        svc._llm_service.generate.return_value = {'analysis': '{}'}
 
         # El orchestrator queda REAL (para reusar _save_analysis_to_session tal
         # cual), solo se mockea la llamada cara a APIs externas + LLM planning.

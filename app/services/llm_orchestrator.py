@@ -1341,13 +1341,19 @@ Responde de forma clara, profesional y útil."""
             db.session.flush()
 
             if session:
-                self.session_manager.add_ioc_to_session(
-                    session_id=session.id,
-                    ioc_id=ioc_obj.id,
-                    analysis_id=analysis_obj.id,
-                    role='analyzed',
-                    message_id=user_message_id
-                )
+                try:
+                    # commit=False + SAVEPOINT: una sola transacción con el análisis (ALTO-06)
+                    with db.session.begin_nested():
+                        self.session_manager.add_ioc_to_session(
+                            session_id=session.id,
+                            ioc_id=ioc_obj.id,
+                            analysis_id=analysis_obj.id,
+                            role='analyzed',
+                            message_id=user_message_id,
+                            commit=False
+                        )
+                except Exception as link_err:
+                    logger.error(f"Error vinculando IOC a la sesión (el análisis se conserva): {link_err}")
 
             db.session.commit()
             return analysis_obj

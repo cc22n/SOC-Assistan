@@ -41,15 +41,28 @@ class RiskLevel(str, Enum):
 
 
 class IncidentSeverity(str, Enum):
+    """Debe coincidir con Incident.VALID_SEVERITIES (las rutas solo aceptan P1-P4)."""
     P1 = 'P1'
     P2 = 'P2'
     P3 = 'P3'
     P4 = 'P4'
-    CRITICAL = 'critical'
-    HIGH = 'high'
-    MEDIUM = 'medium'
-    LOW = 'low'
-    INFO = 'info'
+
+
+# Nombres antiguos/coloquiales -> código P. Antes el esquema aceptaba 'critical', 'high'...
+# como valores propios y las rutas respondían 400; ahora se normalizan a P1-P4.
+LEGACY_SEVERITY_ALIASES = {
+    'critical': 'P1', 'critico': 'P1', 'crítico': 'P1',
+    'high': 'P2', 'alto': 'P2',
+    'medium': 'P3', 'medio': 'P3',
+    'low': 'P4', 'bajo': 'P4', 'info': 'P4',
+}
+
+
+def _normalize_severity(value):
+    if isinstance(value, str):
+        v = value.strip()
+        return LEGACY_SEVERITY_ALIASES.get(v.lower(), v.upper() if v.upper() in ('P1', 'P2', 'P3', 'P4') else v)
+    return value
 
 
 
@@ -196,10 +209,15 @@ class IncidentCreateRequest(BaseModel):
     """POST /api/incidents"""
     title: str = Field(..., min_length=3, max_length=200)
     description: Optional[str] = Field(None, max_length=5000)
-    severity: IncidentSeverity = Field(IncidentSeverity.MEDIUM)
+    severity: IncidentSeverity = Field(IncidentSeverity.P3)
     analysis_id: Optional[int] = Field(None, ge=1)
     session_id: Optional[int] = Field(None, ge=1)
     ioc_ids: List[int] = Field(default_factory=list)
+
+    @field_validator('severity', mode='before')
+    @classmethod
+    def _severity_aliases(cls, v):
+        return _normalize_severity(v)
 
 
 class IncidentUpdateRequest(BaseModel):
@@ -209,6 +227,11 @@ class IncidentUpdateRequest(BaseModel):
     severity: Optional[IncidentSeverity] = None
     status: Optional[IncidentStatus] = None
     notes: Optional[str] = Field(None, max_length=10000)
+
+    @field_validator('severity', mode='before')
+    @classmethod
+    def _severity_aliases(cls, v):
+        return _normalize_severity(v)
 
 
 class IncidentResponse(BaseModel):

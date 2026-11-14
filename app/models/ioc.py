@@ -348,9 +348,34 @@ class IncidentIOC(db.Model):
         }
 
 
+class InvalidStatusTransition(ValueError):
+    """Transición de estado de incidente no permitida (ver Incident.STATUS_TRANSITIONS)."""
+
+    def __init__(self, current, requested, allowed):
+        self.current, self.requested, self.allowed = current, requested, list(allowed)
+        super().__init__(f"Transicion no permitida: {current} -> {requested}")
+
+
 class Incident(db.Model):
     """Modelo de incidente de seguridad"""
     __tablename__ = 'incidents'
+
+    # Fuente única de verdad de severidades y estados (rutas, esquemas Pydantic y OpenAPI
+    # deben coincidir con esto; tests/unit/test_incident_state_machine.py lo verifica).
+    VALID_SEVERITIES = ('P1', 'P2', 'P3', 'P4')
+    VALID_STATUSES = ('open', 'investigating', 'resolved', 'closed')
+
+    # Máquina de estados. Flujo normal: open -> investigating -> resolved -> closed.
+    #  * open -> resolved se permite (resolución inmediata), pero open -> closed NO: un
+    #    incidente no se cierra sin haberse atendido (pasar por investigating deja rastro).
+    #  * resolved/closed -> open|investigating son REAPERTURAS (limpian resolved_at).
+    #  * closed -> resolved NO: no se "resucita" una resolución sin reabrir.
+    STATUS_TRANSITIONS = {
+        'open':          ('investigating', 'resolved'),
+        'investigating': ('open', 'resolved', 'closed'),
+        'resolved':      ('investigating', 'open', 'closed'),
+        'closed':        ('investigating', 'open'),
+    }
 
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(UUID(as_uuid=True), unique=True, default=uuid.uuid4, nullable=False)
@@ -452,6 +477,31 @@ class Incident(db.Model):
             'timestamp': utcnow().isoformat()
         }]
 
+    def allowed_transitions(self):
+        """Estados a los que se puede pasar desde el actual (None se trata como 'open')."""
+        return list(self.STATUS_TRANSITIONS.get(self.status or 'open', ()))
+
+    def transition_to(self, new_status):
+        """
+        Cambia el estado aplicando la máquina de estados y las reglas de resolved_at.
+        Lanza InvalidStatusTransition si el cambio no está permitido (incluye no-op).
+        Devuelve (estado_anterior, es_reapertura). No hace commit.
+        """
+        old = self.status or 'open'
+        allowed = self.STATUS_TRANSITIONS.get(old, ())
+        if new_status not in allowed:
+            raise InvalidStatusTransition(old, new_status, allowed)
+
+        reopened = old in ('resolved', 'closed') and new_status in ('open', 'investigating')
+        self.status = new_status
+        if new_status == 'resolved':
+            self.resolved_at = utcnow()
+        elif reopened:
+            # Sin esto, un incidente reabierto conservaba la fecha de su resolución anterior
+            # y el tiempo de resolución (MTTR) salía falso.
+            self.resolved_at = None
+        return old, reopened
+
     def to_dict(self, include_iocs=False, ioc_count=None):
         data = {
             'id': self.id,
@@ -461,6 +511,7 @@ class Incident(db.Model):
             'description': self.description,
             'severity': self.severity,
             'status': self.status,
+            'allowed_transitions': self.allowed_transitions(),
             'assigned_to': self.assignee.username if self.assignee else None,
             'assigned_to_id': self.assigned_to,
             'created_by': self.creator.username if self.creator else None,

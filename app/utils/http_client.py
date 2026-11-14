@@ -41,22 +41,10 @@ def get_http_session(
 
 
 def http_get(url: str, **kwargs) -> requests.Response:
-    """
-    Realiza una petición GET utilizando connection pooling persistente.
-    Si requests.get está interceptado por un mock en pruebas unitarias, delega al mock.
-    """
-    from unittest.mock import Mock
-    if isinstance(requests.get, Mock):
-        return requests.get(url, **kwargs)
+    """Realiza una petición GET utilizando connection pooling persistente."""
     return get_http_session().get(url, **kwargs)
 
 
 def http_post(url: str, **kwargs) -> requests.Response:
-    """
-    Realiza una petición POST utilizando connection pooling persistente.
-    Si requests.post está interceptado por un mock en pruebas unitarias, delega al mock.
-    """
-    from unittest.mock import Mock
-    if isinstance(requests.post, Mock):
-        return requests.post(url, **kwargs)
+    """Realiza una petición POST utilizando connection pooling persistente."""
     return get_http_session().post(url, **kwargs)
