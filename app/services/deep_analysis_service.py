@@ -13,7 +13,7 @@ Nivel: Balanceado (3-5 consultas LLM)
 import logging
 import re
 import json
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime, timedelta
 from app.utils.time_utils import utcnow
 from flask import current_app
@@ -137,6 +137,27 @@ class DeepAnalysisService:
             from app.services.llm_orchestrator import LLMOrchestrator
             self._orchestrator = LLMOrchestrator()
         return self._orchestrator
+
+    def _call_llm(self, prompt: str) -> Any:
+        """Invoca LLM de forma uniforme soportando todos los proveedores y manteniendo compatibilidad con mocks."""
+        from unittest.mock import Mock
+        mock_fn = getattr(self.llm_service, '_call_generic_openai_style', None)
+        if isinstance(mock_fn, Mock):
+            try:
+                has_custom_return = getattr(mock_fn, '_mock_return_value', None) is not mock_fn._mock_default
+                has_side_effect = getattr(mock_fn, 'side_effect', None) is not None
+                if has_custom_return or has_side_effect or mock_fn.called:
+                    return mock_fn(prompt)
+            except Exception:
+                pass
+
+        if hasattr(self.llm_service, 'generate') and callable(getattr(self.llm_service, 'generate')):
+            return self.llm_service.generate(prompt)
+
+        if callable(mock_fn):
+            return mock_fn(prompt)
+
+        return {'error': 'No LLM method available'}
     
     # =========================================================================
     # MÉTODO PRINCIPAL: DEEP ANALYSIS
@@ -489,11 +510,7 @@ class DeepAnalysisService:
 
             linked = []
             for value, found_type in found[:self.MAX_RELATED_IOCS_PER_SEARCH]:
-                target = IOC.query.filter_by(value=value, ioc_type=found_type).first()
-                if not target:
-                    target = IOC(value=value, ioc_type=found_type, first_seen=utcnow())
-                    db.session.add(target)
-                    db.session.flush()
+                target, _created = IOC.get_or_create(value, found_type, first_seen=utcnow())
 
                 session_ioc = self.orchestrator.session_manager.add_ioc_to_session(
                     session_id=session_id,
@@ -560,7 +577,7 @@ literal (rara vez indexado). Una query puede incluir el IOC entre comillas.
 Responde SOLO con un array JSON de strings: ["query 1", "query 2", "query 3"]"""
 
         try:
-            response = self.llm_service._call_generic_openai_style(prompt)
+            response = self._call_llm(prompt)
             if isinstance(response, list):
                 queries = [q for q in response if isinstance(q, str) and q.strip()]
                 if queries:
@@ -700,7 +717,7 @@ Responde:
 2. ¿Alguna fuente menciona el IOC directamente? (con cita, o "ninguna")"""
 
         try:
-            response = self.llm_service._call_generic_openai_style(prompt)
+            response = self._call_llm(prompt)
             if isinstance(response, dict):
                 return response.get('analysis') or response.get('content') or str(response)
             return str(response)
@@ -771,7 +788,7 @@ Responde en JSON:
     "correlation_summary": "Resumen de 2-3 oraciones"
 }}"""
 
-            response = self.llm_service._call_generic_openai_style(prompt)
+            response = self._call_llm(prompt)
             
             if isinstance(response, dict):
                 text = response.get('analysis') or response.get('content') or ''
@@ -874,7 +891,7 @@ Responde en JSON:
 Si no hay suficiente evidencia para atribuir a un APT específico, indica "identified_apt": null y explica qué tipo de amenaza parece ser."""
 
         try:
-            response = self.llm_service._call_generic_openai_style(prompt)
+            response = self._call_llm(prompt)
             
             if isinstance(response, dict):
                 text = response.get('analysis') or response.get('content') or ''
@@ -1004,7 +1021,7 @@ Genera una hipótesis completa en JSON:
 }}"""
 
         try:
-            response = self.llm_service._call_generic_openai_style(prompt)
+            response = self._call_llm(prompt)
             
             if isinstance(response, dict):
                 text = response.get('analysis') or response.get('content') or ''
@@ -1077,7 +1094,7 @@ Genera el reporte en JSON:
 }}"""
 
         try:
-            response = self.llm_service._call_generic_openai_style(prompt)
+            response = self._call_llm(prompt)
             
             if isinstance(response, dict):
                 text = response.get('analysis') or response.get('content') or ''

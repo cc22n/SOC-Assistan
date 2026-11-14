@@ -35,8 +35,7 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime)
 
     # Relaciones
-    analyses = db.relationship('IOCAnalysis', backref='analyst', lazy='dynamic',
-                               cascade='all, delete-orphan')
+    analyses = db.relationship('IOCAnalysis', backref='analyst', lazy='dynamic')
     created_incidents = db.relationship('Incident', backref='creator',
                                         foreign_keys='Incident.created_by',
                                         lazy='dynamic')
@@ -91,14 +90,45 @@ class IOC(db.Model):
     analyses = db.relationship('IOCAnalysis', backref='ioc', lazy='dynamic',
                                cascade='all, delete-orphan')
 
-    # Índices compuestos para búsquedas rápidas
+    # Restricción única e índices compuestos para búsquedas rápidas
     __table_args__ = (
+        db.UniqueConstraint('value', 'ioc_type', name='uq_ioc_value_type'),
         db.Index('idx_ioc_value_type', 'value', 'ioc_type'),
         db.Index('idx_ioc_type_whitelisted', 'ioc_type', 'is_whitelisted'),
         db.Index('idx_ioc_last_analyzed', 'last_analyzed'),
         db.Index('idx_ioc_value_gin', 'value', postgresql_using='gin',
                  postgresql_ops={'value': 'gin_trgm_ops'}),
     )
+
+    @classmethod
+    def get_or_create(cls, value: str, ioc_type: str, **defaults):
+        """
+        Obtiene o crea el IOC (value, ioc_type) de forma atómica ante concurrencia.
+
+        El patrón check-then-insert dejaba una ventana TOCTOU: dos peticiones simultáneas
+        creaban el mismo IOC y la segunda reventaba con IntegrityError (500) en
+        uq_ioc_value_type. Aquí el INSERT va en un SAVEPOINT: si pierde la carrera, solo
+        se revierte el SAVEPOINT (no la transacción del llamador) y se devuelve el IOC
+        que insertó el ganador.
+
+        Hace flush (no commit). Devuelve (ioc, created).
+        """
+        from sqlalchemy.exc import IntegrityError
+
+        existing = cls.query.filter_by(value=value, ioc_type=ioc_type).first()
+        if existing:
+            return existing, False
+        try:
+            with db.session.begin_nested():
+                obj = cls(value=value, ioc_type=ioc_type, **defaults)
+                db.session.add(obj)
+                db.session.flush()
+            return obj, True
+        except IntegrityError:
+            existing = cls.query.filter_by(value=value, ioc_type=ioc_type).first()
+            if existing is None:      # el conflicto era por otra restricción: no ocultarlo
+                raise
+            return existing, False
 
     def to_dict(self, latest_analysis=None):
         if latest_analysis is None:
@@ -134,7 +164,8 @@ class IOCAnalysis(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(UUID(as_uuid=True), unique=True, default=uuid.uuid4, nullable=False)
     ioc_id = db.Column(db.Integer, db.ForeignKey('iocs.id'), nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    # SET NULL: el análisis sobrevive al borrado del analista (migración d3e5f7a9b1c2)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
 
     # Resultados del análisis
     confidence_score = db.Column(db.Integer, default=0, index=True)
@@ -332,14 +363,18 @@ class Incident(db.Model):
     status = db.Column(db.String(20), default='open', index=True)
 
     # Relaciones
-    analysis_id = db.Column(db.Integer, db.ForeignKey('ioc_analyses.id'))
+    analysis_id = db.Column(db.Integer, db.ForeignKey('ioc_analyses.id', ondelete='SET NULL'), nullable=True)
     analysis = db.relationship('IOCAnalysis', backref='incidents')
 
-    session_id = db.Column(db.Integer, db.ForeignKey('investigation_sessions.id', ondelete='SET NULL'))
+    session_id = db.Column(
+        db.Integer,
+        db.ForeignKey('investigation_sessions.id', ondelete='SET NULL', use_alter=True, name='fk_incidents_session_id'),
+        nullable=True
+    )
     session = db.relationship('InvestigationSession', foreign_keys=[session_id])
 
-    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
@@ -387,15 +422,24 @@ class Incident(db.Model):
 
     @staticmethod
     def generate_ticket_id():
-        """Genera un ticket_id unico tipo SOC-20260220-001 (thread-safe)"""
-        from sqlalchemy import text
+        """Genera un ticket_id unico tipo SOC-20260220-001 (thread-safe con MAX)"""
+        from sqlalchemy import text, func
         # Advisory lock previene race condition en requests concurrentes
         db.session.execute(text("SELECT pg_advisory_xact_lock(735201)"))
         today = utcnow().strftime('%Y%m%d')
-        count = Incident.query.filter(
-            Incident.ticket_id.like(f'SOC-{today}-%')
-        ).count()
-        return f"SOC-{today}-{count + 1:03d}"
+        prefix = f'SOC-{today}-'
+        last_ticket = db.session.query(func.max(Incident.ticket_id)).filter(
+            Incident.ticket_id.like(f'{prefix}%')
+        ).scalar()
+        if last_ticket:
+            try:
+                last_num = int(last_ticket.split('-')[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+        return f"{prefix}{next_num:03d}"
 
     def add_timeline_event(self, event_type, description, user=None):
         """Agrega evento al timeline"""
