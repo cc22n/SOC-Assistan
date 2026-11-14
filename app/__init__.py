@@ -17,6 +17,7 @@ import time
 import uuid
 from logging.handlers import RotatingFileHandler
 import os
+import sys
 
 
 class JSONFormatter(logging.Formatter):
@@ -98,11 +99,7 @@ def create_app(config_name='default'):
     with app.app_context():
         from app.models import ioc  # noqa: F401
         from app.models import audit  # noqa: F401
-        # mitre_service define sus modelos (mitre_techniques/mitre_malware_mappings/
-        # mitre_update_log) y solo se importaba de forma perezosa dentro de rutas/CLI
-        # -> nunca quedaban en db.metadata para create_all()/Alembic en una instalación
-        # fresca. Import explícito aquí, igual que ioc/audit arriba.
-        from app.services import mitre_service  # noqa: F401
+        from app.models import mitre  # noqa: F401
 
     # Configurar login
     login_manager.login_view = 'auth.login'
@@ -180,12 +177,7 @@ def register_blueprints(app):
     app.register_blueprint(deep_bp)
     app.register_blueprint(docs_bp)
 
-    # Eximir API blueprints de CSRF
-    csrf.exempt(api_v2_bp)
-    csrf.exempt(reports_bp)
-    csrf.exempt(incidents_api_bp)
-    csrf.exempt(mitre_stix_bp)
-    csrf.exempt(deep_bp)
+    # Eximir únicamente endpoints de documentación pública de CSRF
     csrf.exempt(docs_bp)
 
 
@@ -200,7 +192,9 @@ def register_metrics_collector(app: Flask) -> None:
                 latency_ms = (time.monotonic() - start) * 1000
                 from app.utils.metrics import record_request_time
                 record_request_time(
-                    endpoint=flask_request.path,
+                    # endpoint (p.ej. 'incidents_api.get_incident'), NO el path: con path cada
+                    # /incidents/<id> y cada URL 404 aleatoria creaba una serie nueva (fuga de RAM)
+                    endpoint=flask_request.endpoint or 'unmatched',
                     latency_ms=latency_ms,
                     success=response.status_code < 500,
                 )
@@ -255,38 +249,63 @@ def register_template_filters(app: Flask) -> None:
 
 
 def register_error_handlers(app):
-    """Registra manejadores de errores personalizados"""
+    """Registra manejadores de errores personalizados (híbrido HTML y JSON)"""
+    from flask import render_template
+
+    def wants_json():
+        if flask_request.path.startswith('/api/') or flask_request.is_json:
+            return True
+        best = flask_request.accept_mimetypes.best_match(['application/json', 'text/html'])
+        return best == 'application/json' and flask_request.accept_mimetypes[best] > flask_request.accept_mimetypes['text/html']
 
     @app.errorhandler(400)
     def bad_request(error):
         msg = str(error) if app.debug else 'Bad request'
-        return {'error': 'Bad Request', 'message': msg}, 400
+        if wants_json():
+            return {'success': False, 'error': 'Bad Request', 'message': msg}, 400
+        return render_template('errors/400.html', message=msg), 400
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        msg = str(error) if app.debug else 'Acceso denegado'
+        if wants_json():
+            return {'success': False, 'error': 'Forbidden', 'message': msg}, 403
+        return render_template('errors/403.html', message=msg), 403
 
     @app.errorhandler(404)
     def not_found(error):
-        return {'error': 'Not Found', 'message': 'Recurso no encontrado'}, 404
+        if wants_json():
+            return {'success': False, 'error': 'Not Found', 'message': 'Recurso no encontrado'}, 404
+        return render_template('errors/404.html'), 404
 
     @app.errorhandler(429)
     def ratelimit_handler(error):
-        return {'error': 'Rate Limit Exceeded', 'message': 'Demasiadas solicitudes'}, 429
+        if wants_json():
+            return {'success': False, 'error': 'Rate Limit Exceeded', 'message': 'Demasiadas solicitudes'}, 429
+        return render_template('errors/429.html'), 429
 
     @app.errorhandler(413)
     def request_entity_too_large(error):
-        return {'error': 'Request Too Large', 'message': 'El cuerpo de la solicitud supera el límite de 16 MB'}, 413
+        if wants_json():
+            return {'success': False, 'error': 'Request Too Large', 'message': 'El cuerpo de la solicitud supera el límite de 16 MB'}, 413
+        return render_template('errors/413.html'), 413
 
     @app.errorhandler(500)
     def internal_error(error):
         db.session.rollback()
         app.logger.error(f'Server Error: {error}')
-        return {'error': 'Internal Server Error', 'message': 'Error interno del servidor'}, 500
+        if wants_json():
+            return {'success': False, 'error': 'Internal Server Error', 'message': 'Error interno del servidor'}, 500
+        return render_template('errors/500.html'), 500
 
 
 def register_request_context(app: Flask) -> None:
-    """Inyecta correlation ID y user_id en cada request (T3B-05)."""
+    """Inyecta correlation ID y user_id en cada request (T3B-05) y cabecera en respuesta."""
 
     @app.before_request
     def set_request_context() -> None:
-        g.request_id = str(uuid.uuid4())
+        incoming_id = flask_request.headers.get('X-Request-ID')
+        g.request_id = incoming_id if incoming_id else str(uuid.uuid4())
         g._request_start = time.monotonic()
         try:
             from flask_login import current_user
@@ -297,11 +316,17 @@ def register_request_context(app: Flask) -> None:
         except Exception:
             g.user_id = None
 
+    @app.after_request
+    def inject_request_id_header(response):
+        if hasattr(g, 'request_id') and g.request_id:
+            response.headers['X-Request-ID'] = g.request_id
+        return response
+
 
 def setup_logging(app: Flask) -> None:
     """
     Configura el sistema de logging con JSONFormatter.
-    En producción: RotatingFileHandler JSON.
+    En producción: Dual logging (RotatingFileHandler JSON + StreamHandler a stdout para Docker logs).
     En desarrollo: StreamHandler JSON (stdout).
     """
     log_level = getattr(logging, app.config.get('LOG_LEVEL', 'INFO'))
@@ -322,9 +347,15 @@ def setup_logging(app: Flask) -> None:
         file_handler.setLevel(log_level)
         app.logger.addHandler(file_handler)
 
+        # StreamHandler a stdout para logs de Docker
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setFormatter(json_formatter)
+        stdout_handler.setLevel(log_level)
+        app.logger.addHandler(stdout_handler)
+
     else:
         # En desarrollo: stream handler con JSON para consistencia
-        stream_handler = logging.StreamHandler()
+        stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setFormatter(json_formatter)
         stream_handler.setLevel(log_level)
         # Solo agregar si no hay handlers ya (evitar duplicados en testing)

@@ -589,8 +589,8 @@ function updateGeoMap(geoData) {
         const entries = Object.entries(geoData.countries).slice(0, 5);
         countryStats.innerHTML = entries.map(([country, stats]) => `
             <div class="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-center">
-                <div class="font-semibold">${country}</div>
-                <div class="text-gray-500">${stats.count}</div>
+                <div class="font-semibold">${escapeHtml(country)}</div>
+                <div class="text-gray-500">${escapeHtml(stats.count)}</div>
             </div>
         `).join('');
     }

@@ -84,9 +84,17 @@ _registry_lock = threading.Lock()
 _start_time = datetime.now(timezone.utc)
 
 
+# Tope de series distintas: defensa en profundidad contra fuga de memoria O(N) si algún
+# llamador pasa claves de cardinalidad ilimitada (rutas con IDs, URLs 404 aleatorias).
+MAX_ENDPOINT_SERIES = 500
+OVERFLOW_ENDPOINT_KEY = '_overflow'
+
+
 def _get_or_create_endpoint_series(endpoint: str) -> '_TimeSeries':
-    """Retorna (o crea) la serie para un endpoint. Thread-safe."""
+    """Retorna (o crea) la serie para un endpoint. Thread-safe y acotada."""
     with _registry_lock:
+        if endpoint not in _endpoint_metrics and len(_endpoint_metrics) >= MAX_ENDPOINT_SERIES:
+            endpoint = OVERFLOW_ENDPOINT_KEY
         return _endpoint_metrics[endpoint]
 
 

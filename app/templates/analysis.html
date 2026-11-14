@@ -269,7 +269,7 @@ async function loadLLMProviders() {
         const d = await r.json();
         if (!d.success) return;
         const sel = document.getElementById('llmSelector');
-        const meta = { xai: { icon: '🚀', label: 'xAI Grok' }, openai: { icon: '🧠', label: 'GPT-4' }, groq: { icon: '⚡', label: 'Groq' }, gemini: { icon: '💎', label: 'Gemini' } };
+        const meta = { xai: { icon: '🚀', label: 'xAI Grok' }, openai: { icon: '🧠', label: 'GPT-4' }, deepseek: { icon: '🐋', label: 'DeepSeek' }, gemini: { icon: '💎', label: 'Gemini' }, kimi: { icon: '🌙', label: 'Kimi' } };
         sel.innerHTML = Object.entries(d.providers).map(([n, i]) => {
             const m = meta[n] || { icon: '🤖', label: n };
             return `<option value="${n}" ${!i.available ? 'disabled' : ''} ${n === d.default_provider ? 'selected' : ''}>${m.icon} ${m.label} ${i.available ? '' : '(no disponible)'}</option>`;
@@ -433,11 +433,11 @@ function displayResults(data) {
 
     if (sources.length > 0) {
         tabs.innerHTML = sources.map((s, i) =>
-            `<button onclick="showTab('${s}')" id="tab-${s}" class="px-3 py-2 text-xs font-medium whitespace-nowrap ${i === 0 ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500 hover:text-gray-800'}">${s}</button>`
+            `<button data-tab="${escapeHtml(s)}" onclick="showTab(this.dataset.tab)" id="tab-${escapeHtml(s)}" class="px-3 py-2 text-xs font-medium whitespace-nowrap ${i === 0 ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500 hover:text-gray-800'}">${escapeHtml(s)}</button>`
         ).join('');
         if (errorSources.length > 0) {
             tabs.innerHTML += errorSources.map(s =>
-                `<button onclick="showTab('${s}')" id="tab-${s}" class="px-3 py-2 text-xs font-medium whitespace-nowrap text-red-400 line-through">${s}</button>`
+                `<button data-tab="${escapeHtml(s)}" onclick="showTab(this.dataset.tab)" id="tab-${escapeHtml(s)}" class="px-3 py-2 text-xs font-medium whitespace-nowrap text-red-400 line-through">${escapeHtml(s)}</button>`
             ).join('');
         }
         showTab(sources[0]);

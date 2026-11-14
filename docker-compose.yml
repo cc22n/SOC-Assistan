@@ -1,3 +1,11 @@
+# Rotación de logs del driver json-file: sin esto crecen sin límite en
+# /var/lib/docker/containers/ hasta llenar el disco del VPS (ENOSPC).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
 services:
   # ===========================================
   # SOC Agent - Flask App
@@ -6,8 +14,9 @@ services:
     build: .
     container_name: soc-agent
     restart: unless-stopped
+    logging: *default-logging
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     # .env.docker: copia .env.example y define al menos SECRET_KEY (>=32 chars)
     # y las API keys que tengas. Las variables de abajo tienen prioridad sobre
     # el env_file, así que DATABASE_URL/REDIS_URL siempre apuntan a los servicios.
@@ -37,6 +46,7 @@ services:
     image: postgres:16-alpine
     container_name: soc-db
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_DB: soc_agent
       POSTGRES_USER: soc_admin
@@ -61,6 +71,7 @@ services:
     image: redis:7-alpine
     container_name: soc-redis
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - redis_data:/data
     healthcheck:

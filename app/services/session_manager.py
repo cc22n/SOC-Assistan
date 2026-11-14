@@ -575,17 +575,23 @@ RESUMEN:"""
         
         try:
             llm = self._get_llm_service()
-            if llm.provider:
-                if llm.provider == 'gemini':
+            if getattr(llm, 'provider', None):
+                if hasattr(llm, 'generate') and callable(getattr(llm, 'generate')):
+                    result = llm.generate(prompt)
+                elif llm.provider == 'gemini':
                     result = llm._call_gemini(prompt)
                 else:
                     result = llm._call_generic_openai_style(prompt)
                 
-                if isinstance(result, dict):
-                    summary = result.get('analysis') or result.get('content') or str(result)
-                else:
-                    summary = str(result)
-                
+                summary = self._extract_summary_text(result)
+                if summary is None:
+                    # Error del proveedor (429, 401, timeout...) o respuesta inservible: NO se
+                    # persiste, porque el resumen se inyecta en los prompts de chats futuros.
+                    logger.warning(
+                        f"Resumen de sesión {session_id} descartado: respuesta del LLM no válida "
+                        f"({str(result)[:120]})")
+                    return
+
                 # Guardar resumen
                 session.compressed_summary = summary
                 session.summary_updated_at = utcnow()
@@ -596,6 +602,23 @@ RESUMEN:"""
         except Exception as e:
             logger.error(f"Error generating summary for session {session_id}: {e}")
     
+    @staticmethod
+    def _extract_summary_text(result) -> Optional[str]:
+        """
+        Devuelve el texto del resumen, o None si la respuesta del LLM es un error o no
+        contiene texto utilizable (nunca se serializa un dict de error como si fuera resumen).
+        """
+        if isinstance(result, dict):
+            if result.get('error'):
+                return None
+            text = result.get('analysis') or result.get('content') or result.get('summary')
+        else:
+            text = result
+        if not isinstance(text, str):
+            return None
+        text = text.strip()
+        return text if len(text) >= 20 else None
+
     def force_generate_summary(self, session_id: int) -> Optional[str]:
         """Fuerza la generación de un resumen (útil antes de cerrar sesión)"""
         self._generate_compressed_summary(session_id)
