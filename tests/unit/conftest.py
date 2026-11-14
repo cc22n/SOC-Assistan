@@ -54,8 +54,8 @@ def app():
             'virustotal', 'abuseipdb', 'shodan', 'otx', 'greynoise',
             'google_safebrowsing', 'securitytrails', 'hybrid_analysis',
             'criminal_ip', 'pulsedive', 'urlscan', 'censys', 'ipinfo',
-            'abusech_auth', 'xai', 'openai', 'groq', 'gemini',
-            'anthropic', 'ipgeolocation',
+            'abusech_auth', 'xai', 'openai', 'deepseek', 'gemini',
+            'kimi', 'ipgeolocation',
         ]},
     })
 

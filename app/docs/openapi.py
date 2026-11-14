@@ -124,7 +124,7 @@ def generate_openapi_spec():
                                     },
                                     "with_session": {
                                         "summary": "Mensaje en sesión de investigación",
-                                        "value": {"message": "Analiza esta IP: 185.220.101.34", "session_id": 5, "llm_provider": "groq"}
+                                        "value": {"message": "Analiza esta IP: 185.220.101.34", "session_id": 5, "llm_provider": "deepseek"}
                                     }
                                 }
                             }
@@ -504,7 +504,7 @@ def generate_openapi_spec():
                                     "type": "object",
                                     "required": ["provider"],
                                     "properties": {
-                                        "provider": {"type": "string", "enum": ["xai", "openai", "groq", "gemini"]}
+                                        "provider": {"type": "string", "enum": ["xai", "openai", "deepseek", "gemini", "kimi"]}
                                     }
                                 }
                             }
@@ -599,7 +599,7 @@ def generate_openapi_spec():
                     "properties": {
                         "message": {"type": "string", "minLength": 1, "maxLength": 10000},
                         "session_id": {"type": "integer", "minimum": 1},
-                        "llm_provider": {"type": "string", "enum": ["xai", "openai", "groq", "gemini"]},
+                        "llm_provider": {"type": "string", "enum": ["xai", "openai", "deepseek", "gemini", "kimi"]},
                         "history": {"type": "array", "items": {"type": "object"}, "maxItems": 50}
                     }
                 },

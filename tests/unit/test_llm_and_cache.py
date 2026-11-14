@@ -36,27 +36,28 @@ class TestLLMServiceDetection:
         svc = LLMService()
         assert svc.provider == 'xai'
 
-    def test_detects_groq_when_no_xai(self, app, app_ctx):
+    def test_detects_deepseek_when_no_xai(self, app, app_ctx):
         from flask import current_app
         from app.services.llm_service import LLMService
         original_xai = current_app.config['API_KEYS'].get('xai')
         current_app.config['API_KEYS']['xai'] = None
         try:
-            current_app.config['API_KEYS']['groq'] = 'test-groq-key'
+            current_app.config['API_KEYS']['deepseek'] = 'test-deepseek-key'
             svc = LLMService()
-            assert svc.provider in ('groq', 'openai', 'gemini', 'anthropic')
+            assert svc.provider in ('deepseek', 'openai', 'gemini', 'kimi')
         finally:
             current_app.config['API_KEYS']['xai'] = original_xai
 
     def test_explicit_provider_overrides_detection(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
-        assert svc.provider == 'groq'
+        svc = LLMService(provider='deepseek')
+        assert svc.provider == 'deepseek'
 
-    def test_configure_groq_sets_base_url(self, app_ctx):
+    def test_configure_deepseek_sets_base_url(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
-        assert 'groq' in svc.base_url
+        svc = LLMService(provider='deepseek')
+        assert 'deepseek' in svc.base_url
+        assert svc.model == 'deepseek-flash'
 
     def test_configure_openai_sets_base_url(self, app_ctx):
         from app.services.llm_service import LLMService
@@ -68,10 +69,11 @@ class TestLLMServiceDetection:
         svc = LLMService(provider='gemini')
         assert 'google' in svc.base_url
 
-    def test_configure_anthropic_sets_base_url(self, app_ctx):
+    def test_configure_kimi_sets_base_url(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='anthropic')
-        assert 'anthropic' in svc.base_url
+        svc = LLMService(provider='kimi')
+        assert 'moonshot.ai' in svc.base_url
+        assert svc.model == 'kimi-k3'
 
     def test_configure_xai_sets_base_url(self, app_ctx):
         from app.services.llm_service import LLMService
@@ -86,7 +88,7 @@ class TestLLMServiceAnalyze:
         from app.services.llm_service import LLMService
         # Temporarily null all API keys
         original = dict(current_app.config['API_KEYS'])
-        for k in ('xai', 'openai', 'groq', 'gemini', 'anthropic'):
+        for k in ('xai', 'openai', 'deepseek', 'gemini', 'kimi'):
             current_app.config['API_KEYS'][k] = None
         try:
             svc = LLMService()
@@ -95,9 +97,9 @@ class TestLLMServiceAnalyze:
         finally:
             current_app.config['API_KEYS'].update(original)
 
-    def test_analyze_groq_success(self, app_ctx):
+    def test_analyze_deepseek_success(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         svc.api_key = 'test-key'
 
         mock_resp = make_response(200, {
@@ -132,18 +134,33 @@ class TestLLMServiceAnalyze:
             result = svc.analyze_context({'ioc': '1.2.3.4', 'type': 'ip', 'confidence_score': 20})
         assert 'summary' in result
 
-    def test_analyze_anthropic_success(self, app_ctx):
+    def test_analyze_kimi_success_usa_temperature_1(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='anthropic')
+        svc = LLMService(provider='kimi')
         svc.api_key = 'test-key'
 
         mock_resp = make_response(200, {
-            'content': [{'text': '{"summary": "Claude analysis", "threat_level": "ALTO", "recommendations": ["Block IP"]}'}]
+            'choices': [{'message': {'content': '{"summary": "Kimi analysis", "threat_level": "ALTO", "recommendations": ["Block IP"]}',
+                                     'reasoning_content': 'pensando...'}}]
         })
-        with patch('requests.post', return_value=mock_resp):
+        with patch('requests.post', return_value=mock_resp) as post:
             result = svc.analyze_context({'ioc': '185.220.101.1', 'type': 'ip', 'confidence_score': 85})
-        assert 'summary' in result
-        assert result['summary'] == 'Claude analysis'
+        assert result['summary'] == 'Kimi analysis'
+        sent = post.call_args[1]['json']
+        assert sent['temperature'] == 1          # Kimi rechaza cualquier otro valor
+        assert sent['model'] == 'kimi-k3'
+        assert post.call_args[0][0] == 'https://api.moonshot.ai/v1/chat/completions'
+
+    def test_analyze_deepseek_temperature_normal(self, app_ctx):
+        from app.services.llm_service import LLMService
+        svc = LLMService(provider='deepseek')
+        svc.api_key = 'test-key'
+        mock_resp = make_response(200, {'choices': [{'message': {'content': '{"summary": "ds"}'}}]})
+        with patch('requests.post', return_value=mock_resp) as post:
+            svc.analyze_context({'ioc': '1.2.3.4', 'type': 'ip', 'confidence_score': 10})
+        assert post.call_args[1]['json']['temperature'] == 0.1
+        assert post.call_args[1]['json']['model'] == 'deepseek-flash'
+        assert post.call_args[0][0] == 'https://api.deepseek.com/v1/chat/completions'
 
     def test_analyze_gemini_success(self, app_ctx):
         from app.services.llm_service import LLMService
@@ -157,18 +174,18 @@ class TestLLMServiceAnalyze:
             result = svc.analyze_context({'ioc': 'evil.com', 'type': 'domain', 'confidence_score': 70})
         assert 'summary' in result
 
-    def test_analyze_groq_api_error(self, app_ctx):
+    def test_analyze_deepseek_api_error(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         svc.api_key = 'test-key'
 
         with patch('requests.post', return_value=make_response(429, {'error': 'Rate limit'})):
             result = svc.analyze_context({'ioc': '1.2.3.4', 'type': 'ip', 'confidence_score': 50})
         assert 'error' in result
 
-    def test_analyze_anthropic_api_error(self, app_ctx):
+    def test_analyze_kimi_api_error(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='anthropic')
+        svc = LLMService(provider='kimi')
         svc.api_key = 'test-key'
 
         with patch('requests.post', return_value=make_response(401, {'error': 'Invalid key'})):
@@ -186,7 +203,7 @@ class TestLLMServiceAnalyze:
 
     def test_analyze_exception_returns_error(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         svc.api_key = 'test-key'
 
         with patch('requests.post', side_effect=Exception('Connection error')):
@@ -195,37 +212,96 @@ class TestLLMServiceAnalyze:
         assert 'error' in result
 
 
+class TestLLMRouting:
+    """select_provider tras retirar Groq/Anthropic y añadir DeepSeek/Kimi."""
+
+    KEYS = ('xai', 'openai', 'deepseek', 'gemini', 'kimi')
+
+    def _keys(self, app_ctx, **enabled):
+        from flask import current_app
+        keys = current_app.config['API_KEYS']
+        saved = {k: keys.get(k) for k in self.KEYS}
+        for k in self.KEYS:
+            keys[k] = 'test-key' if enabled.get(k) else None
+        return keys, saved
+
+    def _select(self, **kw):
+        from app.services.llm_orchestrator import LLMOrchestrator
+        return LLMOrchestrator().select_provider(**kw)
+
+    def test_ip_basic_usa_deepseek(self, app_ctx):
+        keys, saved = self._keys(app_ctx, xai=True, deepseek=True)
+        try:
+            assert self._select(ioc_type='ip', analysis_depth='basic').provider == 'deepseek'
+        finally:
+            keys.update(saved)
+
+    def test_sin_deepseek_cae_a_fallback_xai(self, app_ctx):
+        keys, saved = self._keys(app_ctx, xai=True)
+        try:
+            assert self._select(ioc_type='ip', analysis_depth='basic').provider == 'xai'
+        finally:
+            keys.update(saved)
+
+    def test_kimi_es_ultimo_recurso(self, app_ctx):
+        keys, saved = self._keys(app_ctx, kimi=True)
+        try:
+            assert self._select(ioc_type='ip', analysis_depth='basic').provider == 'kimi'
+        finally:
+            keys.update(saved)
+
+    def test_kimi_explicito(self, app_ctx):
+        keys, saved = self._keys(app_ctx, xai=True, kimi=True)
+        try:
+            llm = self._select(ioc_type='ip', analysis_depth='basic', preferred_provider='kimi')
+            assert llm.provider == 'kimi'
+        finally:
+            keys.update(saved)
+
+    def test_providers_retirados_no_existen(self, app_ctx):
+        from app.services.llm_orchestrator import LLMOrchestrator
+        from flask import current_app
+        orch = LLMOrchestrator()
+        assert set(orch.llm_providers) == set(self.KEYS)
+        assert 'groq' not in current_app.config['LLM_MODELS']
+        assert 'anthropic' not in current_app.config['LLM_MODELS']
+        assert 'groq' not in current_app.config['API_KEYS']
+        assert 'anthropic' not in current_app.config['API_KEYS']
+        for pair in orch._ROUTING_TABLE.values():
+            assert set(pair) <= set(self.KEYS)
+
+
 class TestLLMExtractJson:
 
     def test_extract_valid_json(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         result = svc._extract_json('{"summary": "test", "threat_level": "ALTO"}')
         assert result['summary'] == 'test'
 
     def test_extract_json_with_surrounding_text(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         result = svc._extract_json('Here is the analysis:\n{"summary": "evil IP"}\nDone.')
         assert 'summary' in result
 
     def test_extract_json_fallback_to_raw(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         result = svc._extract_json('Just a plain text response with no JSON')
         assert 'analysis' in result
         assert result.get('raw_text') is True
 
     def test_build_prompt_sanitizes_ioc(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         ioc_data = {'ioc': '8.8.8.8<script>', 'type': 'ip', 'confidence_score': 50}
         prompt = svc._build_prompt(ioc_data)
         assert '<script>' not in prompt
 
     def test_build_prompt_sanitizes_type(self, app_ctx):
         from app.services.llm_service import LLMService
-        svc = LLMService(provider='groq')
+        svc = LLMService(provider='deepseek')
         # re.sub(r'[^\w]', '', 'ip; DROP TABLE users') strips ; and spaces
         # resulting in 'ipDROPTABLEusers' — special chars removed, word chars kept
         ioc_data = {'ioc': '1.2.3.4', 'type': 'ip; DROP TABLE users', 'confidence_score': 50}

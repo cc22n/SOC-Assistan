@@ -1,13 +1,14 @@
 """
 Servicio de análisis con LLM (Large Language Models)
-Soporte para: Groq, OpenAI, Gemini, xAI (Grok) y Anthropic (Claude)
+Soporte para: xAI (Grok), OpenAI, DeepSeek, Gemini y Kimi (Moonshot)
 """
 import requests
 import json
 import logging
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from flask import current_app
+from app.utils.http_client import get_http_session, http_post
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class LLMService:
         """
         Inicializa el servicio LLM
         Args:
-            provider: 'groq', 'openai', 'gemini', 'xai' o None (detecta automático)
+            provider: 'xai', 'openai', 'deepseek', 'gemini', 'kimi' o None (detecta automático)
         """
         self.provider = provider or self._detect_available_provider()
         self.api_key = None
@@ -33,17 +34,10 @@ class LLMService:
         """Detecta qué proveedor LLM está configurado y disponible"""
         api_keys = current_app.config.get('API_KEYS', {})
 
-        # Prioridad sugerida: xAI > OpenAI > Groq > Gemini > Anthropic
-        if api_keys.get('xai'):
-            return 'xai'
-        elif api_keys.get('openai'):
-            return 'openai'
-        elif api_keys.get('groq'):
-            return 'groq'
-        elif api_keys.get('gemini'):
-            return 'gemini'
-        elif api_keys.get('anthropic'):
-            return 'anthropic'
+        # Prioridad (LLM_PRIORITY en config): xAI > OpenAI > DeepSeek > Gemini > Kimi
+        for provider in current_app.config.get('LLM_PRIORITY', ['xai', 'openai', 'deepseek', 'gemini', 'kimi']):
+            if api_keys.get(provider):
+                return provider
         return None
 
     def _configure_provider(self):
@@ -56,10 +50,17 @@ class LLMService:
             self.base_url = "https://api.x.ai/v1"
             self.model = llm_models.get('xai', {}).get('model', 'grok-3-mini')
 
-        elif self.provider == 'groq':
-            self.api_key = api_keys.get('groq')
-            self.base_url = "https://api.groq.com/openai/v1"
-            self.model = llm_models.get('groq', {}).get('model', 'llama-3.3-70b-versatile')
+        elif self.provider == 'deepseek':
+            self.api_key = api_keys.get('deepseek')
+            cfg = llm_models.get('deepseek', {})
+            self.base_url = cfg.get('base_url', "https://api.deepseek.com/v1")
+            self.model = cfg.get('model', 'deepseek-flash')
+
+        elif self.provider == 'kimi':
+            self.api_key = api_keys.get('kimi')
+            cfg = llm_models.get('kimi', {})
+            self.base_url = cfg.get('base_url', "https://api.moonshot.ai/v1")
+            self.model = cfg.get('model', 'kimi-k3')
 
         elif self.provider == 'openai':
             self.api_key = api_keys.get('openai')
@@ -71,10 +72,21 @@ class LLMService:
             self.base_url = "https://generativelanguage.googleapis.com/v1beta"
             self.model = llm_models.get('gemini', {}).get('model', 'gemini-2.5-flash')
 
-        elif self.provider == 'anthropic':
-            self.api_key = api_keys.get('anthropic')
-            self.base_url = "https://api.anthropic.com/v1"
-            self.model = llm_models.get('anthropic', {}).get('model', 'claude-sonnet-4-6')
+    def generate(self, prompt: str) -> Dict:
+        """Invoca el LLM configurado (xAI, OpenAI, DeepSeek, Gemini, Kimi) de forma uniforme."""
+        if not self.provider or not self.api_key:
+            return {'error': 'No LLM provider or API key configured'}
+
+        try:
+            if self.provider in ('xai', 'openai', 'deepseek', 'kimi'):
+                return self._call_generic_openai_style(prompt)
+            elif self.provider == 'gemini':
+                return self._call_gemini(prompt)
+            else:
+                return {'error': f'Unsupported provider: {self.provider}'}
+        except Exception as e:
+            logger.error(f"LLM generate Error ({self.provider}): {e}")
+            return {'error': f'LLM service error: {str(e)}'}
 
     def analyze_context(self, ioc_data: Dict) -> Dict:
         """Analiza contexto de IOC usando el LLM configurado"""
@@ -82,24 +94,7 @@ class LLMService:
             return self._fallback_analysis(ioc_data)
 
         prompt = self._build_prompt(ioc_data)
-
-        try:
-            if self.provider == 'xai':
-                return self._call_generic_openai_style(prompt)  # xAI es compatible con OpenAI style
-            elif self.provider == 'groq':
-                return self._call_generic_openai_style(prompt)
-            elif self.provider == 'openai':
-                return self._call_generic_openai_style(prompt)
-            elif self.provider == 'gemini':
-                return self._call_gemini(prompt)
-            elif self.provider == 'anthropic':
-                return self._call_anthropic(prompt)
-            else:
-                return self._fallback_analysis(ioc_data)
-
-        except Exception as e:
-            logger.error(f"LLM Error ({self.provider}): {e}")
-            return {'error': f'LLM service error: {str(e)}'}
+        return self.generate(prompt)
 
     def _build_prompt(self, ioc_data: Dict) -> str:
         # Strip control characters from the IOC value before embedding it in the
@@ -131,20 +126,31 @@ class LLMService:
             "recommendations": ["..."]
         }}"""
 
-    def _call_generic_openai_style(self, prompt: str) -> Dict:
+    def _call_generic_openai_style(self, prompt: str) -> Any:
         """
-        Cliente genérico para APIs compatibles con OpenAI (xAI, Groq, OpenAI)
+        Cliente genérico para APIs compatibles con OpenAI (xAI, OpenAI, DeepSeek, Kimi)
         """
         headers = {
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         }
 
+        max_tokens = 4096
+        temperature = 0.1
+        try:
+            if current_app:
+                cfg = current_app.config.get('LLM_MODELS', {}).get(self.provider, {})
+                max_tokens = cfg.get('max_tokens', 4096)
+                # Kimi solo acepta temperature=1 (400 "invalid temperature" con otro valor)
+                temperature = cfg.get('fixed_temperature', temperature)
+        except Exception:
+            pass
+
         data = {
             'model': self.model,
             'messages': [{'role': 'user', 'content': prompt}],
-            'temperature': 0.1,
-            'max_tokens': 1024
+            'temperature': temperature,
+            'max_tokens': max_tokens
         }
 
         # xAI a veces requiere stream=False explícito
@@ -152,7 +158,7 @@ class LLMService:
             data['stream'] = False
 
         try:
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=data,
@@ -160,92 +166,124 @@ class LLMService:
             )
 
             if response.status_code != 200:
-                logger.error(f"API Error {self.provider}: {response.text}")
+                logger.error(f"API Error {self.provider} ({response.status_code}): {response.text}")
                 return {'error': f'{self.provider} API error: {response.status_code}'}
 
             result = response.json()
-            content = result['choices'][0]['message']['content']
+            choices = result.get('choices', [])
+            if not choices:
+                return {'error': f'{self.provider} no devolvió opciones'}
+
+            message = choices[0].get('message', {})
+            if message.get('refusal'):
+                logger.warning(f"{self.provider} rechazó el prompt: {message.get('refusal')}")
+                return {'error': f"{self.provider} refusal: {message.get('refusal')}"}
+
+            content = message.get('content')
+            if content is None:
+                return {'error': f'{self.provider} retornó contenido nulo'}
+
             return self._extract_json(content)
 
         except Exception as e:
+            logger.error(f"Exception in _call_generic_openai_style ({self.provider}): {e}")
             return {'error': str(e)}
 
-    def _call_gemini(self, prompt: str) -> Dict:
-        """Llamada a Gemini API"""
-        url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
+    def _call_gemini(self, prompt: str) -> Any:
+        """Llamada a Gemini API pasando la clave por header x-goog-api-key"""
+        url = f"{self.base_url}/models/{self.model}:generateContent"
+        headers = {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': self.api_key
+        }
+
+        max_tokens = 4096
+        try:
+            if current_app:
+                max_tokens = current_app.config.get('LLM_MODELS', {}).get('gemini', {}).get('max_tokens', 4096)
+        except Exception:
+            pass
+
         data = {
             'contents': [{'parts': [{'text': prompt}]}],
-            'generationConfig': {'temperature': 0.1}
+            'generationConfig': {
+                'temperature': 0.1,
+                'maxOutputTokens': max_tokens
+            }
         }
 
         try:
-            response = requests.post(url, json=data, timeout=30)
+            response = http_post(url, headers=headers, json=data, timeout=45)
             if response.status_code != 200:
+                logger.error(f"Gemini API error ({response.status_code}): {response.text}")
                 return {'error': f'Gemini error: {response.status_code}'}
 
             result = response.json()
-            # Manejo seguro de la estructura de respuesta de Gemini
-            if 'candidates' in result and result['candidates']:
-                content = result['candidates'][0]['content']['parts'][0]['text']
-                return self._extract_json(content)
-            else:
+            candidates = result.get('candidates', [])
+            if not candidates:
+                feedback = result.get('promptFeedback', {})
+                block_reason = feedback.get('blockReason')
+                if block_reason:
+                    return {'error': f'Gemini bloqueó el prompt: {block_reason}'}
                 return {'error': 'Gemini no retornó contenido'}
+
+            candidate = candidates[0]
+            finish_reason = candidate.get('finishReason')
+            if finish_reason in ('SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT'):
+                return {'error': f'Gemini finalizó por política: {finish_reason}'}
+
+            parts = candidate.get('content', {}).get('parts', [])
+            if not parts:
+                return {'error': 'Gemini no retornó partes en el contenido'}
+
+            content_text = "".join(p.get('text', '') for p in parts if isinstance(p, dict) and 'text' in p)
+            if not content_text:
+                return {'error': 'Gemini retornó partes sin texto'}
+
+            return self._extract_json(content_text)
         except Exception as e:
+            logger.error(f"Exception in _call_gemini: {e}")
             return {'error': str(e)}
 
-    def _call_anthropic(self, prompt: str) -> Dict:
-        """Llamada a Anthropic Messages API (Claude)"""
-        headers = {
-            'x-api-key': self.api_key,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json'
-        }
-
-        data = {
-            'model': self.model,
-            'max_tokens': 1024,
-            'messages': [{'role': 'user', 'content': prompt}]
-        }
-
-        try:
-            response = requests.post(
-                f"{self.base_url}/messages",
-                headers=headers,
-                json=data,
-                timeout=45
-            )
-
-            if response.status_code != 200:
-                logger.error(f"Anthropic API Error: {response.text}")
-                return {'error': f'Anthropic API error: {response.status_code}'}
-
-            result = response.json()
-            content = result['content'][0]['text']
-            return self._extract_json(content)
-
-        except Exception as e:
-            return {'error': str(e)}
-
-    def _extract_json(self, text: str) -> Dict:
+    def _extract_json(self, text: str) -> Any:
         """
-        Extrae JSON de manera robusta usando Regex
-        Soluciona el problema de "No pude procesar la pregunta"
+        Extrae JSON de manera robusta.
+        Maneja fences Markdown (```json ... ```), objetos {...} y arrays [...].
         """
+        if not text:
+            return {'analysis': '', 'raw_text': True}
+
+        cleaned = text.strip()
+
+        # 1. Quitar markdown code blocks si existen
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+            cleaned = cleaned.strip()
+
+        # 2. Intentar carga directa
         try:
-            # 1. Intentar carga directa
-            return json.loads(text)
-        except:
+            return json.loads(cleaned)
+        except Exception:
             pass
 
-        # 2. Buscar patrón JSON {...}
-        match = re.search(r'\{.*\}', text, re.DOTALL)
-        if match:
+        # 3. Buscar patrón JSON {...}
+        match_obj = re.search(r'\{.*\}', cleaned, re.DOTALL)
+        if match_obj:
             try:
-                return json.loads(match.group(0))
-            except:
+                return json.loads(match_obj.group(0))
+            except Exception:
                 pass
 
-        # 3. Fallback: devolver texto envuelto
+        # 4. Buscar patrón JSON [...]
+        match_arr = re.search(r'\[.*\]', cleaned, re.DOTALL)
+        if match_arr:
+            try:
+                return json.loads(match_arr.group(0))
+            except Exception:
+                pass
+
+        # 5. Fallback: devolver texto envuelto
         return {'analysis': text, 'raw_text': True}
 
     def _fallback_analysis(self, ioc_data: Dict) -> Dict:

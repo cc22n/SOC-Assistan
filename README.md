@@ -84,8 +84,8 @@ The system enables analysts to:
 │  │  Audit Log,  │  └────────────────────────────────────┘   │
 │  │  Sessions)   │  ┌────────────────────────────────────┐   │
 │  └──────────────┘  │ 5 LLM Providers                    │   │
-│                    │ xAI · OpenAI · Groq · Gemini        │   │
-│                    │ Anthropic (Claude)                  │   │
+│                    │ xAI · OpenAI · DeepSeek · Gemini    │   │
+│                    │ Kimi (Moonshot)                     │   │
 │                    └────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -113,11 +113,11 @@ The system enables analysts to:
 |----------|-------|----------|
 | **xAI** | Grok-3-mini | Fast analysis, default |
 | **OpenAI** | GPT-4o-mini | Deep analysis, hashes |
-| **Groq** | LLaMA 3.3 70B | Speed, free tier |
+| **DeepSeek** | deepseek-flash | Speed, low cost (IPs, URLs) |
 | **Gemini** | Gemini 2.5 Flash | Long context, free tier |
-| **Anthropic** | Claude Sonnet 4.6 | Advanced reasoning |
+| **Kimi** | kimi-k3 (Moonshot) | Reasoning, long context (slower, fallback) |
 
-The orchestrator automatically routes each analysis to the optimal provider based on IOC type and analysis depth (e.g. Groq for IPs, OpenAI/Anthropic for malware hashes).
+The orchestrator automatically routes each analysis to the optimal provider based on IOC type and analysis depth (e.g. DeepSeek for IPs, OpenAI for malware hashes).
 
 ---
 
@@ -139,7 +139,7 @@ The orchestrator automatically routes each analysis to the optimal provider base
 - **Threat correlation graph**: flags previous IOCs sharing malware family, MITRE techniques, ASN or incident ("possible same campaign") — pure SQL, no LLM cost
 - Smart re-query: if a question needs data not yet fetched, only the missing APIs are called and results are persisted
 - Session export (JSON, Markdown, PDF, DOCX)
-- LLM provider selector (xAI, OpenAI, Groq, Gemini, Claude)
+- LLM provider selector (xAI, OpenAI, DeepSeek, Gemini, Kimi)
 
 ### Deep Analysis + Web OSINT Agent
 - Full pipeline: 20 APIs + web search + IOC correlation + APT attribution + attack hypothesis
@@ -315,7 +315,7 @@ You don't need all APIs to use SOC Agent. The system works with whatever APIs yo
 | crt.sh | No key required | — |
 | Tavily (web OSINT) | 1000 credits/month | [tavily.com](https://app.tavily.com/) |
 
-For LLMs, [Groq](https://console.groq.com/) offers free access. [Anthropic](https://console.anthropic.com/) and [OpenAI](https://platform.openai.com/) are paid.
+For LLMs, [Gemini](https://aistudio.google.com/apikey) has a free tier. [DeepSeek](https://platform.deepseek.com/), [Kimi](https://platform.moonshot.ai/) and [OpenAI](https://platform.openai.com/) are paid.
 
 ---
 
@@ -391,7 +391,7 @@ soc-agent/
 | **Resilience** | Circuit breakers, TTL cache by IOC type, request metrics |
 | **Reports** | ReportLab (PDF), python-docx (DOCX) |
 | **APIs** | 19 Threat Intelligence APIs |
-| **AI** | 5 LLM providers with smart routing (xAI, OpenAI, Groq, Gemini, Anthropic) |
+| **AI** | 5 LLM providers with smart routing (xAI, OpenAI, DeepSeek, Gemini, Kimi) |
 
 ---
 

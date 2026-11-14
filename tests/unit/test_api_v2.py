@@ -44,7 +44,7 @@ MOCK_CHAT_RESULT = {
     'analysis_data': None,
     'session_id': None,
     'session_title': None,
-    'llm_provider': 'groq',
+    'llm_provider': 'deepseek',
 }
 
 
@@ -318,12 +318,12 @@ class TestChatValidation:
         assert 'response' in data
 
     def test_chat_with_valid_provider_returns_200(self, analyst_client):
-        """Proveedor válido (groq) con mock → 200."""
+        """Proveedor válido (deepseek) con mock → 200."""
         with patch('app.routes.api_v2_routes.get_orchestrator') as mock_orch:
             mock_orch.return_value.chat_analysis.return_value = MOCK_CHAT_RESULT
             resp = post_json(analyst_client, f'{BASE}/chat/message', {
                 'message': 'Resume la sesión',
-                'llm_provider': 'groq'
+                'llm_provider': 'deepseek'
             })
         assert resp.status_code == 200
 
@@ -474,7 +474,7 @@ class TestLLMProviders:
         assert data['success'] is True
         assert 'xai' in data['providers']
         assert 'openai' in data['providers']
-        assert 'groq' in data['providers']
+        assert 'deepseek' in data['providers']
         assert 'gemini' in data['providers']
 
     def test_llm_providers_fields(self, analyst_client):
@@ -574,7 +574,7 @@ class TestCostlyEndpointsRBAC:
     def test_viewer_cannot_test_llm(self, app, db_session):
         """El rol viewer no puede disparar /llm/test (403 vía require_role)."""
         c = self._viewer_client(app, db_session)
-        resp = post_json(c, f'{BASE}/llm/test', {'provider': 'groq'})
+        resp = post_json(c, f'{BASE}/llm/test', {'provider': 'deepseek'})
         assert resp.status_code == 403
 
     def test_analyst_not_blocked_by_role_on_llm_test(self, analyst_client):

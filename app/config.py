@@ -25,6 +25,12 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
+        # Sin timeouts, una BD caída o saturada dejaba a los workers colgados esperando
+        # conexión indefinidamente. 3 workers x (5+10) = 45 conexiones máx. (< 100 de Postgres).
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_timeout': 10,                      # s esperando una conexión libre del pool
+        'connect_args': {'connect_timeout': 5},  # s para establecer la conexión TCP/auth
     }
 
     # Redis
@@ -49,9 +55,15 @@ class Config:
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
 
     # ==========================================================================
-    # Security - CORS Allowed Origins
+    # Security - CORS & Host Validation
     # ==========================================================================
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://127.0.0.1:5000,http://localhost:5000').split(',')
+    ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if h.strip()]
+
+    # ==========================================================================
+    # Observability & Monitoring
+    # ==========================================================================
+    SENTRY_DSN = os.environ.get('SENTRY_DSN')
 
     # ==========================================================================
     # API KEYS - Threat Intelligence
@@ -89,9 +101,9 @@ class Config:
         # === LLM Providers ===
         'xai': os.environ.get('XAI_API_KEY'),
         'openai': os.environ.get('OPENAI_API_KEY'),
-        'groq': os.environ.get('GROQ_API_KEY'),
+        'deepseek': os.environ.get('DEEPSEEK_API_KEY'),
         'gemini': os.environ.get('GEMINI_API_KEY'),
-        'anthropic': os.environ.get('ANTHROPIC_API_KEY'),
+        'kimi': os.environ.get('KIMI_API_KEY'),
     }
 
     # ==========================================================================
@@ -137,26 +149,28 @@ class Config:
             'max_tokens': 4096,
             'temperature': 0.7
         },
-        'groq': {
-            'model': 'llama-3.3-70b-versatile',  # llama-3.1-70b decomisado → llama-3.3-70b
+        'deepseek': {
+            'model': 'deepseek-flash',        # verificado en vivo 2026-11-13 (~2s); alterno: deepseek-v4-pro
             'max_tokens': 4096,
             'temperature': 0.7,
-            'base_url': 'https://api.groq.com/openai/v1'
+            'base_url': 'https://api.deepseek.com/v1'
         },
         'gemini': {
             'model': 'gemini-2.5-flash',      # REST API recomendada sobre SDK
             'max_tokens': 4096,
             'temperature': 0.7
         },
-        'anthropic': {
-            'model': 'claude-sonnet-4-6',     # Claude Sonnet 4.6 — balance costo/calidad
+        'kimi': {
+            'model': 'kimi-k3',               # verificado en vivo 2026-11-13 (~8s); alternos: kimi-k3.1-pro, kimi-k2.6
             'max_tokens': 4096,
-            'temperature': 0.7
+            'temperature': 0.7,
+            'fixed_temperature': 1,           # la API de Kimi rechaza cualquier temperature != 1
+            'base_url': 'https://api.moonshot.ai/v1'  # .cn rechaza las keys internacionales
         }
     }
 
     # Orden de prioridad para LLMs
-    LLM_PRIORITY = ['xai', 'openai', 'groq', 'gemini', 'anthropic']
+    LLM_PRIORITY = ['xai', 'openai', 'deepseek', 'gemini', 'kimi']
 
     # ==========================================================================
     # Session Investigation Settings

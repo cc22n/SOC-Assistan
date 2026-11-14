@@ -41,11 +41,16 @@ class RiskLevel(str, Enum):
 
 
 class IncidentSeverity(str, Enum):
+    P1 = 'P1'
+    P2 = 'P2'
+    P3 = 'P3'
+    P4 = 'P4'
     CRITICAL = 'critical'
     HIGH = 'high'
     MEDIUM = 'medium'
     LOW = 'low'
     INFO = 'info'
+
 
 
 class IncidentStatus(str, Enum):
@@ -168,7 +173,7 @@ class ChatMessageRequest(BaseModel):
     @field_validator('llm_provider')
     @classmethod
     def valid_provider(cls, v):
-        valid = ('xai', 'openai', 'groq', 'gemini', 'anthropic')
+        valid = ('xai', 'openai', 'deepseek', 'gemini', 'kimi')
         if v and v not in valid:
             raise ValueError(f'Invalid LLM provider: {v}. Must be one of {valid}')
         return v

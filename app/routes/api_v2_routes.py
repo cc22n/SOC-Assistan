@@ -100,8 +100,22 @@ def analyze_enhanced(data: AnalyzeRequest):
             if cached:
                 # Si hay sesion, vincular el IOC existente
                 if session_id:
+                    sm = get_session_manager()
+                    sess_check = sm.get_session(session_id)
+                    if not sess_check:
+                        return jsonify({'error': 'Sesión no encontrada'}), 404
+                    if not sess_check.is_visible_to(current_user):
+                        from app.models.audit import AuditEvent
+                        AuditEvent.log(
+                            action='unauthorized_access',
+                            resource_type='session',
+                            resource_id=session_id,
+                            success=False,
+                            details={'reason': 'IDOR attempt in analyze_enhanced cached'},
+                            _commit=True
+                        )
+                        return jsonify({'error': 'No autorizado para operar en esta sesión'}), 403
                     try:
-                        sm = get_session_manager()
                         ioc_obj = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type).first()
                         if ioc_obj:
                             sm.add_ioc_to_session(
@@ -136,7 +150,23 @@ def analyze_enhanced(data: AnalyzeRequest):
         orch = get_orchestrator()
         sm = get_session_manager()
 
-        session_context = sm.build_context_for_llm(session_id) if session_id else None
+        session_context = None
+        if session_id:
+            sess_check = sm.get_session(session_id)
+            if not sess_check:
+                return jsonify({'error': 'Sesión no encontrada'}), 404
+            if not sess_check.is_visible_to(current_user):
+                from app.models.audit import AuditEvent
+                AuditEvent.log(
+                    action='unauthorized_access',
+                    resource_type='session',
+                    resource_id=session_id,
+                    success=False,
+                    details={'reason': 'IDOR attempt in analyze_enhanced fresh'},
+                    _commit=True
+                )
+                return jsonify({'error': 'No autorizado para operar en esta sesión'}), 403
+            session_context = sm.build_context_for_llm(session_id)
 
         analysis_result = orch.analyze_with_intelligence(
             ioc=ioc_value,
@@ -147,14 +177,12 @@ def analyze_enhanced(data: AnalyzeRequest):
         )
 
         # Guardar en BD
-        ioc_obj = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type).first()
-        if not ioc_obj:
-            ioc_obj = IOC(value=ioc_value, ioc_type=ioc_type, first_seen=utcnow(), times_analyzed=0)
-            db.session.add(ioc_obj)
-            db.session.flush()
+        ioc_obj, _created = IOC.get_or_create(
+            ioc_value, ioc_type, first_seen=utcnow(), times_analyzed=0)
 
         ioc_obj.last_analyzed = utcnow()
-        ioc_obj.times_analyzed += 1
+        # Incremento en SQL (no en Python): evita lost-updates entre peticiones concurrentes
+        ioc_obj.times_analyzed = IOC.times_analyzed + 1
 
         analysis = IOCAnalysis(
             ioc_id=ioc_obj.id,
@@ -311,6 +339,22 @@ def chat_message(data: ChatMessageRequest):
             return jsonify({'error': 'Mensaje vacío o inválido'}), 400
 
         session_id = data.session_id
+        if session_id:
+            sm = get_session_manager()
+            sess = sm.get_session(session_id)
+            if not sess:
+                return jsonify({'error': 'Sesión no encontrada'}), 404
+            if not sess.is_visible_to(current_user):
+                from app.models.audit import AuditEvent
+                AuditEvent.log(
+                    action='unauthorized_access',
+                    resource_type='session',
+                    resource_id=session_id,
+                    success=False,
+                    details={'reason': 'IDOR attempt in chat_message'},
+                    _commit=True
+                )
+                return jsonify({'error': 'No autorizado para acceder a esta sesión'}), 403
         llm_provider = data.llm_provider
         history = data.history
 
@@ -675,12 +719,12 @@ def llm_providers():
                 'speed': 'fast',
                 'cost': 'paid'
             },
-            'groq': {
-                'available': bool(api_keys.get('groq')),
-                'model': 'llama-3.3-70b-versatile',
-                'description': 'Extremadamente rápido y gratuito',
+            'deepseek': {
+                'available': bool(api_keys.get('deepseek')),
+                'model': 'deepseek-flash',
+                'description': 'Muy rápido y económico, buen razonamiento',
                 'speed': 'very_fast',
-                'cost': 'free'
+                'cost': 'paid'
             },
             'gemini': {
                 'available': bool(api_keys.get('gemini')),
@@ -689,16 +733,16 @@ def llm_providers():
                 'speed': 'medium',
                 'cost': 'free'
             },
-            'anthropic': {
-                'available': bool(api_keys.get('anthropic')),
-                'model': 'claude-sonnet-4-6',
-                'description': 'Claude — razonamiento avanzado y contexto largo',
-                'speed': 'fast',
+            'kimi': {
+                'available': bool(api_keys.get('kimi')),
+                'model': 'kimi-k3',
+                'description': 'Kimi (Moonshot) — razonamiento y contexto largo, más lento',
+                'speed': 'medium',
                 'cost': 'paid'
             }
         }
 
-        default_provider = next((p for p in ['xai', 'openai', 'groq', 'gemini', 'anthropic'] if providers[p]['available']), None)
+        default_provider = next((p for p in ['xai', 'openai', 'deepseek', 'gemini', 'kimi'] if providers[p]['available']), None)
 
         return jsonify({
             'success': True,
@@ -736,8 +780,6 @@ def test_llm():
 
         if provider == 'gemini':
             result = llm._call_gemini("Responde 'OK' si funciona")
-        elif provider == 'anthropic':
-            result = llm._call_anthropic("Responde 'OK' si funciona")
         else:
             result = llm._call_generic_openai_style("Responde 'OK' si funciona")
 
@@ -829,6 +871,10 @@ def health_check():
         db_status = 'healthy'
     except Exception as e:
         logger.error(f"Health check DB error: {e}")
+        try:
+            db.session.rollback()   # sin esto la sesión queda en estado fallido para lo que siga
+        except Exception:
+            pass
 
     # Redis latency
     redis_status = 'not_configured'
@@ -848,7 +894,7 @@ def health_check():
 
     api_keys = current_app.config.get('API_KEYS', {})
     configured_apis = sum(1 for v in api_keys.values() if v)
-    llm_count = sum(1 for p in ['xai', 'openai', 'groq', 'gemini'] if api_keys.get(p))
+    llm_count = sum(1 for p in ['xai', 'openai', 'deepseek', 'gemini', 'kimi'] if api_keys.get(p))
 
     overall = 'healthy' if db_status == 'healthy' else 'degraded'
 
@@ -858,6 +904,8 @@ def health_check():
     open_circuits = [s for s in circuit_statuses.values() if s['state'] == 'OPEN']
     if open_circuits:
         overall = 'degraded'
+
+    status_code = 200 if db_status == 'healthy' else 503
 
     return jsonify({
         'status': overall,
@@ -869,4 +917,4 @@ def health_check():
         'open_circuits': len(open_circuits),
         'version': '5.0',
         'timestamp': utcnow().isoformat()
-    }), 200
+    }), status_code
