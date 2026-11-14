@@ -21,6 +21,7 @@ from sqlalchemy import desc
 from app import db
 from app.models.ioc import Incident, IncidentIOC, IOC, IOCAnalysis, User
 from app.utils.responses import safe_error_response as _safe_error  # (VULN-02 fix)
+from app.utils.auth import require_role
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ def _check_incident_access(incident: Incident) -> bool:
 
 @bp.route('', methods=['POST'])
 @login_required
+@require_role('analyst')   # viewer = solo lectura (CRIT-03)
 def create_incident():
     """
     Crea un nuevo incidente.
@@ -80,6 +82,22 @@ def create_incident():
         if severity not in ['P1', 'P2', 'P3', 'P4']:
             return jsonify({'error': 'Severidad invalida (P1-P4)'}), 400
 
+        session_id = data.get('session_id')
+        if session_id:
+            from app.models.session import InvestigationSession
+            sess = db.session.get(InvestigationSession, session_id)
+            if not sess or not sess.is_visible_to(current_user):
+                from app.models.audit import AuditEvent
+                AuditEvent.log(
+                    action='unauthorized_access',
+                    resource_type='session',
+                    resource_id=session_id,
+                    success=False,
+                    details={'reason': 'IDOR attempt linking session to incident'},
+                    _commit=True
+                )
+                return jsonify({'error': 'No autorizado para vincular la sesión indicada'}), 403
+
         # Crear incidente
         incident = Incident(
             ticket_id=Incident.generate_ticket_id(),
@@ -90,7 +108,7 @@ def create_incident():
             assigned_to=data.get('assigned_to'),
             created_by=current_user.id,
             analysis_id=data.get('analysis_id'),
-            session_id=data.get('session_id'),
+            session_id=session_id,
         )
 
         # Timeline: evento de creacion
@@ -265,6 +283,7 @@ def get_incident(incident_id):
 
 @bp.route('/<int:incident_id>', methods=['PUT'])
 @login_required
+@require_role('analyst')   # viewer = solo lectura (CRIT-03)
 def update_incident(incident_id):
     """
     Actualiza campos de un incidente.
@@ -341,6 +360,7 @@ def update_incident(incident_id):
 
 @bp.route('/<int:incident_id>/status', methods=['PUT'])
 @login_required
+@require_role('analyst')   # viewer = solo lectura (CRIT-03)
 def change_status(incident_id):
     """
     Cambia el estado de un incidente.
@@ -404,6 +424,7 @@ def change_status(incident_id):
 
 @bp.route('/<int:incident_id>/notes', methods=['POST'])
 @login_required
+@require_role('analyst')   # viewer = solo lectura (CRIT-03)
 def add_note(incident_id):
     """
     Agrega una nota al timeline del incidente.
@@ -458,6 +479,7 @@ def add_note(incident_id):
 
 @bp.route('/<int:incident_id>/iocs', methods=['POST'])
 @login_required
+@require_role('analyst')   # viewer = solo lectura (CRIT-03)
 def link_iocs(incident_id):
     """
     Vincula IOC(s) a un incidente.
@@ -553,6 +575,7 @@ def link_iocs(incident_id):
 
 @bp.route('/<int:incident_id>/iocs/<int:ioc_id>', methods=['DELETE'])
 @login_required
+@require_role('analyst')   # viewer = solo lectura (CRIT-03)
 def unlink_ioc(incident_id, ioc_id):
     """Desvincula un IOC de un incidente"""
     try:
@@ -610,23 +633,25 @@ def get_full_timeline(incident_id):
         # Timeline propio del incidente
         timeline = list(incident.timeline or [])
 
-        # Si hay sesion vinculada, agregar mensajes del chat
+        # Si hay sesion vinculada, agregar mensajes del chat solo si la sesion es visible para el usuario
         if incident.session_id:
             try:
-                from app.models.session import SessionMessage
-                messages = SessionMessage.query.filter_by(
-                    session_id=incident.session_id
-                ).order_by(SessionMessage.created_at).all()
+                from app.models.session import InvestigationSession, SessionMessage
+                sess = db.session.get(InvestigationSession, incident.session_id)
+                if sess and sess.is_visible_to(current_user):
+                    messages = SessionMessage.query.filter_by(
+                        session_id=incident.session_id
+                    ).order_by(SessionMessage.created_at).all()
 
-                for msg in messages:
-                    timeline.append({
-                        'type': 'chat_message',
-                        'description': msg.content[:200] + ('...' if len(msg.content) > 200 else ''),
-                        'user': msg.role,
-                        'timestamp': msg.created_at.isoformat() if msg.created_at else None,
-                        'llm_provider': msg.llm_provider,
-                        'source': 'session'
-                    })
+                    for msg in messages:
+                        timeline.append({
+                            'type': 'chat_message',
+                            'description': msg.content[:200] + ('...' if len(msg.content) > 200 else ''),
+                            'user': msg.role,
+                            'timestamp': msg.created_at.isoformat() if msg.created_at else None,
+                            'llm_provider': msg.llm_provider,
+                            'source': 'session'
+                        })
             except Exception as e:
                 logger.warning(f"Could not load session messages: {e}")
 

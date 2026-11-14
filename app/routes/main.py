@@ -7,7 +7,8 @@ from flask import (
     request,
     jsonify,
     current_app,
-    abort
+    abort,
+    Response
 )
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
@@ -232,16 +233,25 @@ def search():
     if not query_text:
         return render_template('search.html', results=None)
 
-    # autoescape=True escapa los metacaracteres LIKE (%, _) del input del usuario
-    iocs = IOC.query.filter(
-        IOC.value.contains(query_text, autoescape=True)
-    ).limit(50).all()
+    # CRIT-04: un no-admin solo ve lo que él mismo analizó. IOC es una tabla global,
+    # así que también se restringe a los IOCs con algún análisis propio (si no, se
+    # filtraría qué IOCs investigaron los demás analistas).
+    is_admin = current_user.role == 'admin'
 
-    analyses = IOCAnalysis.query.join(IOC).filter(
+    # autoescape=True escapa los metacaracteres LIKE (%, _) del input del usuario
+    ioc_q = IOC.query.filter(IOC.value.contains(query_text, autoescape=True))
+    analysis_q = IOCAnalysis.query.options(joinedload(IOCAnalysis.ioc)).join(IOC).filter(
         IOC.value.contains(query_text, autoescape=True)
-    ).order_by(
-        IOCAnalysis.created_at.desc()
-    ).limit(20).all()
+    )
+    if not is_admin:
+        own_ioc_ids = db.session.query(IOCAnalysis.ioc_id).filter(
+            IOCAnalysis.user_id == current_user.id
+        )
+        ioc_q = ioc_q.filter(IOC.id.in_(own_ioc_ids))
+        analysis_q = analysis_q.filter(IOCAnalysis.user_id == current_user.id)
+
+    iocs = ioc_q.limit(50).all()
+    analyses = analysis_q.order_by(IOCAnalysis.created_at.desc()).limit(20).all()
 
     return render_template(
         'search.html',
@@ -261,3 +271,69 @@ def about():
 def chat():
     """Chat interactivo SOC"""
     return render_template('chat.html')
+
+
+@main_bp.route('/privacy')
+def privacy():
+    """Política de Privacidad y Manejo de Inteligencia de Amenazas"""
+    return render_template('privacy.html')
+
+
+@main_bp.route('/terms')
+def terms():
+    """Términos de Servicio y Condiciones de Uso"""
+    return render_template('terms.html')
+
+
+@main_bp.route('/robots.txt')
+def robots_txt():
+    """Archivo robots.txt estándar"""
+    content = (
+        "User-agent: *\n"
+        "Disallow: /api/\n"
+        "Disallow: /dashboard/\n"
+        "Disallow: /history\n"
+        "Disallow: /chat\n"
+        "Allow: /$\n"
+        "Allow: /about\n"
+        "Allow: /privacy\n"
+        "Allow: /terms\n"
+        "Sitemap: /sitemap.xml\n"
+    )
+    return Response(content, mimetype='text/plain')
+
+
+@main_bp.route('/sitemap.xml')
+def sitemap_xml():
+    """Sitemap XML estándar"""
+    base_url = request.url_root.rstrip('/')
+    urls = [
+        f"{base_url}/",
+        f"{base_url}/about",
+        f"{base_url}/privacy",
+        f"{base_url}/terms",
+    ]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    for u in urls:
+        xml.append('  <url>')
+        xml.append(f'    <loc>{u}</loc>')
+        xml.append('    <changefreq>monthly</changefreq>')
+        xml.append('  </url>')
+    xml.append('</urlset>')
+    return Response("\n".join(xml), mimetype='application/xml')
+
+
+@main_bp.route('/.well-known/security.txt')
+@main_bp.route('/security.txt')
+def security_txt():
+    """Divulgación responsable de vulnerabilidades (RFC 9116)"""
+    content = (
+        "Contact: mailto:security@soc-agent.local\n"
+        "Expires: 2027-12-31T23:59:59.000Z\n"
+        "Preferred-Languages: es, en\n"
+        "Canonical: /.well-known/security.txt\n"
+        "Policy: /terms\n"
+    )
+    return Response(content, mimetype='text/plain')
+

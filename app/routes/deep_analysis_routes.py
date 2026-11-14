@@ -4,6 +4,7 @@ Endpoints para análisis profundo de IOCs
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
+from app.utils.auth import require_role
 from app.services.deep_analysis_service import DeepAnalysisService
 from app.utils.validators import validate_ioc, detect_ioc_type
 import logging
@@ -28,6 +29,7 @@ def get_deep_service():
 
 @bp.route('/analyze', methods=['POST'])
 @login_required
+@require_role('senior_analyst')
 @limiter.limit("30 per hour")
 @limiter.limit("5 per minute")
 def deep_analyze():
@@ -85,8 +87,31 @@ def deep_analyze():
         if not is_valid:
             return jsonify({'error': error_msg}), 400
         
+        # CRIT-01: la sesión debe existir y ser visible al usuario (dueño o admin).
+        # Sin esto se podía correlacionar contra la sesión de otro analista y
+        # exfiltrar sus IOCs/análisis.
+        if session_id is not None:
+            if isinstance(session_id, bool) or not isinstance(session_id, int):
+                return jsonify({'error': 'session_id debe ser un entero'}), 400
+            from app.models.session import InvestigationSession
+            from app import db
+            sess = db.session.get(InvestigationSession, session_id)
+            if not sess:
+                return jsonify({'error': 'Sesión no encontrada'}), 404
+            if not sess.is_visible_to(current_user):
+                from app.models.audit import AuditEvent
+                AuditEvent.log(
+                    action='unauthorized_access',
+                    resource_type='session',
+                    resource_id=session_id,
+                    success=False,
+                    details={'reason': 'IDOR attempt in deep_analyze'},
+                    _commit=True
+                )
+                return jsonify({'error': 'No autorizado para acceder a esta sesión'}), 403
+
         logger.info(f"🔍 Deep analysis requested for {ioc_type}: {ioc}")
-        
+
         # Ejecutar análisis profundo
         service = get_deep_service()
         result = service.deep_analyze(

@@ -33,9 +33,9 @@ class LLMOrchestrator:
         self.llm_providers = {
             'xai': self._get_xai_client,
             'openai': self._get_openai_client,
-            'groq': self._get_groq_client,
+            'deepseek': self._get_deepseek_client,
             'gemini': self._get_gemini_client,
-            'anthropic': self._get_anthropic_client,
+            'kimi': self._get_kimi_client,
         }
 
         self.api_clients = {}
@@ -220,17 +220,17 @@ class LLMOrchestrator:
         from app.services.llm_service import LLMService
         return LLMService(provider='openai')
 
-    def _get_groq_client(self):
+    def _get_deepseek_client(self):
         from app.services.llm_service import LLMService
-        return LLMService(provider='groq')
+        return LLMService(provider='deepseek')
 
     def _get_gemini_client(self):
         from app.services.llm_service import LLMService
         return LLMService(provider='gemini')
 
-    def _get_anthropic_client(self):
+    def _get_kimi_client(self):
         from app.services.llm_service import LLMService
-        return LLMService(provider='anthropic')
+        return LLMService(provider='kimi')
 
     # =========================================================================
     # LLM ROUTING INTELIGENTE (T5B-02)
@@ -240,24 +240,26 @@ class LLMOrchestrator:
     # primary: proveedor óptimo para el caso de uso
     # fallback: solo se usa si primary no está disponible o falla — no cadena
     _ROUTING_TABLE: Dict[Tuple[str, str], Tuple[str, str]] = {
-        # IPs: Groq (LLaMA 3.1 — rápido, bajo costo, suficiente para reputación)
-        ('ip',     'basic'): ('groq',   'xai'),
-        ('ip',     'deep'):  ('groq',   'openai'),
+        # IPs: DeepSeek (rápido ~2s, bajo costo, suficiente para reputación)
+        ('ip',     'basic'): ('deepseek', 'xai'),
+        ('ip',     'deep'):  ('deepseek', 'openai'),
 
         # Dominios: Grok por defecto; profundo → OpenAI para más contexto
-        ('domain', 'basic'): ('xai',    'groq'),
+        ('domain', 'basic'): ('xai',    'deepseek'),
         ('domain', 'deep'):  ('openai', 'xai'),
 
-        # URLs: Groq (rápido, patrones de phishing son simples)
-        ('url',    'basic'): ('groq',   'xai'),
+        # URLs: DeepSeek (rápido, patrones de phishing son simples)
+        ('url',    'basic'): ('deepseek', 'xai'),
         ('url',    'deep'):  ('openai', 'xai'),
 
         # Hashes/malware: OpenAI GPT-4 (mayor ventana de contexto, mejor para análisis binario)
         ('hash',   'basic'): ('openai', 'xai'),
-        ('hash',   'deep'):  ('openai', 'groq'),
+        ('hash',   'deep'):  ('openai', 'deepseek'),
     }
 
-    _DEFAULT_ROUTING = ('xai', 'groq')  # Grok como default, Groq como fallback
+    _DEFAULT_ROUTING = ('xai', 'deepseek')  # Grok como default, DeepSeek como fallback
+    # Kimi (~8s) no es primario en ninguna ruta: entra como último recurso, en la cadena
+    # de reintento de síntesis y cuando el usuario lo elige explícitamente.
 
     def select_provider(self, ioc_type: str, analysis_depth: str = 'basic',
                         preferred_provider: Optional[str] = None) -> Optional[object]:
@@ -305,7 +307,7 @@ class LLMOrchestrator:
                 logger.warning(f"LLM routing: provider '{provider}' failed: {e}")
 
         # 3. Last resort: cualquier provider disponible
-        for provider in ('xai', 'openai', 'groq', 'gemini', 'anthropic'):
+        for provider in current_app.config.get('LLM_PRIORITY', ('xai', 'openai', 'deepseek', 'gemini', 'kimi')):
             if provider in (primary, fallback):
                 continue  # Ya los intentamos
             if api_keys.get(provider):
@@ -326,14 +328,15 @@ class LLMOrchestrator:
 
     def _call_llm(self, llm, prompt: str) -> Dict:
         try:
-            if llm.provider == 'gemini':
+            if hasattr(llm, 'generate') and callable(getattr(llm, 'generate')):
+                return llm.generate(prompt)
+            if getattr(llm, 'provider', None) == 'gemini':
                 return llm._call_gemini(prompt)
-            elif llm.provider == 'anthropic':
-                return llm._call_anthropic(prompt)
             else:
                 return llm._call_generic_openai_style(prompt)
         except Exception as e:
-            logger.error(f"LLM call error ({llm.provider}): {e}")
+            provider = getattr(llm, 'provider', 'unknown')
+            logger.error(f"LLM call error ({provider}): {e}")
             return {'error': str(e)}
 
     # =========================================================================
@@ -555,7 +558,7 @@ Responde SOLO con un array JSON: ["api1", "api2", ...]"""
 
     def _synthesize_with_llm(self, ioc: str, ioc_type: str, api_results: Dict, user_context: str,
                              analysis_depth: str = 'basic') -> Dict:
-        # Synthesis usa el depth real del análisis — hash/deep → OpenAI; IP/basic → Groq
+        # Synthesis usa el depth real del análisis — hash/deep → OpenAI; IP/basic → DeepSeek
         llm = self.select_provider(ioc_type=ioc_type, analysis_depth=analysis_depth)
         if not llm:
             return self._fallback_synthesis(api_results)
@@ -589,6 +592,20 @@ Responde SOLO con el JSON."""
 
         try:
             response = self._call_llm(llm, prompt)
+
+            # Si el proveedor primario falla (rate limit, 500, timeout), intentar con proveedor secundario
+            if (not isinstance(response, dict) or 'error' in response or
+                    not any(k in response for k in ['executive_summary', 'threat_level', 'key_findings', 'analysis'])):
+                primary_prov = getattr(llm, 'provider', None)
+                fallback_list = [p for p in ['deepseek', 'openai', 'gemini', 'kimi', 'xai'] if p != primary_prov]
+                for fallback_prov in fallback_list:
+                    alt_llm = self.select_provider(ioc_type=ioc_type, analysis_depth=analysis_depth, preferred_provider=fallback_prov)
+                    if alt_llm and getattr(alt_llm, 'provider', None) != primary_prov:
+                        logger.warning(f"Reintentando síntesis LLM con proveedor alternativo: {fallback_prov}")
+                        alt_resp = self._call_llm(alt_llm, prompt)
+                        if isinstance(alt_resp, dict) and 'error' not in alt_resp:
+                            response = alt_resp
+                            break
 
             if isinstance(response, dict):
                 if any(k in response for k in ['executive_summary', 'threat_level', 'key_findings']):
@@ -738,7 +755,18 @@ Responde SOLO con el JSON."""
         if user_id:
             try:
                 if session_id:
-                    session = self.session_manager.get_session(session_id)
+                    sess_candidate = self.session_manager.get_session(session_id)
+                    if sess_candidate:
+                        from app.models.ioc import User
+                        user_obj = User.query.get(user_id) if user_id else None
+                        if user_obj and not sess_candidate.is_visible_to(user_obj):
+                            logger.warning(f"IDOR attempt blocked: user {user_id} tried to access session {session_id}")
+                            return {
+                                'response': 'No autorizado para acceder a esta sesión.',
+                                'requires_analysis': False,
+                                'session_id': None
+                            }
+                        session = sess_candidate
 
                 if not session:
                     session, is_new = self.session_manager.get_or_create_session(user_id)
@@ -759,6 +787,19 @@ Responde SOLO con el JSON."""
             ioc_match = self._extract_ioc_from_message(message)
             if ioc_match:
                 ioc_value, ioc_type = ioc_match
+                # CRIT-02: /deep/analyze exige senior_analyst; el chat (abierto a viewer)
+                # no puede ser una puerta trasera que lo evite y gaste cuotas de APIs de pago.
+                if not self._user_can_deep_analyze(user_id):
+                    self._audit_deep_denied(user_id, ioc_value)
+                    return {
+                        'response': ('El análisis profundo requiere el rol **senior_analyst** o superior. '
+                                     'Puedo hacer un análisis estándar de este IOC si lo pides sin la '
+                                     'palabra "profundo".'),
+                        'requires_analysis': False,
+                        'deep_analysis': False,
+                        'session_id': session.id if session else None,
+                        'llm_provider': llm.provider
+                    }
                 logger.info(f"🔍 Deep analysis triggered for {ioc_type}: {ioc_value}")
                 return self._handle_deep_analysis_request(
                     llm=llm,
@@ -1249,11 +1290,7 @@ Responde de forma clara, profesional y útil."""
             from app.models.ioc import IOC, IOCAnalysis
             from app import db
 
-            ioc_obj = IOC.query.filter_by(value=ioc, ioc_type=ioc_type).first()
-            if not ioc_obj:
-                ioc_obj = IOC(value=ioc, ioc_type=ioc_type)
-                db.session.add(ioc_obj)
-                db.session.flush()
+            ioc_obj, _created = IOC.get_or_create(ioc, ioc_type)
 
             # Crear análisis con todos los campos de APIs disponibles
             analysis_obj = IOCAnalysis(
@@ -1474,6 +1511,32 @@ Usa emojis para severidad (🔴🟠🟡🟢)."""
                 return domain, 'domain'
 
         return None
+
+    @staticmethod
+    def _user_can_deep_analyze(user_id) -> bool:
+        """True si el usuario tiene rol >= senior_analyst (misma regla que /api/v2/deep/analyze)."""
+        if not user_id:
+            return False
+        from app import db
+        from app.models.ioc import User
+        from app.utils.auth import _role_level
+        user = db.session.get(User, user_id)
+        return bool(user and user.is_active and
+                    _role_level(user.role or '') >= _role_level('senior_analyst'))
+
+    @staticmethod
+    def _audit_deep_denied(user_id, ioc: str) -> None:
+        try:
+            from app.models.audit import AuditEvent
+            AuditEvent.log(
+                'rbac_denied',
+                success=False,
+                resource_type='deep_analysis',
+                details={'reason': 'chat deep analysis requires senior_analyst', 'ioc': str(ioc)[:200]},
+                _commit=True,
+            )
+        except Exception as e:  # la auditoría nunca debe romper el chat
+            logger.warning(f"No se pudo auditar el rechazo de deep analysis: {e}")
 
     def _handle_deep_analysis_request(
             self,
