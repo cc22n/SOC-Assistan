@@ -12,9 +12,12 @@ INSTALACIÓN:
 pip install google-genai requests --break-system-packages
 """
 import requests
+from app.utils.http_client import http_get, http_post
 import logging
 import json
 import base64
+import threading
+import time
 from typing import Dict, Optional, Any
 from flask import current_app
 
@@ -41,7 +44,7 @@ class VirusTotalClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/ip_addresses/{ip}",
                 headers=self._get_headers(),
                 timeout=30
@@ -73,7 +76,7 @@ class VirusTotalClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/files/{file_hash}",
                 headers=self._get_headers(),
                 timeout=30
@@ -107,7 +110,7 @@ class VirusTotalClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/domains/{domain}",
                 headers=self._get_headers(),
                 timeout=30
@@ -139,7 +142,7 @@ class VirusTotalClient:
 
         try:
             url_id = base64.urlsafe_b64encode(url.encode()).decode().strip('=')
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/urls/{url_id}",
                 headers=self._get_headers(),
                 timeout=30
@@ -181,7 +184,7 @@ class AbuseIPDBClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/check",
                 headers={'Key': self.api_key, 'Accept': 'application/json'},
                 params={'ipAddress': ip, 'maxAgeInDays': 90, 'verbose': True},
@@ -222,7 +225,7 @@ class ShodanClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/shodan/host/{ip}",
                 params={'key': self.api_key},
                 timeout=15
@@ -280,7 +283,7 @@ class OTXClient:
     def check_ip(self, ip: str) -> Dict:
         """Consulta una IP en OTX"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/indicators/IPv4/{ip}/general",
                 headers=self._get_headers(),
                 timeout=30
@@ -308,7 +311,7 @@ class OTXClient:
     def check_domain(self, domain: str) -> Dict:
         """Consulta un dominio en OTX"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/indicators/domain/{domain}/general",
                 headers=self._get_headers(),
                 timeout=30
@@ -331,7 +334,7 @@ class OTXClient:
     def check_hash(self, file_hash: str) -> Dict:
         """Consulta un hash en OTX"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/indicators/file/{file_hash}/general",
                 headers=self._get_headers(),
                 timeout=30
@@ -370,7 +373,7 @@ class GreyNoiseClient:
             headers['key'] = self.api_key
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/{ip}",
                 headers=headers,
                 timeout=15
@@ -426,7 +429,7 @@ class GoogleSafeBrowsingClient:
                 }
             }
 
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}?key={self.api_key}",
                 json=payload,
                 timeout=15
@@ -466,7 +469,7 @@ class SecurityTrailsClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/domain/{domain}",
                 headers={'APIKEY': self.api_key, 'Accept': 'application/json'},
                 timeout=15
@@ -513,7 +516,7 @@ class HybridAnalysisClient:
             return {'error': f'Hash inválido (longitud: {len(hash_clean)})'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/overview/{hash_clean}",
                 headers={
                     'api-key': self.api_key,
@@ -525,19 +528,26 @@ class HybridAnalysisClient:
 
             if response.status_code == 200:
                 data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    result = data[0]
+                # /overview/{hash} devuelve un dict; versiones/endpoints viejos devolvían lista
+                if isinstance(data, list):
+                    result = data[0] if data else None
+                    total = len(data)
+                else:
+                    result = data if isinstance(data, dict) and data.get('sha256') else None
+                    total = 1
+                if result:
                     return {
                         'found': True,
                         'verdict': result.get('verdict'),
                         'threat_score': result.get('threat_score'),
                         'threat_level': result.get('threat_level'),
-                        'av_detect': result.get('av_detect'),
+                        'av_detect': result.get('av_detect', result.get('multiscan_result')),
                         'vx_family': result.get('vx_family'),
                         'type': result.get('type'),
-                        'submit_name': result.get('submit_name'),
+                        'submit_name': result.get('submit_name', result.get('last_file_name')),
+                        'tags': (result.get('tags') or [])[:10],
                         'environment': result.get('environment_description'),
-                        'total_results': len(data)
+                        'total_results': total
                     }
                 return {'found': False, 'message': 'Hash no encontrado'}
             elif response.status_code == 401:
@@ -568,7 +578,7 @@ class URLhausClient:
     def check_url(self, url: str) -> Dict:
         """Consulta una URL en URLhaus (Auth-Key opcional para consultas)"""
         try:
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}/url/",
                 headers=self._get_headers(),
                 data={'url': url},
@@ -598,7 +608,7 @@ class URLhausClient:
     def check_host(self, host: str) -> Dict:
         """Consulta un host en URLhaus (Auth-Key opcional)"""
         try:
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}/host/",
                 headers=self._get_headers(),
                 data={'host': host},
@@ -625,7 +635,9 @@ class ThreatFoxClient:
     """Cliente para ThreatFox API (abuse.ch)"""
 
     def __init__(self):
-        self.base_url = "https://threatfox-api.abuse.ch/api/v1"
+        # La barra final es obligatoria: sin ella el servidor responde 301 y
+        # requests convierte el POST en GET -> HTTP 405 "http_post_expected".
+        self.base_url = "https://threatfox-api.abuse.ch/api/v1/"
         self.auth_key = current_app.config.get('API_KEYS', {}).get('abusech_auth')
 
     def _get_headers(self) -> Dict:
@@ -637,7 +649,7 @@ class ThreatFoxClient:
     def search_ioc(self, ioc: str) -> Dict:
         """Busca un IOC en ThreatFox (Auth-Key opcional)"""
         try:
-            response = requests.post(
+            response = http_post(
                 self.base_url,
                 headers=self._get_headers(),
                 json={'query': 'search_ioc', 'search_term': ioc},
@@ -684,7 +696,7 @@ class MalwareBazaarClient:
     def query_hash(self, file_hash: str) -> Dict:
         """Busca un hash en MalwareBazaar (Auth-Key opcional)"""
         try:
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}/",
                 headers=self._get_headers(),
                 data={'query': 'get_info', 'hash': file_hash},
@@ -720,7 +732,7 @@ class MalwareBazaarClient:
     def get_recent_samples(self, selector: str = 'time') -> Dict:
         """Obtiene muestras recientes"""
         try:
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}/",
                 headers=self._get_headers(),
                 data={'query': 'get_recent', 'selector': selector},
@@ -750,6 +762,9 @@ class CriminalIPClient:
     NUEVO - Escaner de IPs y dominios, deteccion de C2, phishing
     """
 
+    DOMAIN_POLL_INTERVAL = 3.0   # s entre consultas de estado del scan
+    DOMAIN_POLL_BUDGET = 15.0    # s máximos de sondeo (despachador: 30s por API; el scan tardó 10-20s)
+
     def __init__(self):
         self.base_url = "https://api.criminalip.io/v1"
         self.api_key = current_app.config.get('API_KEYS', {}).get('criminal_ip')
@@ -766,7 +781,7 @@ class CriminalIPClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/asset/ip/report",
                 headers=self._get_headers(),
                 params={'ip': ip},
@@ -776,26 +791,47 @@ class CriminalIPClient:
             if response.status_code == 200:
                 data = response.json()
                 if data.get('status') == 200:
-                    result = data.get('data', {})
+                    # La respuesta real es plana (no hay envoltorio 'data'):
+                    # score.inbound, issues{is_tor,...}, whois.data[], port.data[]
+                    issues = data.get('issues') if isinstance(data.get('issues'), dict) else {}
+                    score = data.get('score') if isinstance(data.get('score'), dict) else {}
+                    whois = ((data.get('whois') or {}).get('data') or [{}])[0] or {}
+                    ports = (data.get('port') or {}).get('data') or []
+                    inbound = score.get('inbound')
+                    geo = {}
+                    if not whois:
+                        # En planes sin whois en el reporte, /asset/ip/summary sí trae geo/ISP/ASN
+                        try:
+                            sm = http_get(f"{self.base_url}/asset/ip/summary",
+                                          headers=self._get_headers(), params={'ip': ip}, timeout=15)
+                            if sm.status_code == 200 and sm.json().get('status') == 200:
+                                geo = sm.json()
+                        except Exception as ge:
+                            logger.debug(f"Criminal IP summary no disponible: {ge}")
                     return {
                         'found': True,
                         'ip': ip,
-                        'score': result.get('score', {}).get('inbound'),
-                        'is_vpn': result.get('is_vpn', False),
-                        'is_proxy': result.get('is_proxy', False),
-                        'is_tor': result.get('is_tor', False),
-                        'is_hosting': result.get('is_hosting', False),
-                        'is_scanner': result.get('is_scanner', False),
-                        'is_snort': result.get('is_snort', False),
-                        'is_malicious': result.get('is_malicious', False),
-                        'country': result.get('country'),
-                        'city': result.get('city'),
-                        'isp': result.get('isp'),
-                        'asn': result.get('as_name'),
-                        'open_ports': result.get('ports', [])[:10],
-                        'issues': result.get('issues', [])[:5]
+                        'score': inbound,
+                        'score_outbound': score.get('outbound'),
+                        'is_vpn': bool(issues.get('is_vpn')),
+                        'is_proxy': bool(issues.get('is_proxy')),
+                        'is_tor': bool(issues.get('is_tor')),
+                        'is_hosting': bool(issues.get('is_hosting')),
+                        'is_scanner': bool(issues.get('is_scanner')),
+                        'is_snort': bool(issues.get('is_snort')),
+                        'is_darkweb': bool(issues.get('is_darkweb')),
+                        'is_malicious': str(inbound).lower() in ('critical', 'dangerous'),
+                        'country': whois.get('org_country_code') or geo.get('country'),
+                        'city': whois.get('city') or geo.get('city'),
+                        'isp': whois.get('org_name') or geo.get('isp') or geo.get('org_name'),
+                        'asn': whois.get('as_name') or geo.get('as_no'),
+                        'open_ports': [p.get('open_port_no') for p in ports[:10] if isinstance(p, dict)],
+                        'issues': [k for k, v in issues.items() if v][:5]
                     }
                 return {'error': data.get('message', 'Error desconocido')}
+            elif response.status_code == 403:
+                # Criminal IP restringe IPs muy conocidas (8.8.8.8, 1.1.1.1...)
+                return {'found': False, 'message': 'IP restringida por Criminal IP'}
             elif response.status_code == 401:
                 return {'error': 'API key inválida'}
             elif response.status_code == 429:
@@ -810,32 +846,121 @@ class CriminalIPClient:
         if not self.api_key:
             return {'error': 'API key no configurada'}
 
+        # GET /v1/domain/report?query= fue retirado (200 con cuerpo status=404).
+        # Flujo vigente (verificado en vivo 2026-11-13), asíncrono y con costo de créditos:
+        #   POST /v1/domain/scan (form: query) -> data.scan_id
+        #   GET  /v1/domain/status/{id}        -> data.scan_percentage (0..100)
+        #   GET  /v2/domain/report/{id}        -> data.{summary, main_domain_info, ...}
+        # El scan tarda ~10s; el despachador da 30s por API, así que se sondea con tope.
         try:
-            response = requests.get(
-                f"{self.base_url}/domain/report",
-                headers=self._get_headers(),
-                params={'query': domain},
-                timeout=30
-            )
+            r = http_post(f"{self.base_url}/domain/scan", headers=self._get_headers(),
+                              data={'query': domain}, timeout=15)
+            if r.status_code == 401:
+                return {'error': 'API key inválida'}
+            if r.status_code == 429:
+                return {'error': 'Rate limit excedido'}
+            if r.status_code != 200:
+                return {'error': f'HTTP {r.status_code}'}
+            body = r.json()
+            scan_id = (body.get('data') or {}).get('scan_id')
+            if body.get('status') != 200 or not scan_id:
+                return {'error': body.get('message', 'Scan rechazado por Criminal IP')}
 
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('status') == 200:
-                    result = data.get('data', {})
-                    return {
-                        'found': True,
-                        'domain': domain,
-                        'is_phishing': result.get('is_phishing', False),
-                        'is_malicious': result.get('is_malicious', False),
-                        'score': result.get('score'),
-                        'technologies': result.get('technologies', [])[:5],
-                        'certificates': result.get('certificates', [])[:3]
-                    }
-                return {'found': False}
-            return {'error': f'HTTP {response.status_code}'}
+            deadline = time.monotonic() + self.DOMAIN_POLL_BUDGET
+            done = False
+            while time.monotonic() < deadline:
+                time.sleep(self.DOMAIN_POLL_INTERVAL)
+                s = http_get(f"{self.base_url}/domain/status/{scan_id}",
+                                 headers=self._get_headers(), timeout=15)
+                pct = ((s.json().get('data') or {}).get('scan_percentage') or 0) if s.status_code == 200 else 0
+                if pct >= 100:
+                    done = True
+                    break
+            if not done:
+                return {'found': False, 'scan_id': scan_id,
+                        'message': 'Scan de Criminal IP aún en curso (timeout de sondeo)'}
+
+            rep = http_get("https://api.criminalip.io/v2/domain/report/%s" % scan_id,
+                               headers=self._get_headers(), timeout=10)
+            if rep.status_code != 200:
+                return {'error': f'HTTP {rep.status_code} al obtener reporte'}
+            d = rep.json().get('data') or {}
+            summary = d.get('summary') or {}
+            info = d.get('main_domain_info') or {}
+            dscore = info.get('domain_score') or {}
+            abuse = summary.get('abuse_record') or {}
+            phishing = summary.get('phishing_record') or 0
+            score = dscore.get('score')
+            return {
+                'found': True,
+                'domain': domain,
+                'scan_id': scan_id,
+                'score': score,
+                'score_num': dscore.get('score_num'),
+                'is_phishing': bool(phishing) or bool(summary.get('fake_domain')),
+                'is_malicious': str(score).lower() in ('critical', 'dangerous')
+                                or bool(abuse.get('critical') or abuse.get('dangerous')),
+                'abuse_record': abuse,
+                'phishing_record': phishing,
+                'dga_score': summary.get('dga_score'),
+                'newborn_domain': summary.get('newborn_domain'),
+                'domain_created': info.get('domain_created'),
+                'registrar': info.get('domain_registrar'),
+                'technologies': [t.get('name') for t in (d.get('technologies') or [])[:5]],
+                'mapped_ips': [m.get('ip') for m in (d.get('mapped_ip') or [])[:5]],
+            }
         except Exception as e:
             logger.error(f"Criminal IP domain error: {e}")
             return {'error': str(e)}
+
+
+_pulsedive_lock = threading.Lock()
+_pulsedive_last_call = 0.0
+PULSEDIVE_MIN_INTERVAL = 1.6  # plan free: 1 req/s; margen extra por jitter de red (1.1s aún daba 429)
+
+
+_PULSEDIVE_REDIS_KEY = 'ratelimit:pulsedive:slot'
+
+
+def _pulsedive_redis_slot() -> bool:
+    """
+    Reserva un 'slot' de 1 llamada cada PULSEDIVE_MIN_INTERVAL entre TODOS los workers
+    (SET NX PX atómico en Redis). Devuelve False si Redis no está disponible, para que
+    el llamador use el espaciado local por proceso.
+    """
+    try:
+        import redis as redis_lib
+        url = current_app.config.get('REDIS_URL')
+        if not url:
+            return False
+        client = redis_lib.from_url(url, socket_connect_timeout=0.5, socket_timeout=0.5)
+        px = int(PULSEDIVE_MIN_INTERVAL * 1000)
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            if client.set(_PULSEDIVE_REDIS_KEY, '1', nx=True, px=px):
+                return True
+            remaining = client.pttl(_PULSEDIVE_REDIS_KEY)
+            time.sleep(max(remaining, 20) / 1000.0)
+        return True  # no se obtuvo slot en 10s: no bloquear más, el reintento ante 429 cubre
+    except Exception as e:
+        logger.debug(f"Pulsedive: Redis no disponible para throttle ({e}); usando espaciado local")
+        return False
+
+
+def _pulsedive_throttle():
+    """
+    Espacia las llamadas a Pulsedive >= PULSEDIVE_MIN_INTERVAL: primero entre workers
+    (Redis) y, si Redis no está, por proceso (lock local).
+    """
+    global _pulsedive_last_call
+    with _pulsedive_lock:
+        if _pulsedive_redis_slot():
+            _pulsedive_last_call = time.monotonic()
+            return
+        wait = PULSEDIVE_MIN_INTERVAL - (time.monotonic() - _pulsedive_last_call)
+        if wait > 0:
+            time.sleep(wait)
+        _pulsedive_last_call = time.monotonic()
 
 
 class PulsediveClient:
@@ -854,7 +979,8 @@ class PulsediveClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            _pulsedive_throttle()
+            response = http_get(
                 f"{self.base_url}/info.php",
                 params={
                     'indicator': indicator,
@@ -863,6 +989,13 @@ class PulsediveClient:
                 },
                 timeout=15
             )
+            if response.status_code == 429:  # un reintento tras respetar el intervalo
+                _pulsedive_throttle()
+                response = http_get(
+                    f"{self.base_url}/info.php",
+                    params={'indicator': indicator, 'key': self.api_key, 'pretty': 1},
+                    timeout=15
+                )
 
             if response.status_code == 200:
                 data = response.json()
@@ -896,7 +1029,8 @@ class PulsediveClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            _pulsedive_throttle()
+            response = http_get(
                 f"{self.base_url}/info.php",
                 params={
                     'threat': threat,
@@ -942,7 +1076,7 @@ class URLScanClient:
     def search(self, query: str) -> Dict:
         """Busca escaneos existentes"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/search/",
                 headers=self._get_headers(),
                 params={'q': query},
@@ -983,7 +1117,7 @@ class URLScanClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.post(
+            response = http_post(
                 f"{self.base_url}/scan/",
                 headers=self._get_headers(),
                 json={'url': url, 'visibility': visibility},
@@ -1009,7 +1143,7 @@ class URLScanClient:
     def get_result(self, uuid: str) -> Dict:
         """Obtiene resultado de un escaneo"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/result/{uuid}/",
                 headers=self._get_headers(),
                 timeout=15
@@ -1050,7 +1184,7 @@ class ShodanInternetDBClient:
     def check_ip(self, ip: str) -> Dict:
         """Obtiene información básica de una IP (sin API key)"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/{ip}",
                 timeout=10
             )
@@ -1089,7 +1223,7 @@ class IPAPIClient:
     def get_geolocation(self, ip: str) -> Dict:
         """Obtiene geolocalización de una IP"""
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/{ip}",
                 params={
                     'fields': 'status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,reverse,mobile,proxy,hosting,query'},
@@ -1148,7 +1282,7 @@ class CensysClient:
             return {'error': 'API key no configurada'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/global/asset/host/{ip}",
                 headers=self._get_headers(),
                 timeout=30
@@ -1156,8 +1290,10 @@ class CensysClient:
 
             if response.status_code == 200:
                 data = response.json()
-                host = data.get('result', data)
-                services = host.get('services', [])
+                # Platform API v3: {"result": {"resource": {...host...}}}
+                result = data.get('result', data)
+                host = result.get('resource', result) if isinstance(result, dict) else {}
+                services = host.get('services') or []
                 return {
                     'found': True,
                     'ip': ip,
@@ -1165,15 +1301,15 @@ class CensysClient:
                     'services': [
                         {
                             'port': s.get('port'),
-                            'service_name': s.get('service_name'),
+                            'service_name': s.get('protocol', s.get('service_name')),
                             'transport_protocol': s.get('transport_protocol'),
                             'certificate': s.get('tls', {}).get('certificates', {}).get('leaf', {}).get('subject_dn', '')
                         }
                         for s in services[:10]
                     ],
-                    'operating_system': host.get('operating_system', {}),
-                    'autonomous_system': host.get('autonomous_system', {}),
-                    'location': host.get('location', {}),
+                    'operating_system': host.get('operating_system') or {},
+                    'autonomous_system': host.get('autonomous_system') or {},
+                    'location': host.get('location') or {},
                     'last_updated_at': host.get('last_updated_at')
                 }
             elif response.status_code == 404:
@@ -1204,7 +1340,7 @@ class IPinfoClient:
             return {'error': 'Token no configurado'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 f"{self.base_url}/{ip}",
                 params={'token': self.token},
                 timeout=10
@@ -1254,7 +1390,7 @@ class IPGeolocationClient:
             return {'error': 'API key no configurada (IPGEOLOCATION_API_KEY)'}
 
         try:
-            response = requests.get(
+            response = http_get(
                 self.base_url,
                 params={'apiKey': self.api_key, 'ip': ip},
                 timeout=10
@@ -1314,7 +1450,7 @@ class CrtShClient:
     def check_domain(self, domain: str) -> Dict:
         """Busca certificados para `%.{domain}` y extrae subdominios únicos."""
         try:
-            response = requests.get(
+            response = http_get(
                 self.base_url,
                 params={'q': f'%.{domain}', 'output': 'json'},
                 timeout=15
@@ -1394,7 +1530,7 @@ class TavilySearchClient:
             payload['include_domains'] = self.SECURITY_DOMAINS
 
         try:
-            response = requests.post(
+            response = http_post(
                 self.base_url,
                 json=payload,
                 headers={
