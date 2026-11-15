@@ -1,7 +1,10 @@
 FROM python:3.12-slim
 
+# PYTHONPATH=/app: `python docker/init_db.py` pone /app/docker (no /app) en sys.path y
+# `from app import ...` fallaba con ModuleNotFoundError -> el contenedor entraba en bucle de reinicios.
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 WORKDIR /app
 

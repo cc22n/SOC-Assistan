@@ -1,0 +1,6 @@
+# Fin de linea LF forzado en lo que se ejecuta DENTRO de Linux/contenedores. Con core.autocrlf=true
+# (Windows) un checkout los convertia a CRLF y Bash fallaba con "\r: command not found".
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf

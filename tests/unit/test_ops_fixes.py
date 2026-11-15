@@ -103,3 +103,51 @@ class TestInfraComoCodigo:
     def test_healthcheck_usa_ipv4_explicito(self):
         df = (ROOT / 'Dockerfile').read_text(encoding='utf-8')
         assert '127.0.0.1:5000/api/v2/health' in df and 'localhost:5000' not in df
+
+
+class TestArranqueDelContenedor:
+    """
+    Hallazgos de `docker compose up --build` real (2026-11-14): el contenedor entraba en bucle de
+    reinicios con ModuleNotFoundError porque `python docker/init_db.py` pone /app/docker (no /app) en
+    sys.path. Este bug estuvo presente desde que existe init_db.py sin que ningun test lo viera.
+    """
+
+    def test_dockerfile_define_pythonpath(self):
+        df = (ROOT / 'Dockerfile').read_text(encoding='utf-8')
+        assert 'PYTHONPATH=/app' in df
+
+    def test_el_cmd_ejecuta_init_db_como_script(self):
+        """Si alguien cambia a `python -m docker.init_db` o mueve el script, este test avisa de que
+        PYTHONPATH deja de ser necesario (o de que hay que revisar la causa)."""
+        df = (ROOT / 'Dockerfile').read_text(encoding='utf-8')
+        assert 'python docker/init_db.py' in df
+
+    def test_init_db_importa_app_por_nombre(self):
+        src = (ROOT / 'docker' / 'init_db.py').read_text(encoding='utf-8')
+        assert 'from app import create_app, db' in src
+
+    def test_init_db_no_se_puede_importar_sin_pythonpath_desde_su_directorio(self):
+        """Reproduce el fallo original: con sys.path[0]=docker/ y sin PYTHONPATH, `import app` falla."""
+        import subprocess, sys, os
+        env = {k: v for k, v in os.environ.items() if k != 'PYTHONPATH'}
+        r = subprocess.run([sys.executable, '-I', '-c', 'import sys; sys.path[:] = [sys.argv[1]]; import app',
+                            str(ROOT / 'docker')], capture_output=True, text=True, env=env, cwd=str(ROOT / 'docker'))
+        assert r.returncode != 0 and 'No module named' in r.stderr
+
+    def test_el_script_de_verificacion_existe_y_tiene_sintaxis_valida(self):
+        import shutil, subprocess
+        script = ROOT / 'scripts' / 'ops' / 'verify_docker.sh'
+        assert script.is_file()
+        bash = shutil.which('bash')
+        if not bash:
+            pytest.skip('bash no disponible')
+        r = subprocess.run([bash, '-n', str(script)], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+
+    def test_los_scripts_de_shell_no_tienen_crlf(self):
+        for sh in (ROOT / 'scripts' / 'ops').glob('*.sh'):
+            assert b'\r\n' not in sh.read_bytes(), f'{sh.name} tiene CRLF'
+
+    def test_gitattributes_fuerza_lf_en_scripts_y_dockerfile(self):
+        ga = (ROOT / '.gitattributes').read_text(encoding='utf-8')
+        assert '*.sh' in ga and 'eol=lf' in ga and 'Dockerfile' in ga
