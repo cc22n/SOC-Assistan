@@ -327,6 +327,23 @@ def unwhitelist_ioc(ioc_id):
         return safe_error_response(e, "Whitelist remove error")
 
 
+@bp.route('/analysis/<int:analysis_id>', methods=['GET'])
+@login_required
+def get_analysis(analysis_id):
+    """
+    Detalle de un análisis (solo dueño o admin). Lo usa history.html como respaldo cuando la fila
+    no está en el DOM; antes llamaba a esta ruta y recibía 404. Sin los datos crudos de las APIs.
+    """
+    try:
+        from app.utils.analysis_access import authorized_analysis
+        analysis, denied = authorized_analysis(analysis_id)
+        if denied:
+            return denied
+        return jsonify({**analysis.to_dict(include_details=False), 'success': True}), 200
+    except Exception as e:
+        return safe_error_response(e, "Get analysis error")
+
+
 # =============================================================================
 # CHAT
 # =============================================================================

@@ -1,6 +1,7 @@
 """
 Validadores y detectores de IOCs
 """
+import ipaddress
 import re
 from typing import Optional
 
@@ -16,19 +17,40 @@ def is_valid_ip(ip: str) -> bool:
         return False
 
 
+# Rangos que NO tiene sentido consultar a APIs de terceros (y cuyo envio filtraria topologia interna).
+# Se excluyen a proposito los rangos de documentacion (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24):
+# son validos como IOC de ejemplo/demostracion.
+_NON_ROUTABLE_V4 = tuple(ipaddress.ip_network(n) for n in (
+    '0.0.0.0/8',        # "esta red" / sin especificar
+    '10.0.0.0/8',       # RFC 1918
+    '100.64.0.0/10',    # CGNAT (RFC 6598)
+    '127.0.0.0/8',      # loopback
+    '169.254.0.0/16',   # link-local: incluye 169.254.169.254 (metadatos cloud)
+    '172.16.0.0/12',    # RFC 1918
+    '192.168.0.0/16',   # RFC 1918
+    '224.0.0.0/4',      # multicast
+    '240.0.0.0/4',      # reservado (incluye 255.255.255.255)
+))
+
+
 def is_private_ip(ip: str) -> bool:
-    """Verifica si es IP privada (RFC 1918)"""
+    """
+    True si la IP es privada/reservada/no enrutable (RFC 1918, loopback, link-local 169.254/16,
+    CGNAT, multicast, reservadas, y sus equivalentes IPv6). Entrada invalida -> False.
+    """
     try:
-        parts = [int(part) for part in ip.split('.')]
-        # RFC 1918 ranges
-        return (
-                parts[0] == 10 or
-                (parts[0] == 172 and 16 <= parts[1] <= 31) or
-                (parts[0] == 192 and parts[1] == 168) or
-                parts[0] == 127  # Localhost
-        )
-    except (ValueError, IndexError):
+        addr = ipaddress.ip_address(str(ip).strip())
+    except ValueError:
         return False
+    if addr.version == 6:
+        if addr.ipv4_mapped is not None:                  # ::ffff:10.0.0.1 -> evalua la IPv4 embebida
+            return is_private_ip(str(addr.ipv4_mapped))
+        return (addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_unspecified
+                or addr.is_reserved or addr in _ULA_V6)
+    return any(addr in net for net in _NON_ROUTABLE_V4)
+
+
+_ULA_V6 = ipaddress.ip_network('fc00::/7')   # unique local addresses (equivalente IPv6 de RFC 1918)
 
 
 def is_valid_hash(hash_value: str) -> bool:

@@ -18,6 +18,8 @@ from app.utils.time_utils import utcnow
 from io import BytesIO
 
 from app.utils.responses import safe_error_response
+from app.utils.pdf_safe import esc
+from app.utils.analysis_access import authorized_analysis as _authorized_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -193,18 +195,10 @@ def generate_analysis_pdf(analysis_id):
     GET /api/v2/reports/analysis/456/pdf
     """
     try:
-        # Obtener análisis
-        analysis = db.session.get(IOCAnalysis, analysis_id)
-        if not analysis:
-            return jsonify({'error': 'Análisis no encontrado'}), 404
+        analysis, denied = _authorized_analysis(analysis_id)
+        if denied:
+            return denied
 
-        if analysis.user_id != current_user.id and current_user.role != 'admin':
-            from app.models.audit import AuditEvent
-            AuditEvent.log('unauthorized_access', resource_type='analysis',
-                           resource_id=analysis_id, success=False,
-                           details={'reason': 'IDOR attempt'}, _commit=True)
-            return jsonify({'error': 'No autorizado'}), 403
-        
         # Generar PDF simple para un solo análisis
         pdf_buffer = _generate_single_analysis_pdf(analysis)
         
@@ -223,6 +217,34 @@ def generate_analysis_pdf(analysis_id):
         
     except Exception as e:
         return safe_error_response(e, "Error generating analysis PDF")
+
+
+@bp.route('/analysis/<int:analysis_id>/docx', methods=['GET'])
+@login_required
+def generate_analysis_docx(analysis_id):
+    """
+    Genera reporte DOCX de un análisis individual.
+
+    GET /api/v2/reports/analysis/456/docx
+    La página de análisis ofrecía este formato pero el endpoint no existía (404).
+    """
+    try:
+        analysis, denied = _authorized_analysis(analysis_id)
+        if denied:
+            return denied
+
+        buffer = _generate_single_analysis_docx(analysis)
+        if not buffer:
+            return jsonify({'error': 'Error generando DOCX'}), 500
+
+        return send_file(
+            buffer,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            as_attachment=True,
+            download_name=f"ioc_report_{analysis.ioc.ioc_type}_{analysis_id}.docx"
+        )
+    except Exception as e:
+        return safe_error_response(e, "Error generating analysis DOCX")
 
 
 @bp.route('/formats', methods=['GET'])
@@ -303,7 +325,7 @@ def _generate_single_analysis_pdf(analysis: IOCAnalysis) -> BytesIO:
         
         # Título
         story.append(Paragraph(f"🔒 Análisis de IOC", styles['Title2']))
-        story.append(Paragraph(f"{ioc.ioc_type.upper()}: {ioc.value}", styles['Heading2']))
+        story.append(Paragraph(f"{esc(str(ioc.ioc_type).upper())}: {esc(ioc.value)}", styles['Heading2']))
         story.append(Spacer(1, 0.3*inch))
         
         # Datos principales
@@ -344,25 +366,25 @@ def _generate_single_analysis_pdf(analysis: IOCAnalysis) -> BytesIO:
             
             summary = analysis.llm_analysis.get('executive_summary', '')
             if summary:
-                story.append(Paragraph(summary, styles['Normal']))
+                story.append(Paragraph(esc(summary), styles['Normal']))
             
             findings = analysis.llm_analysis.get('key_findings', [])
             if findings:
                 story.append(Paragraph("<b>Hallazgos:</b>", styles['Normal']))
                 for f in findings:
-                    story.append(Paragraph(f"• {f}", styles['Normal']))
+                    story.append(Paragraph(f"• {esc(f)}", styles['Normal']))
             
             recs = analysis.llm_analysis.get('recommendations', [])
             if recs:
                 story.append(Paragraph("<b>Recomendaciones:</b>", styles['Normal']))
                 for r in recs:
-                    story.append(Paragraph(f"• {r}", styles['Normal']))
+                    story.append(Paragraph(f"• {esc(r)}", styles['Normal']))
         
         # MITRE
         if analysis.mitre_techniques:
             story.append(Spacer(1, 0.2*inch))
             story.append(Paragraph(
-                f"<b>MITRE ATT&CK:</b> {', '.join(analysis.mitre_techniques)}",
+                f"<b>MITRE ATT&amp;CK:</b> {esc(', '.join(str(x) for x in analysis.mitre_techniques))}",
                 styles['Normal']
             ))
         
@@ -379,4 +401,59 @@ def _generate_single_analysis_pdf(analysis: IOCAnalysis) -> BytesIO:
         
     except Exception as e:
         logger.error(f"Error generating single analysis PDF: {e}")
+        return None
+
+
+def _generate_single_analysis_docx(analysis: IOCAnalysis):
+    """Genera DOCX para un solo análisis (mismo contenido que el PDF). python-docx escribe texto plano."""
+    try:
+        from docx import Document
+        from app.utils.pdf_safe import plain
+
+        doc = Document()
+        ioc = analysis.ioc
+        doc.add_heading('Análisis de IOC', level=0)
+        doc.add_heading(f"{plain(str(ioc.ioc_type).upper())}: {plain(ioc.value)}", level=2)
+
+        rows = [
+            ('Tipo', plain(str(ioc.ioc_type).upper())),
+            ('Valor', plain(ioc.value)),
+            ('Riesgo', plain(analysis.risk_level)),
+            ('Score', f"{plain(analysis.confidence_score)}/100"),
+            ('Fuentes', plain(', '.join(str(x) for x in (analysis.sources_used or [])))),
+            ('Fecha', analysis.created_at.strftime('%Y-%m-%d %H:%M') if analysis.created_at else 'N/A'),
+        ]
+        table = doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+        table.rows[0].cells[0].text, table.rows[0].cells[1].text = 'Métrica', 'Valor'
+        for k, v in rows:
+            cells = table.add_row().cells
+            cells[0].text, cells[1].text = k, v
+
+        llm = analysis.llm_analysis if isinstance(analysis.llm_analysis, dict) else None
+        if llm:
+            doc.add_heading('Análisis Detallado', level=2)
+            if llm.get('executive_summary'):
+                doc.add_paragraph(plain(llm['executive_summary']))
+            for titulo, clave in (('Hallazgos', 'key_findings'), ('Recomendaciones', 'recommendations')):
+                items = llm.get(clave) or []
+                if items:
+                    p = doc.add_paragraph()
+                    p.add_run(f'{titulo}:').bold = True
+                    for item in items:
+                        doc.add_paragraph(plain(item), style='List Bullet')
+
+        if analysis.mitre_techniques:
+            p = doc.add_paragraph()
+            p.add_run('MITRE ATT&CK: ').bold = True
+            p.add_run(plain(', '.join(str(x) for x in analysis.mitre_techniques)))
+
+        doc.add_paragraph(f"Generado por SOC Agent - {utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        logger.error(f"Error generando DOCX de análisis: {e}")
         return None

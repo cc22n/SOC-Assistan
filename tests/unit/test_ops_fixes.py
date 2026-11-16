@@ -141,7 +141,12 @@ class TestArranqueDelContenedor:
         bash = shutil.which('bash')
         if not bash:
             pytest.skip('bash no disponible')
-        r = subprocess.run([bash, '-n', str(script)], capture_output=True, text=True)
+        # Ruta RELATIVA + cwd: el bash.exe de WSL (C:\Windows\System32) no entiende rutas de Windows.
+        r = subprocess.run([bash, '-n', 'scripts/ops/verify_docker.sh'], capture_output=True, text=True,
+                           cwd=str(ROOT))
+        if r.returncode != 0 and 'system32' in bash.lower():
+            pytest.skip('el bash de PATH es el lanzador de WSL, que no puede leer el script desde Windows; '
+                        'usa Git Bash para ejecutar esta comprobación')
         assert r.returncode == 0, r.stderr
 
     def test_los_scripts_de_shell_no_tienen_crlf(self):

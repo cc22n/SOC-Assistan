@@ -316,8 +316,17 @@ class TestMaquinaDeEstadosRuta:
         assert self._cambiar(analyst_client, sample_incident, 'INVALID').status_code == 400
 
     def test_viewer_sigue_sin_poder(self, app, db_session, sample_incident):
-        from tests.unit.test_authorization_fixes import _client_for
-        c, _ = _client_for(app, db_session, 'fsm_viewer', 'viewer')
+        # Helper local: importar de otro módulo de test (`from tests.unit...`) dependía de que `tests` se
+        # resolviera como paquete y se rompía si había otro `tests/` en site-packages.
+        from app.models.ioc import User
+        viewer = User(username='fsm_viewer', email='fsm_viewer@soc-test.local', role='viewer', is_active=True)
+        viewer.set_password('Passw0rd!Test1')
+        db_session.session.add(viewer)
+        db_session.session.commit()
+        c = app.test_client()
+        with c.session_transaction() as sess:
+            sess['_user_id'] = str(viewer.id)
+            sess['_fresh'] = True
         assert self._cambiar(c, sample_incident, 'investigating').status_code == 403
 
 

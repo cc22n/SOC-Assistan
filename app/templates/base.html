@@ -27,13 +27,20 @@
             });
         }
 
-        // Auto-adjuntar X-CSRFToken en peticiones mutantes (POST, PUT, PATCH, DELETE)
+        // Auto-adjuntar X-CSRFToken en peticiones mutantes (POST, PUT, PATCH, DELETE) SOLO al mismo origen:
+        // enviarlo a un tercero filtraria el token.
+        function isSameOrigin(url) {
+            try {
+                const target = (typeof Request !== 'undefined' && url instanceof Request) ? url.url : String(url);
+                return new URL(target, window.location.href).origin === window.location.origin;
+            } catch (e) { return false; }
+        }
         (function() {
             const _origFetch = window.fetch;
             window.fetch = function(url, options = {}) {
                 const metaCsrf = document.querySelector('meta[name="csrf-token"]');
                 const token = metaCsrf ? metaCsrf.getAttribute('content') : null;
-                if (token && options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) {
+                if (token && isSameOrigin(url) && options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) {
                     options.headers = options.headers || {};
                     if (options.headers instanceof Headers) {
                         if (!options.headers.has('X-CSRFToken')) {

@@ -14,6 +14,7 @@ import os
 import json
 import logging
 from app.utils.time_utils import utcnow
+from app.utils.pdf_safe import esc
 from typing import Dict, List, Optional, Any
 from io import BytesIO
 
@@ -168,7 +169,7 @@ class ReportGenerator:
             story.append(Paragraph("REPORTE DE INVESTIGACION SOC", styles['ReportTitle']))
             story.append(Spacer(1, 0.3 * inch))
             story.append(Paragraph(
-                session_data['session'].get('title', 'Investigación de Seguridad'),
+                esc(session_data['session'].get('title', 'Investigación de Seguridad')),
                 styles['Heading2']
             ))
             story.append(Spacer(1, 0.5 * inch))
@@ -274,7 +275,7 @@ class ReportGenerator:
 
                     # Header del IOC
                     story.append(Paragraph(
-                        f"<b>IOC #{idx}:</b> {ioc.get('ioc_type', 'N/A').upper()}",
+                        f"<b>IOC #{idx}:</b> {esc(str(ioc.get('ioc_type', 'N/A')).upper())}",
                         styles['SubHeader']
                     ))
 
@@ -311,27 +312,27 @@ class ReportGenerator:
                         exec_summary = llm_analysis.get('executive_summary', '')
                         if exec_summary:
                             story.append(Spacer(1, 0.1 * inch))
-                            story.append(Paragraph(f"<b>Análisis:</b> {exec_summary}", styles['BodyText']))
+                            story.append(Paragraph(f"<b>Análisis:</b> {esc(exec_summary)}", styles['BodyText']))
 
                         # Hallazgos clave
                         findings = llm_analysis.get('key_findings', [])
                         if findings:
                             story.append(Paragraph("<b>Hallazgos clave:</b>", styles['BodyText']))
                             for finding in findings[:5]:  # Máximo 5
-                                story.append(Paragraph(f"• {finding}", styles['BodyText']))
+                                story.append(Paragraph(f"• {esc(finding)}", styles['BodyText']))
 
                         # Recomendaciones
                         recommendations = llm_analysis.get('recommendations', [])
                         if recommendations:
                             story.append(Paragraph("<b>Recomendaciones:</b>", styles['BodyText']))
                             for rec in recommendations[:3]:  # Máximo 3
-                                story.append(Paragraph(f"• {rec}", styles['BodyText']))
+                                story.append(Paragraph(f"• {esc(rec)}", styles['BodyText']))
 
                     # Fuentes consultadas
                     sources = analysis_details.get('sources_used', [])
                     if sources:
                         story.append(Paragraph(
-                            f"<b>Fuentes:</b> {', '.join(sources)}",
+                            f"<b>Fuentes:</b> {esc(', '.join(str(x) for x in sources))}",
                             styles['SmallText']
                         ))
 
@@ -339,7 +340,7 @@ class ReportGenerator:
                     mitre = analysis_details.get('mitre_techniques', [])
                     if mitre:
                         story.append(Paragraph(
-                            f"<b>MITRE ATT&CK:</b> {', '.join(mitre)}",
+                            f"<b>MITRE ATT&amp;CK:</b> {esc(', '.join(str(x) for x in mitre))}",
                             styles['SmallText']
                         ))
 
@@ -383,7 +384,7 @@ class ReportGenerator:
 
                 for technique in sorted(all_mitre):
                     desc = mitre_descriptions.get(technique, 'Técnica detectada')
-                    story.append(Paragraph(f"<b>{technique}</b>: {desc}", styles['BodyText']))
+                    story.append(Paragraph(f"<b>{esc(technique)}</b>: {esc(desc)}", styles['BodyText']))
 
             # === RECOMENDACIONES GENERALES ===
             story.append(Spacer(1, 0.3 * inch))
@@ -411,7 +412,7 @@ class ReportGenerator:
                 ])
 
             for rec in recommendations:
-                story.append(Paragraph(f"• {rec}", styles['BodyText']))
+                story.append(Paragraph(f"• {esc(rec)}", styles['BodyText']))
 
             # === PIE DE PÁGINA / DISCLAIMER ===
             story.append(Spacer(1, 0.5 * inch))

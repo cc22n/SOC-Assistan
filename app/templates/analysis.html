@@ -531,7 +531,7 @@ async function doExport(fmt) {
     } else {
         // PDF/DOCX via report endpoint
         try {
-            const r = await fetch(`/api/reports/single-analysis/${currentAnalysisId}?format=${fmt}`);
+            const r = await fetch(`/api/v2/reports/analysis/${currentAnalysisId}/${fmt}`);
             if (!r.ok) { showToast('Error generando reporte', 'error'); return; }
             const blob = await r.blob();
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
