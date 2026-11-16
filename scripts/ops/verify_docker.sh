@@ -83,6 +83,16 @@ echo "$HDR" | grep -qi "strict-transport-security" && ok "HSTS" || bad "sin HSTS
 check "Host: evil.com rechazado" "$(http -H 'Host: evil.com' $BASE/auth/login)" "400"
 check "X-Forwarded-Host: evil.com rechazado" "$(http -H 'X-Forwarded-Host: evil.com' $BASE/auth/login)" "400"
 check "Host: localhost permitido" "$(http -H 'Host: localhost' $BASE/auth/login)" "200"
+CSP_LINE="$(echo "$HDR" | grep -i '^content-security-policy:' | tr ';' '\n')"
+echo "$CSP_LINE" | grep -i 'style-src ' | grep -qi "unsafe-inline" && bad "style-src permite 'unsafe-inline'" || ok "style-src sin 'unsafe-inline' (solo style-src-attr)"
+echo "$CSP_LINE" | grep -qi "tailwindcss" && bad "la CSP aun permite cdn.tailwindcss.com" || ok "la CSP ya no menciona el CDN de Tailwind"
+CT="$(curl -sI $BASE/static/css/tailwind.css | grep -i '^content-type:' | tr -d '\r')"
+check "CSS de Tailwind compilado servido" "$(http $BASE/static/css/tailwind.css)" "200"
+echo "$CT" | grep -qi "text/css" && ok "tailwind.css con Content-Type text/css" || bad "tailwind.css sin text/css ($CT)"
+# El nonce cambia en CADA peticion: cabecera y cuerpo deben salir de la MISMA respuesta
+FULL="$(curl -si $BASE/auth/login)"
+HDR_NONCE="$(echo "$FULL" | grep -i '^content-security-policy:' | grep -io "style-src 'self' 'nonce-[A-Za-z0-9_-]*'" | grep -o "nonce-[A-Za-z0-9_-]*" | head -1)"
+[ -n "$HDR_NONCE" ] && echo "$FULL" | grep -q "<style nonce=\"${HDR_NONCE#nonce-}\"" && ok "el <style> de la pagina lleva el nonce de la cabecera" || bad "el <style> no lleva el nonce de la cabecera"
 check "GET /auth/logout -> 405" "$(http $BASE/auth/logout)" "405"
 check "estatico ui-actions.js" "$(http $BASE/static/ui-actions.js)" "200"
 

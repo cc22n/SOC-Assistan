@@ -141,3 +141,98 @@ class TestServidorSirveUiActions:
         r = client.get('/static/ui-actions.js')
         assert r.status_code == 200
         assert b'data-action' in r.data
+
+
+class TestEstilosConNonce:
+    """Tailwind compilado + nonce en <style>: sin 'unsafe-inline' en style-src/style-src-elem (verificado en Chrome:
+    un <style> inyectado, su @import y una hoja de evil.example quedan bloqueados; el <style> con nonce funciona)."""
+
+    def test_style_src_sin_unsafe_inline_y_con_nonce(self, client):
+        csp = _csp(client.get('/auth/login'))
+        for nombre in ('style-src', 'style-src-elem'):
+            d = _directive(csp, nombre)
+            assert "'unsafe-inline'" not in d, d
+            assert re.search(r"'nonce-[A-Za-z0-9_-]{16,}'", d), d
+
+    def test_residual_deliberado_solo_en_atributos(self, client):
+        """Los style="..." no se pueden proteger con nonce: unica excepcion, y solo para ATRIBUTOS."""
+        assert _directive(_csp(client.get('/auth/login')), 'style-src-attr') == "style-src-attr 'unsafe-inline'"
+
+    def test_ya_no_se_permite_tailwind_ni_jsdelivr_en_estilos(self, client):
+        csp = _csp(client.get('/auth/login'))
+        assert 'tailwindcss' not in csp
+        assert 'jsdelivr' not in _directive(csp, 'style-src')
+        assert 'jsdelivr' not in _directive(csp, 'style-src-elem')
+
+    def test_el_mismo_nonce_en_script_style_y_html(self, client):
+        r = client.get('/auth/register')
+        csp = _csp(r)
+        nonces = set(re.findall(r"'nonce-([^']+)'", csp))
+        assert len(nonces) == 1                                  # un único nonce por respuesta
+        html = r.get_data(as_text=True)
+        n = re.search(r"'nonce-([^']+)'", csp).group(1)
+        estilos = re.findall(r'<style\b[^>]*>', html)
+        assert estilos and all(f'nonce="{n}"' in t for t in estilos), estilos
+
+    @pytest.mark.parametrize('path', ['/dashboard', '/chat', '/analyze', '/history', '/incidents', '/api-health'])
+    def test_paginas_autenticadas_estilos_con_el_nonce_de_la_respuesta(self, analyst_client, path):
+        r = analyst_client.get(path)
+        n = re.search(r"'nonce-([^']+)'", _csp(r)).group(1)
+        for tag in re.findall(r'<style\b[^>]*>', r.get_data(as_text=True)):
+            assert f'nonce="{n}"' in tag, (path, tag)
+
+    def test_el_html_enlaza_el_css_compilado_y_no_el_cdn(self, analyst_client):
+        html = analyst_client.get('/dashboard').get_data(as_text=True)
+        assert '/static/css/tailwind.css' in html and 'cdn.tailwindcss.com' not in html
+
+    @pytest.mark.parametrize('path', TEMPLATES, ids=lambda p: str(p.relative_to(ROOT / 'app' / 'templates')))
+    def test_todo_style_de_las_plantillas_lleva_nonce(self, path):
+        for tag in re.findall(r'<style\b[^>]*>', path.read_text(encoding='utf-8')):
+            assert 'nonce="{{ csp_nonce() }}"' in tag, f'{path.name}: {tag}'
+
+
+class TestIntegridadDeRecursosDeCdn:
+    """SRI en todo recurso de terceros que se ejecuta/aplica: un CDN comprometido ya no puede servir código distinto."""
+
+    # hashes verificados contra DOS fuentes independientes (API del CDN y cálculo propio sobre el archivo)
+    ESPERADOS = {
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js':
+            'sha256-dEAdc43T4D7l37O2hBIQ/ixOrYqWDEARykugt4qf2PM=',
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js':
+            'sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==',
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css':
+            'sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css':
+            'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==',
+    }
+
+    @staticmethod
+    def _externos():
+        """(archivo, url, etiqueta) de cada <script src> / <link stylesheet> hacia https://."""
+        out = []
+        for f in TEMPLATES:
+            txt = f.read_text(encoding='utf-8')
+            for tag in re.findall(r'<(?:script|link)\b[^>]*>', txt):
+                m = re.search(r'(?:src|href)="(https?://[^"]+)"', tag)
+                if m and 'stylesheet' in tag or (m and tag.startswith('<script')):
+                    out.append((f.name, m.group(1), tag))
+        return out
+
+    def test_se_encuentran_los_recursos_de_cdn(self):
+        urls = {u for _, u, _ in self._externos()}
+        assert set(self.ESPERADOS) <= urls, urls
+
+    def test_todo_recurso_externo_tiene_integrity_y_crossorigin(self):
+        for archivo, url, tag in self._externos():
+            assert re.search(r'integrity="(sha256|sha384|sha512)-[A-Za-z0-9+/=]+"', tag), f'{archivo}: {url} sin SRI'
+            assert 'crossorigin="anonymous"' in tag, f'{archivo}: {url} sin crossorigin'
+
+    def test_los_hashes_coinciden_con_los_verificados(self):
+        for archivo, url, tag in self._externos():
+            assert f'integrity="{self.ESPERADOS[url]}"' in tag, f'{archivo}: hash distinto al verificado para {url}'
+
+    def test_chart_js_usa_el_archivo_publicado_no_el_minificado_al_vuelo(self):
+        """jsDelivr GENERA *.min.js minificando al vuelo: su hash puede cambiar si cambian su minificador."""
+        for _, url, _ in self._externos():
+            if 'chart.js' in url:
+                assert url.endswith('/dist/chart.umd.js') and '.min.' not in url

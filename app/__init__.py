@@ -240,17 +240,22 @@ def build_csp(nonce: str, upgrade_insecure: bool = False) -> str:
       soporte de strict-dynamic (CSP2); los modernos los ignoran.
     script-src-attr 'none': prohíbe handlers inline (onclick=...); las plantillas usan
       data-action + static/ui-actions.js.
-    style-src 'unsafe-inline': se mantiene A PROPÓSITO, porque Tailwind por CDN (Play CDN)
-      inyecta <style> en runtime y hay <style>/style="" en las plantillas. Riesgo mucho menor
-      que scripts; se elimina compilando Tailwind en build (pendiente).
+    style-src / style-src-elem: 'self' + nonce (sin 'unsafe-inline'). Cada <style> lleva el nonce; Tailwind
+      se COMPILA (app/static/css/tailwind.css, scripts/build_css.sh) en vez de generarse en el navegador
+      con el CDN, que era lo que obligaba a 'unsafe-inline' y a permitir un script de terceros sin versión.
+    style-src-attr 'unsafe-inline': RESIDUAL y deliberado. Los atributos style="..." (y los que escribe el
+      JS de las plantillas) no se pueden proteger con nonce; el riesgo es mucho menor que el de un <style>
+      o un <script> inyectado (no ejecuta código; solo permite alterar la apariencia).
+    Los recursos de CDN (Chart.js, Leaflet, Font Awesome) llevan SRI (integrity + crossorigin).
     """
     directives = [
         "default-src 'self'",
         f"script-src 'nonce-{nonce}' 'strict-dynamic' https://cdn.jsdelivr.net "
-        "https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
+        "https://cdnjs.cloudflare.com",
         "script-src-attr 'none'",
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
-        "https://fonts.googleapis.com",
+        f"style-src 'self' 'nonce-{nonce}' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+        f"style-src-elem 'self' 'nonce-{nonce}' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+        "style-src-attr 'unsafe-inline'",
         "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com",
         "img-src 'self' data: https://*.tile.openstreetmap.org",
         "connect-src 'self'",

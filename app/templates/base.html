@@ -6,9 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}SOC Agent{% endblock %}</title>
 
-    <!-- Tailwind CSS -->
-    <script nonce="{{ csp_nonce() }}" src="https://cdn.tailwindcss.com"></script>
-
     <!-- Despachador de acciones data-* (sustituye a los handlers inline; ver ui-actions.js) -->
     <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='ui-actions.js') }}"></script>
 
@@ -58,10 +55,10 @@
     </script>
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
     <!-- Custom Styles -->
-    <style>
+    <style nonce="{{ csp_nonce() }}">
         .sidebar {
             transition: transform 0.3s ease-in-out;
         }
@@ -143,6 +140,10 @@
 
     {% block extra_css %}{% endblock %}
     {% block head %}{% endblock %}
+
+    <!-- Tailwind COMPILADO (bash scripts/build_css.sh). Va el ÚLTIMO del <head> a propósito: el CDN anterior
+         inyectaba su hoja al final del head, así que las utilidades ganan a los estilos locales en un empate. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
 </head>
 <body class="bg-gray-100">
 

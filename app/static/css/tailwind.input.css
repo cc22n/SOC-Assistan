@@ -1,0 +1,4 @@
+/* Entrada del compilador de Tailwind (ver tailwind.config.js y scripts/build_css.sh). No editar tailwind.css a mano. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
