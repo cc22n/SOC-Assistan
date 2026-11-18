@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Cuentas bloqueadas - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-user-lock text-indigo-600 mr-2"></i>Cuentas bloqueadas
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Una cuenta se bloquea 15 minutos tras 5 intentos de login fallidos. Desbloquearla reinicia su contador
+                y queda registrado en la auditoría.
+            </p>
+        </div>
+        <button data-action="loadLocked" class="px-4 py-2 bg-white border rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <i class="fas fa-sync-alt mr-2"></i>Actualizar
+        </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr class="text-left text-xs uppercase text-gray-500">
+                    <th class="px-4 py-3">Usuario</th>
+                    <th class="px-4 py-3">Desbloqueo automático</th>
+                    <th class="px-4 py-3">Fallos</th>
+                    <th class="px-4 py-3">Última IP</th>
+                    <th class="px-4 py-3">Último fallo</th>
+                    <th class="px-4 py-3 text-right">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="lockedBody" class="divide-y divide-gray-100 text-sm">
+                <tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">Cargando…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-6 text-sm text-gray-500 bg-gray-50 rounded-lg p-4">
+        <i class="fas fa-terminal mr-2"></i>Si tú mismo quedas bloqueado y no puedes entrar, desde el servidor:
+        <code class="bg-white px-2 py-1 rounded border">flask accounts unlock &lt;usuario&gt;</code>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce() }}">
+async function loadLocked() {
+    const body = document.getElementById('lockedBody');
+    try {
+        const r = await fetch('/api/v2/admin/locked-accounts');
+        const data = await r.json();
+        if (!r.ok || !data.success) {
+            body.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-red-500">${escapeHtml(data.error || 'No se pudo cargar')}</td></tr>`;
+            return;
+        }
+        if (!data.accounts.length) {
+            body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">Ninguna cuenta bloqueada.</td></tr>';
+            return;
+        }
+        body.innerHTML = data.accounts.map(a => `
+            <tr>
+                <td class="px-4 py-3 font-mono text-gray-800">${escapeHtml(a.username)}</td>
+                <td class="px-4 py-3 text-gray-600">en ${escapeHtml(a.restante_min)} min</td>
+                <td class="px-4 py-3 text-gray-600">${escapeHtml(a.fallos)}</td>
+                <td class="px-4 py-3 font-mono text-xs text-gray-600">${escapeHtml(a.ultima_ip || '-')}</td>
+                <td class="px-4 py-3 text-xs text-gray-500">${escapeHtml(a.ultimo_fallo || '-')}</td>
+                <td class="px-4 py-3 text-right">
+                    <button data-action="unlockAccount" data-args='${escapeHtml(JSON.stringify([a.username]))}'
+                            class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs">
+                        <i class="fas fa-unlock mr-1"></i>Desbloquear
+                    </button>
+                </td>
+            </tr>`).join('');
+    } catch (e) {
+        body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-red-500">Error de red</td></tr>';
+    }
+}
+
+async function unlockAccount(username) {
+    try {
+        const r = await fetch('/api/v2/admin/accounts/unlock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await r.json();
+        if (r.ok && data.success) {
+            showToast(data.was_locked ? `Cuenta ${data.username} desbloqueada` : `${data.username} no estaba bloqueada (contador reiniciado)`, 'success');
+        } else {
+            showToast(data.error || 'No se pudo desbloquear', 'error');
+        }
+    } catch (e) {
+        showToast('Error de red', 'error');
+    }
+    loadLocked();
+}
+
+loadLocked();
+</script>
+{% endblock %}
