@@ -10,9 +10,9 @@
   "level": "BAJO",
   "score_los": 25,
   "level_los": "BAJO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "217.216.54.78",
@@ -21,13 +21,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=AsyncRAT conf=100",
-  "score": 0,
-  "level": "LIMPIO",
+  "score": 30,
+  "level": "MEDIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 20,
-  "n_ok": 4,
-  "n_apis": 6
+  "presence_points": 25,
+  "n_ok": 5,
+  "n_apis": 7
  },
  {
   "value": "8.212.181.6",
@@ -36,13 +36,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Havoc conf=100",
-  "score": 25,
-  "level": "BAJO",
+  "score": 55,
+  "level": "ALTO",
   "score_los": 25,
   "level_los": "BAJO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "216.73.157.144",
@@ -51,13 +51,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Cobalt Strike conf=100",
-  "score": 0,
-  "level": "LIMPIO",
+  "score": 30,
+  "level": "MEDIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "14.102.238.105",
@@ -66,13 +66,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Unknown malware conf=100",
-  "score": 0,
-  "level": "LIMPIO",
+  "score": 30,
+  "level": "MEDIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "43.128.108.9",
@@ -85,9 +85,9 @@
   "level": "BAJO",
   "score_los": 25,
   "level_los": "BAJO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "160.202.46.32",
@@ -96,13 +96,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Cobalt Strike conf=100",
-  "score": 0,
-  "level": "LIMPIO",
+  "score": 30,
+  "level": "MEDIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "120.48.128.24",
@@ -111,13 +111,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=VShell conf=100",
-  "score": 25,
-  "level": "BAJO",
+  "score": 55,
+  "level": "ALTO",
   "score_los": 25,
   "level_los": "BAJO",
-  "presence_points": 20,
-  "n_ok": 4,
-  "n_apis": 6
+  "presence_points": 25,
+  "n_ok": 5,
+  "n_apis": 7
  },
  {
   "value": "31.77.168.157",
@@ -126,13 +126,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Unknown malware conf=100",
-  "score": 0,
-  "level": "LIMPIO",
+  "score": 30,
+  "level": "MEDIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "192.163.172.91",
@@ -145,9 +145,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "n3.asas777.org",
@@ -156,13 +156,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 28,
-  "level": "BAJO",
+  "score": 58,
+  "level": "ALTO",
   "score_los": 28,
   "level_los": "BAJO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "eh.asas777.org",
@@ -171,13 +171,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 31,
-  "level": "MEDIO",
+  "score": 61,
+  "level": "ALTO",
   "score_los": 31,
   "level_los": "MEDIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "lc.asah189.org",
@@ -186,13 +186,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 10,
-  "level": "BAJO",
+  "score": 40,
+  "level": "MEDIO",
   "score_los": 10,
   "level_los": "BAJO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "asastogel.org",
@@ -201,13 +201,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 12,
-  "level": "BAJO",
+  "score": 42,
+  "level": "MEDIO",
   "score_los": 12,
   "level_los": "BAJO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "mooner.icu",
@@ -216,13 +216,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Unknown Stealer conf=100",
-  "score": 33,
-  "level": "MEDIO",
+  "score": 63,
+  "level": "ALTO",
   "score_los": 33,
   "level_los": "MEDIO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "q.goo55.org",
@@ -231,13 +231,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 28,
-  "level": "BAJO",
+  "score": 58,
+  "level": "ALTO",
   "score_los": 28,
   "level_los": "BAJO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "emprdrcfhpvym7uwqvxky6ympquibzxfxuor6qeexk7lz3sxz5t2ubqd.onion",
@@ -250,9 +250,9 @@
   "level": "BAJO",
   "score_los": 24,
   "level_los": "BAJO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "md.asas777.org",
@@ -261,13 +261,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 25,
-  "level": "BAJO",
+  "score": 55,
+  "level": "ALTO",
   "score_los": 25,
   "level_los": "BAJO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "spp.anka69.org",
@@ -276,13 +276,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 33,
-  "level": "MEDIO",
+  "score": 63,
+  "level": "ALTO",
   "score_los": 33,
   "level_los": "MEDIO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "kj.asastogel.org",
@@ -291,13 +291,13 @@
   "category": "ioc_reciente",
   "label_source": "threatfox",
   "note": "malware=Vidar conf=100",
-  "score": 12,
-  "level": "BAJO",
+  "score": 42,
+  "level": "MEDIO",
   "score_los": 12,
   "level_los": "BAJO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "http://93.113.165.202:42968/i",
@@ -610,9 +610,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "1.1.1.1",
@@ -625,9 +625,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "9.9.9.9",
@@ -640,9 +640,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "208.67.222.222",
@@ -655,9 +655,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "140.82.112.3",
@@ -670,9 +670,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "151.101.1.69",
@@ -685,9 +685,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 20,
-  "n_ok": 4,
-  "n_apis": 6
+  "presence_points": 25,
+  "n_ok": 5,
+  "n_apis": 7
  },
  {
   "value": "13.107.42.14",
@@ -700,9 +700,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 20,
-  "n_ok": 4,
-  "n_apis": 6
+  "presence_points": 25,
+  "n_ok": 5,
+  "n_apis": 7
  },
  {
   "value": "17.253.144.10",
@@ -715,9 +715,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 20,
-  "n_ok": 4,
-  "n_apis": 6
+  "presence_points": 25,
+  "n_ok": 5,
+  "n_apis": 7
  },
  {
   "value": "google.com",
@@ -730,9 +730,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "github.com",
@@ -745,9 +745,9 @@
   "level": "BAJO",
   "score_los": 20,
   "level_los": "BAJO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "microsoft.com",
@@ -760,9 +760,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "wikipedia.org",
@@ -775,9 +775,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 7
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 8
  },
  {
   "value": "python.org",
@@ -790,9 +790,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "mozilla.org",
@@ -805,9 +805,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "debian.org",
@@ -820,9 +820,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "kernel.org",
@@ -835,9 +835,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "apache.org",
@@ -850,9 +850,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "cloudflare.com",
@@ -865,9 +865,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  },
  {
   "value": "https://www.google.com/",
@@ -1120,9 +1120,9 @@
   "level": "CRÍTICO",
   "score_los": 80,
   "level_los": "CRÍTICO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "80.67.167.81",
@@ -1135,9 +1135,9 @@
   "level": "CRÍTICO",
   "score_los": 80,
   "level_los": "CRÍTICO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "109.70.100.4",
@@ -1150,9 +1150,9 @@
   "level": "CRÍTICO",
   "score_los": 80,
   "level_los": "CRÍTICO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "192.42.116.99",
@@ -1165,9 +1165,9 @@
   "level": "CRÍTICO",
   "score_los": 95,
   "level_los": "CRÍTICO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 6
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 7
  },
  {
   "value": "192.42.116.44",
@@ -1180,9 +1180,9 @@
   "level": "CRÍTICO",
   "score_los": 95,
   "level_los": "CRÍTICO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 6
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 7
  },
  {
   "value": "71.6.135.131",
@@ -1195,9 +1195,9 @@
   "level": "ALTO",
   "score_los": 55,
   "level_los": "ALTO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 6
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 7
  },
  {
   "value": "162.142.125.10",
@@ -1210,9 +1210,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "198.20.69.74",
@@ -1225,9 +1225,9 @@
   "level": "LIMPIO",
   "score_los": 0,
   "level_los": "LIMPIO",
-  "presence_points": 25,
-  "n_ok": 5,
-  "n_apis": 6
+  "presence_points": 30,
+  "n_ok": 6,
+  "n_apis": 7
  },
  {
   "value": "pastebin.com",
@@ -1240,9 +1240,9 @@
   "level": "MEDIO",
   "score_los": 30,
   "level_los": "MEDIO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "ngrok.io",
@@ -1255,9 +1255,9 @@
   "level": "BAJO",
   "score_los": 12,
   "level_los": "BAJO",
-  "presence_points": 30,
-  "n_ok": 6,
-  "n_apis": 7
+  "presence_points": 35,
+  "n_ok": 7,
+  "n_apis": 8
  },
  {
   "value": "duckdns.org",
@@ -1270,8 +1270,8 @@
   "level": "BAJO",
   "score_los": 10,
   "level_los": "BAJO",
-  "presence_points": 35,
-  "n_ok": 7,
-  "n_apis": 7
+  "presence_points": 40,
+  "n_ok": 8,
+  "n_apis": 8
  }
 ]

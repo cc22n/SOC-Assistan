@@ -8,7 +8,7 @@ Composición: malicious=40, benign=34, ambiguous=11
 
 | etiqueta | LIMPIO | BAJO | MEDIO | ALTO | CRÍTICO | n |
 |---|---|---|---|---|---|---|
-| malicious | 6 | 11 | 10 | 2 | 11 | 40 |
+| malicious | 1 | 3 | 15 | 10 | 11 | 40 |
 | benign | 33 | 1 | 0 | 0 | 0 | 34 |
 | ambiguous | 2 | 2 | 1 | 1 | 5 | 11 |
 
@@ -24,9 +24,9 @@ Composición: malicious=40, benign=34, ambiguous=11
 
 | tipo | recall maliciosos | falsos positivos (benignos) | precisión | n mal / n ben |
 |---|---|---|---|---|
-| ALL | 32% (13/40) | 0% (0/34) | 100% | 40 / 34 |
-| ip | 0% (0/10) | 0% (0/8) | n/a | 10 / 8 |
-| domain | 0% (0/10) | 0% (0/10) | n/a | 10 / 10 |
+| ALL | 52% (21/40) | 0% (0/34) | 100% | 40 / 34 |
+| ip | 20% (2/10) | 0% (0/8) | 100% | 10 / 8 |
+| domain | 60% (6/10) | 0% (0/10) | 100% | 10 / 10 |
 | url | 40% (4/10) | 0% (0/8) | 100% | 10 / 8 |
 | hash | 90% (9/10) | 0% (0/8) | 100% | 10 / 8 |
 
@@ -34,9 +34,9 @@ Composición: malicious=40, benign=34, ambiguous=11
 
 | tipo | recall maliciosos | falsos positivos (benignos) | precisión | n mal / n ben |
 |---|---|---|---|---|
-| ALL | 58% (23/40) | 0% (0/34) | 100% | 40 / 34 |
-| ip | 0% (0/10) | 0% (0/8) | n/a | 10 / 8 |
-| domain | 30% (3/10) | 0% (0/10) | 100% | 10 / 10 |
+| ALL | 90% (36/40) | 0% (0/34) | 100% | 40 / 34 |
+| ip | 70% (7/10) | 0% (0/8) | 100% | 10 / 8 |
+| domain | 90% (9/10) | 0% (0/10) | 100% | 10 / 10 |
 | url | 100% (10/10) | 0% (0/8) | 100% | 10 / 8 |
 | hash | 100% (10/10) | 0% (0/8) | 100% | 10 / 8 |
 
@@ -62,7 +62,7 @@ Composición: malicious=40, benign=34, ambiguous=11
 
 ### ¿Cuánto del score de un IOC limpio es solo "la API respondió"? (+5 por API sin error)
 
-Benignos: score medio **0.6**, de los cuales **25.6** son puntos de presencia (4350%). Benignos que subirían de nivel solo por estos puntos: 1 de 34.
+Benignos: score medio **0.6**, de los cuales **28.2** son puntos de presencia (4800%). Benignos que subirían de nivel solo por estos puntos: 1 de 34.
 
 ### Falsos positivos (benignos con nivel ≥ MEDIO)
 
@@ -70,23 +70,10 @@ Benignos: score medio **0.6**, de los cuales **25.6** son puntos de presencia (4
 
 ### Falsos negativos (maliciosos con nivel ≤ BAJO, análisis completo)
 
-- `134.175.236.45` (ip, malware=Unknown malware conf=100) score=25 BAJO  [5/6 APIs ok]
-- `217.216.54.78` (ip, malware=AsyncRAT conf=100) score=0 LIMPIO  [4/6 APIs ok]
-- `8.212.181.6` (ip, malware=Havoc conf=100) score=25 BAJO  [5/6 APIs ok]
-- `216.73.157.144` (ip, malware=Cobalt Strike conf=100) score=0 LIMPIO  [5/6 APIs ok]
-- `14.102.238.105` (ip, malware=Unknown malware conf=100) score=0 LIMPIO  [5/6 APIs ok]
-- `43.128.108.9` (ip, malware=Unknown malware conf=100) score=25 BAJO  [5/6 APIs ok]
-- `160.202.46.32` (ip, malware=Cobalt Strike conf=100) score=0 LIMPIO  [5/6 APIs ok]
-- `120.48.128.24` (ip, malware=VShell conf=100) score=25 BAJO  [4/6 APIs ok]
-- `31.77.168.157` (ip, malware=Unknown malware conf=100) score=0 LIMPIO  [5/6 APIs ok]
-- `192.163.172.91` (ip, malware=Unknown malware conf=100) score=0 LIMPIO  [5/6 APIs ok]
-- `n3.asas777.org` (domain, malware=Vidar conf=100) score=28 BAJO  [6/7 APIs ok]
-- `lc.asah189.org` (domain, malware=Vidar conf=100) score=10 BAJO  [7/7 APIs ok]
-- `asastogel.org` (domain, malware=Vidar conf=100) score=12 BAJO  [7/7 APIs ok]
-- `q.goo55.org` (domain, malware=Vidar conf=100) score=28 BAJO  [6/7 APIs ok]
-- `emprdrcfhpvym7uwqvxky6ympquibzxfxuor6qeexk7lz3sxz5t2ubqd.onion` (domain, malware=Unknown malware conf=100) score=24 BAJO  [7/7 APIs ok]
-- `md.asas777.org` (domain, malware=Vidar conf=100) score=25 BAJO  [6/7 APIs ok]
-- `kj.asastogel.org` (domain, malware=Vidar conf=100) score=12 BAJO  [6/7 APIs ok]
+- `134.175.236.45` (ip, malware=Unknown malware conf=100) score=25 BAJO  [6/7 APIs ok]
+- `43.128.108.9` (ip, malware=Unknown malware conf=100) score=25 BAJO  [6/7 APIs ok]
+- `192.163.172.91` (ip, malware=Unknown malware conf=100) score=0 LIMPIO  [6/7 APIs ok]
+- `emprdrcfhpvym7uwqvxky6ympquibzxfxuor6qeexk7lz3sxz5t2ubqd.onion` (domain, malware=Unknown malware conf=100) score=24 BAJO  [8/8 APIs ok]
 
 ### Ambiguos (informativo, no puntúa)
 
@@ -114,10 +101,10 @@ Benignos: score medio **0.6**, de los cuales **25.6** son puntos de presencia (4
 | greynoise | 26 | 0 | 100% |  |
 | abuseipdb | 26 | 0 | 100% |  |
 | criminal_ip | 26 | 0 | 100% |  |
+| threatfox | 67 | 0 | 100% |  |
 | urlhaus | 41 | 0 | 100% |  |
 | securitytrails | 23 | 0 | 100% |  |
 | virustotal | 59 | 0 | 100% |  |
 | google_safebrowsing | 41 | 0 | 100% |  |
-| threatfox | 18 | 0 | 100% |  |
 | hybrid_analysis | 18 | 0 | 100% |  |
 | malwarebazaar | 18 | 0 | 100% |  |

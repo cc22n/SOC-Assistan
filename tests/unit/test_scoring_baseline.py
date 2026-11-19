@@ -28,6 +28,8 @@ def _score(row):
 def _old_score(row):
     """Scoring ANTERIOR, reproducido fielmente: +5 por API sin error y VirusTotal = min(30, 2 * malicious)."""
     res = SNAPS[f"{row['type']}:{row['value']}"]['api_results']
+    if row['type'] in ('ip', 'domain'):             # el scoring antiguo no consultaba ThreatFox en IP ni dominio
+        res = {k: v for k, v in res.items() if k != 'threatfox'}
     nuevo = ORCH._calculate_enhanced_score(res, {})
     vt = res.get('virustotal')
     if vt and 'error' not in vt:

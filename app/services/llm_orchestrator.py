@@ -54,8 +54,8 @@ class LLMOrchestrator:
 
         # Estrategias por tipo de IOC (ACTUALIZADO sin censys/ipqualityscore)
         self.strategies = {
-            'ip': ['greynoise', 'abuseipdb', 'shodan', 'criminal_ip', 'pulsedive', 'otx'],
-            'domain': ['urlhaus', 'otx', 'securitytrails', 'virustotal', 'google_safebrowsing', 'urlscan', 'crtsh'],
+            'ip': ['greynoise', 'abuseipdb', 'shodan', 'criminal_ip', 'pulsedive', 'otx', 'threatfox'],
+            'domain': ['urlhaus', 'otx', 'securitytrails', 'virustotal', 'google_safebrowsing', 'urlscan', 'crtsh', 'threatfox'],
             'url': ['urlhaus', 'google_safebrowsing', 'virustotal', 'urlscan', 'pulsedive'],
             'hash': ['virustotal', 'threatfox', 'hybrid_analysis', 'malwarebazaar', 'otx', 'pulsedive']
         }

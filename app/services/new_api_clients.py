@@ -646,8 +646,32 @@ class ThreatFoxClient:
             headers['Auth-Key'] = self.auth_key
         return headers
 
-    def search_ioc(self, ioc: str) -> Dict:
-        """Busca un IOC en ThreatFox (Auth-Key opcional)"""
+    @staticmethod
+    def _is_exact_match(entry: Dict, ioc: str, ioc_type: Optional[str]) -> bool:
+        """
+        ThreatFox busca por COINCIDENCIA PARCIAL: 'google.com' devuelve 'google-proxy-1-2-3-4.google.com' y URLs de
+        malware alojado en github.com. Y `exact_match=true` no sirve para IPs (los IOC son 'ip:puerto'). Por eso se
+        filtra aquí: el IOC buscado debe ser, tal cual, el IOC reportado (verificado en vivo 2026-11-18:
+        sin este filtro 4 de 10 dominios benignos salían 'encontrados').
+        """
+        t = (entry.get('ioc_type') or '').lower()
+        v = (entry.get('ioc') or '').strip()
+        want = ioc.strip()
+        if ioc_type == 'ip':
+            return t == 'ip:port' and v.rsplit(':', 1)[0] == want
+        if ioc_type == 'domain':
+            return t == 'domain' and v.lower() == want.lower()
+        if ioc_type == 'url':
+            return t == 'url' and v == want
+        if ioc_type == 'hash':
+            return t.endswith('_hash') and v.lower() == want.lower()
+        return v.lower() == want.lower()
+
+    def search_ioc(self, ioc: str, ioc_type: Optional[str] = None) -> Dict:
+        """
+        Busca un IOC en ThreatFox (Auth-Key opcional). Solo cuenta coincidencias EXACTAS (ver _is_exact_match).
+        `ioc_type`: ip | domain | url | hash (sin él, se exige igualdad textual con el valor del IOC).
+        """
         try:
             response = http_post(
                 self.base_url,
@@ -658,18 +682,21 @@ class ThreatFoxClient:
 
             if response.status_code == 200:
                 data = response.json()
-                if data.get('query_status') == 'ok' and data.get('data'):
-                    first = data['data'][0]
-                    return {
-                        'found': True,
-                        'threat_type': first.get('threat_type'),
-                        'threat_type_desc': first.get('threat_type_desc'),
-                        'malware': first.get('malware_printable'),
-                        'confidence_level': first.get('confidence_level'),
-                        'first_seen': first.get('first_seen'),
-                        'tags': first.get('tags', []),
-                        'total_results': len(data['data'])
-                    }
+                entries = data.get('data') if data.get('query_status') == 'ok' else None
+                if isinstance(entries, list):
+                    exact = [e for e in entries if self._is_exact_match(e, ioc, ioc_type)]
+                    if exact:
+                        first = exact[0]
+                        return {
+                            'found': True,
+                            'threat_type': first.get('threat_type'),
+                            'threat_type_desc': first.get('threat_type_desc'),
+                            'malware': first.get('malware_printable'),
+                            'confidence_level': first.get('confidence_level'),
+                            'first_seen': first.get('first_seen'),
+                            'tags': first.get('tags', []),
+                            'total_results': len(exact)
+                        }
                 return {'found': False}
             return {'error': f'HTTP {response.status_code}'}
         except Exception as e:

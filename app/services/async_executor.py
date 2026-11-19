@@ -156,10 +156,10 @@ def _resolve_method(api_name: str, client: Any, ioc: str, ioc_type: str) -> Opti
         ('urlhaus', 'domain'):      lambda: client.check_host(ioc),
         ('urlhaus', 'ip'):          lambda: client.check_host(ioc),
 
-        ('threatfox', 'ip'):        lambda: client.search_ioc(ioc),
-        ('threatfox', 'domain'):    lambda: client.search_ioc(ioc),
-        ('threatfox', 'hash'):      lambda: client.search_ioc(ioc),
-        ('threatfox', 'url'):       lambda: client.search_ioc(ioc),
+        ('threatfox', 'ip'):        lambda: client.search_ioc(ioc, 'ip'),
+        ('threatfox', 'domain'):    lambda: client.search_ioc(ioc, 'domain'),
+        ('threatfox', 'hash'):      lambda: client.search_ioc(ioc, 'hash'),
+        ('threatfox', 'url'):       lambda: client.search_ioc(ioc, 'url'),
 
         ('malwarebazaar', 'hash'):  lambda: client.query_hash(ioc),
 

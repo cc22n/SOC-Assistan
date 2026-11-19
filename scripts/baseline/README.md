@@ -63,3 +63,14 @@ Lectura honesta:
   estrategia de IP, OTX pulses con cuidado con Tor/CDN), no calibrar umbrales.
 - Las bandas de VT se eligieron mirando estos datos (n pequeño): hay riesgo de sobreajuste. Repetir la línea base
   con otra fecha antes de darlas por definitivas.
+
+## ThreatFox en las estrategias de IP y dominio (2026-11-18)
+- ThreatFox busca por coincidencia PARCIAL: `google.com` devolvía 32 subdominios `google-proxy-...` y `github.com` URLs
+  de malware alojado allí. Con la búsqueda cruda, 4 de 10 dominios benignos salían 'encontrados' (+30). `exact_match=true`
+  no sirve para IPs (los IOC son `ip:puerto`). El cliente ahora filtra por igualdad exacta de tipo y valor.
+- Con el filtro: **0 falsos positivos en 45 consultas de benignos y ambiguos**; encuentra 7/10 IPs y 9/10 dominios maliciosos.
+- Análisis completo: AUC IPs 0.70 -> 0.95, recall IPs a MEDIO+ 0% -> 70%.
+- **PERO es circular**: esos IOC están etiquetados maliciosos *porque* ThreatFox los lista. Sin las APIs de la fuente de la etiqueta
+  (leave-source-out) el AUC de IPs sigue en 0.70. Este dataset NO demuestra mejora de detección independiente; demuestra
+  que no añade falsos positivos y que el cliente funciona. Para medir la mejora real hace falta una etiqueta de otra fuente.
+- `collect.py --add-api <api> --types ip,domain` añade una API a los snapshots sin repetir las demás.

@@ -8,7 +8,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:45:21Z",
   "api_results": {
@@ -84,6 +85,9 @@
     "asn": "AS45090 shenzhen tencent computer systems company limited",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -96,7 +100,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:45:25Z",
   "api_results": {
@@ -182,6 +187,20 @@
     "asn": "AS6739 vodafone ono  s.a.",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "AsyncRAT",
+    "confidence_level": 75,
+    "first_seen": "2026-11-18 19:44:34 UTC",
+    "tags": [
+     "AsyncRAT",
+     "drb-ra",
+     "RAT"
+    ],
+    "total_results": 5
    }
   }
  },
@@ -194,7 +213,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:45:46Z",
   "api_results": {
@@ -298,6 +318,18 @@
     "asn": "AS45102 alibaba (us) technology co.  ltd.",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Havoc",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 16:05:06 UTC",
+    "tags": [
+     "havoc"
+    ],
+    "total_results": 5
    }
   }
  },
@@ -310,7 +342,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:45:51Z",
   "api_results": {
@@ -386,6 +419,19 @@
     "asn": "AS1239 sprint",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Cobalt Strike",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 19:23:57 UTC",
+    "tags": [
+     "C2",
+     "Cobalt Strike"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -398,7 +444,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:45:56Z",
   "api_results": {
@@ -453,6 +500,18 @@
     "asn": "ASNone ",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Unknown malware",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 19:23:48 UTC",
+    "tags": [
+     "ARTEX"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -465,7 +524,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:46:01Z",
   "api_results": {
@@ -535,6 +595,9 @@
     "asn": "AS132203 tencent building  kejizhongyi avenue",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -547,7 +610,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:46:06Z",
   "api_results": {
@@ -615,6 +679,18 @@
     "asn": "AS133178 australian customs and border protection service",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Cobalt Strike",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 17:05:09 UTC",
+    "tags": [
+     "cobaltstrike"
+    ],
+    "total_results": 5
    }
   }
  },
@@ -627,7 +703,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:46:11Z",
   "api_results": {
@@ -683,6 +760,18 @@
     "asn": "ASNone ",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "VShell",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 19:05:08 UTC",
+    "tags": [
+     "vshell"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -695,7 +784,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:46:16Z",
   "api_results": {
@@ -769,6 +859,18 @@
     "asn": "AS12576 ee limited",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Unknown malware",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 16:05:06 UTC",
+    "tags": [
+     "mythic"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -781,7 +883,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:46:21Z",
   "api_results": {
@@ -855,6 +958,9 @@
     "asn": "AS395954 leaseweb usa  inc.",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -868,7 +974,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:46:51Z",
   "api_results": {
@@ -916,6 +1023,18 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-19 02:05:34 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -929,7 +1048,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:47:24Z",
   "api_results": {
@@ -993,6 +1113,18 @@
     "found": false,
     "subdomains": [],
     "total_certificates": 0
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 23:05:34 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1006,7 +1138,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:47:41Z",
   "api_results": {
@@ -1067,6 +1200,18 @@
     "found": false,
     "subdomains": [],
     "total_certificates": 0
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 15:05:34 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1080,7 +1225,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:48:06Z",
   "api_results": {
@@ -1158,6 +1304,18 @@
     ],
     "total_subdomains": 2,
     "total_certificates": 15
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-19 03:10:35 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1171,7 +1329,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:48:24Z",
   "api_results": {
@@ -1234,6 +1393,19 @@
    },
    "crtsh": {
     "error": "HTTPSConnectionPool(host='crt.sh', port=443): Max retries exceeded with url: /?q=%25.mooner.icu&output=json (Caused by ResponseError('too many 502 error responses'))"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Unknown Stealer",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 15:42:47 UTC",
+    "tags": [
+     "WeedHack",
+     "WeedStealer"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1247,7 +1419,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:49:10Z",
   "api_results": {
@@ -1321,6 +1494,18 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 23:10:35 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1334,7 +1519,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:49:30Z",
   "api_results": {
@@ -1373,6 +1559,9 @@
     "found": false,
     "subdomains": [],
     "total_certificates": 0
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -1386,7 +1575,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:50:16Z",
   "api_results": {
@@ -1447,6 +1637,18 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 22:05:34 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1460,7 +1662,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:51:02Z",
   "api_results": {
@@ -1498,6 +1701,18 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-18 16:40:34 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -1511,7 +1726,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:51:48Z",
   "api_results": {
@@ -1559,6 +1775,18 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "botnet_cc",
+    "threat_type_desc": "Indicator that identifies a botnet command&control server (C&C)",
+    "malware": "Vidar",
+    "confidence_level": 100,
+    "first_seen": "2026-11-19 03:10:34 UTC",
+    "tags": [
+     "vidar"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -2219,19 +2447,6 @@
     "size": 6968,
     "magic": "ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux.so.2, for GNU/Linux 2.6.26, not stripped"
    },
-   "threatfox": {
-    "found": true,
-    "threat_type": "payload",
-    "threat_type_desc": "Indicator that identifies a malware sample (payload)",
-    "malware": "SNOWLIGHT",
-    "confidence_level": 95,
-    "first_seen": "2026-11-19 01:59:38 UTC",
-    "tags": [
-     "elf",
-     "SNOWLIGHT"
-    ],
-    "total_results": 1
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "malicious",
@@ -2275,6 +2490,19 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "payload",
+    "threat_type_desc": "Indicator that identifies a malware sample (payload)",
+    "malware": "SNOWLIGHT",
+    "confidence_level": 95,
+    "first_seen": "2026-11-19 01:59:38 UTC",
+    "tags": [
+     "elf",
+     "SNOWLIGHT"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -2336,9 +2564,6 @@
     "size": 7316,
     "magic": "ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3, for GNU/Linux 2.6.32, not stripped"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "malicious",
@@ -2393,6 +2618,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -2451,19 +2679,6 @@
     ],
     "size": 46080,
     "magic": "PE32 executable (GUI) Intel 80386 Mono/.Net assembly, for MS Windows"
-   },
-   "threatfox": {
-    "found": true,
-    "threat_type": "payload",
-    "threat_type_desc": "Indicator that identifies a malware sample (payload)",
-    "malware": "AsyncRAT",
-    "confidence_level": 95,
-    "first_seen": "2026-11-19 01:59:31 UTC",
-    "tags": [
-     "AsyncRAT",
-     "exe"
-    ],
-    "total_results": 1
    },
    "hybrid_analysis": {
     "found": true,
@@ -2525,6 +2740,19 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "payload",
+    "threat_type_desc": "Indicator that identifies a malware sample (payload)",
+    "malware": "AsyncRAT",
+    "confidence_level": 95,
+    "first_seen": "2026-11-19 01:59:31 UTC",
+    "tags": [
+     "AsyncRAT",
+     "exe"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -2586,9 +2814,6 @@
     "size": 7628,
     "magic": "ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3, for GNU/Linux 2.6.32, not stripped"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "malicious",
@@ -2642,6 +2867,9 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -2693,9 +2921,6 @@
     ],
     "size": 573866,
     "magic": "ASCII text, with very long lines (4129u)"
-   },
-   "threatfox": {
-    "found": false
    },
    "hybrid_analysis": {
     "found": true,
@@ -2750,6 +2975,9 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -2809,9 +3037,6 @@
     "size": 22528,
     "magic": "PE32 executable (GUI) Intel 80386 Mono/.Net assembly, for MS Windows"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "malicious",
@@ -2861,6 +3086,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -2922,9 +3150,6 @@
     "size": 34216,
     "magic": "Mach-O 64-bit x86_64 executable, flags:<NOUNDEFS|DYLDLINK|TWOLEVEL|PIE>"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "malicious",
@@ -2980,6 +3205,9 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -3041,9 +3269,6 @@
     "size": 7316,
     "magic": "ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-armhf.so.3, for GNU/Linux 2.6.32, not stripped"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "malicious",
@@ -3099,6 +3324,9 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -3155,19 +3383,6 @@
     ],
     "size": 9800,
     "magic": "ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 2.6.32, not stripped"
-   },
-   "threatfox": {
-    "found": true,
-    "threat_type": "payload",
-    "threat_type_desc": "Indicator that identifies a malware sample (payload)",
-    "malware": "SNOWLIGHT",
-    "confidence_level": 95,
-    "first_seen": "2026-11-19 01:59:33 UTC",
-    "tags": [
-     "elf",
-     "SNOWLIGHT"
-    ],
-    "total_results": 1
    },
    "hybrid_analysis": {
     "found": true,
@@ -3227,6 +3442,19 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": true,
+    "threat_type": "payload",
+    "threat_type_desc": "Indicator that identifies a malware sample (payload)",
+    "malware": "SNOWLIGHT",
+    "confidence_level": 95,
+    "first_seen": "2026-11-19 01:59:33 UTC",
+    "tags": [
+     "elf",
+     "SNOWLIGHT"
+    ],
+    "total_results": 1
    }
   }
  },
@@ -3274,9 +3502,6 @@
     ],
     "size": 3067430,
     "magic": "ASCII text, with very long lines (65536u), with no line terminators"
-   },
-   "threatfox": {
-    "found": false
    },
    "hybrid_analysis": {
     "found": true,
@@ -3330,6 +3555,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -3342,7 +3570,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:28Z",
   "api_results": {
@@ -3409,6 +3638,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -3421,7 +3653,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:30Z",
   "api_results": {
@@ -3502,6 +3735,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -3514,7 +3750,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:35Z",
   "api_results": {
@@ -3852,6 +4089,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -3864,7 +4104,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:40Z",
   "api_results": {
@@ -4290,6 +4531,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -4302,7 +4546,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:45Z",
   "api_results": {
@@ -4648,6 +4893,9 @@
     "asn": "AS36459 github  inc.",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -4660,7 +4908,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:50Z",
   "api_results": {
@@ -5173,6 +5422,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -5185,7 +5437,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:58:55Z",
   "api_results": {
@@ -6043,6 +6296,9 @@
       "name": "Cloud Provider IP range"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -6055,7 +6311,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:59:00Z",
   "api_results": {
@@ -6521,6 +6778,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -6534,7 +6794,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:59:04Z",
   "api_results": {
@@ -6885,6 +7146,9 @@
     ],
     "total_subdomains": 399,
     "total_certificates": 1152
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -6898,7 +7162,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T03:59:44Z",
   "api_results": {
@@ -7269,6 +7534,9 @@
     ],
     "total_subdomains": 143,
     "total_certificates": 1238
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -7282,7 +7550,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:00:09Z",
   "api_results": {
@@ -7629,6 +7898,9 @@
     ],
     "total_subdomains": 3932,
     "total_certificates": 5827
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -7642,7 +7914,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:00:55Z",
   "api_results": {
@@ -7750,6 +8023,9 @@
    },
    "crtsh": {
     "error": "HTTPSConnectionPool(host='crt.sh', port=443): Max retries exceeded with url: /?q=%25.wikipedia.org&output=json (Caused by ResponseError('too many 502 error responses'))"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -7763,7 +8039,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:01:41Z",
   "api_results": {
@@ -7883,6 +8160,9 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -7896,7 +8176,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:02:14Z",
   "api_results": {
@@ -8236,6 +8517,9 @@
     ],
     "total_subdomains": 463,
     "total_certificates": 3800
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -8249,7 +8533,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:02:35Z",
   "api_results": {
@@ -8574,6 +8859,9 @@
     ],
     "total_subdomains": 194,
     "total_certificates": 4622
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -8587,7 +8875,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:03:21Z",
   "api_results": {
@@ -8715,6 +9004,9 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -8728,7 +9020,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:03:45Z",
   "api_results": {
@@ -9054,6 +9347,9 @@
     ],
     "total_subdomains": 224,
     "total_certificates": 4713
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -9067,7 +9363,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:04:16Z",
   "api_results": {
@@ -9408,6 +9705,9 @@
     ],
     "total_subdomains": 3425,
     "total_certificates": 4978
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -10996,9 +11296,6 @@
     "size": 0,
     "magic": "empty"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "whitelisted",
@@ -11115,6 +11412,9 @@
       "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
      }
     }
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11149,9 +11449,6 @@
     "size": 360448,
     "magic": "PE32+ executable (GUI) x86-64, for MS Windows"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "no specific threat",
@@ -11174,6 +11471,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11207,9 +11507,6 @@
     ],
     "size": 49152,
     "magic": "PE32+ executable (GUI) x86-64, for MS Windows"
-   },
-   "threatfox": {
-    "found": false
    },
    "hybrid_analysis": {
     "found": true,
@@ -11250,6 +11547,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11284,9 +11584,6 @@
     "size": 339968,
     "magic": "PE32+ executable (console) x86-64, for MS Windows"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "no specific threat",
@@ -11311,6 +11608,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11345,9 +11645,6 @@
     "size": 45056,
     "magic": "PE32+ executable (console) x86-64, for MS Windows"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "no specific threat",
@@ -11381,6 +11678,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11414,9 +11714,6 @@
     ],
     "size": 122880,
     "magic": "PE32+ executable (console) x86-64, for MS Windows"
-   },
-   "threatfox": {
-    "found": false
    },
    "hybrid_analysis": {
     "found": true,
@@ -11470,6 +11767,9 @@
    },
    "pulsedive": {
     "error": "HTTP 404"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11503,9 +11803,6 @@
     ],
     "size": 98304,
     "magic": "PE32+ executable (console) x86-64, for MS Windows"
-   },
-   "threatfox": {
-    "found": false
    },
    "hybrid_analysis": {
     "found": true,
@@ -11569,6 +11866,9 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11602,9 +11902,6 @@
     "size": 40960,
     "magic": "PE32+ executable (console) x86-64, for MS Windows"
    },
-   "threatfox": {
-    "found": false
-   },
    "hybrid_analysis": {
     "found": true,
     "verdict": "no specific threat",
@@ -11630,6 +11927,9 @@
    "pulsedive": {
     "error": "service temporarily unavailable",
     "circuit_state": "OPEN"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11642,7 +11942,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:09:56Z",
   "api_results": {
@@ -11779,6 +12080,9 @@
       "name": "Whitelisted IP"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11791,7 +12095,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:08Z",
   "api_results": {
@@ -11935,6 +12240,9 @@
     "asn": "AS2027 medecins sans frontieres",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -11947,7 +12255,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:13Z",
   "api_results": {
@@ -12347,6 +12656,9 @@
       "name": "IP Assosciated with Tor Exit Nodes"
      }
     ]
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -12359,7 +12671,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:18Z",
   "api_results": {
@@ -12610,6 +12923,9 @@
     "asn": "AS1101 surfnet bv",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -12622,7 +12938,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:23Z",
   "api_results": {
@@ -12989,6 +13306,9 @@
     "asn": "AS1101 surfnet bv",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -13001,7 +13321,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:34Z",
   "api_results": {
@@ -13261,6 +13582,9 @@
     "asn": "AS10439 carinet  inc.",
     "reputation": 1,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -13273,7 +13597,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:39Z",
   "api_results": {
@@ -13493,6 +13818,9 @@
     "asn": "AS398324 censys  inc.",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -13505,7 +13833,8 @@
    "shodan",
    "criminal_ip",
    "pulsedive",
-   "otx"
+   "otx",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:10:44Z",
   "api_results": {
@@ -13644,6 +13973,9 @@
     "asn": "AS32475 singlehop llc",
     "reputation": 0,
     "validation": []
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -13657,7 +13989,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:11:03Z",
   "api_results": {
@@ -13863,6 +14196,9 @@
    },
    "crtsh": {
     "error": "HTTPSConnectionPool(host='crt.sh', port=443): Max retries exceeded with url: /?q=%25.pastebin.com&output=json (Caused by ResponseError('too many 502 error responses'))"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -13876,7 +14212,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:11:49Z",
   "api_results": {
@@ -14003,6 +14340,9 @@
    },
    "crtsh": {
     "error": "Timeout (30.0s)"
+   },
+   "threatfox": {
+    "found": false
    }
   }
  },
@@ -14016,7 +14356,8 @@
    "virustotal",
    "google_safebrowsing",
    "urlscan",
-   "crtsh"
+   "crtsh",
+   "threatfox"
   ],
   "collected_at": "2026-11-19T04:12:09Z",
   "api_results": {
@@ -14353,6 +14694,9 @@
     ],
     "total_subdomains": 2230,
     "total_certificates": 4494
+   },
+   "threatfox": {
+    "found": false
    }
   }
  }
