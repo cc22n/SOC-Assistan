@@ -127,3 +127,7 @@ ROADMAP_FASE3.md
 graphify-out
 # Scripts manuales de prueba de APIs (experimentos locales, no son la suite)
 scripts/manual/
+
+# Linea base (regenerable con scripts/baseline/fetch_malicious.py)
+scripts/baseline/malicious_candidates.json
+scripts/baseline/tor_exits.txt
