@@ -65,6 +65,25 @@ def is_valid_hash(hash_value: str) -> bool:
     return bool(re.match(r'^[a-fA-F0-9]+$', hash_value))
 
 
+CVE_PATTERN = re.compile(r'^CVE-\d{4}-\d{4,}$', re.IGNORECASE)
+IOC_TYPES = ('ip', 'hash', 'domain', 'url', 'cve')
+
+
+def is_valid_cve(value: str) -> bool:
+    """CVE-AAAA-NNNN (el sufijo tiene 4 o más dígitos). No distingue mayúsculas."""
+    return isinstance(value, str) and bool(CVE_PATTERN.match(value.strip()))
+
+
+def normalize_ioc_value(value: str, ioc_type: Optional[str]) -> str:
+    """
+    Forma canónica de un IOC. Hoy solo el CVE (a mayúsculas): sin esto 'cve-2021-44228' y 'CVE-2021-44228' serían
+    dos IOCs distintos (uq_ioc_value_type) con su propio análisis. Los demás tipos se devuelven sin tocar.
+    """
+    if isinstance(value, str) and ioc_type == 'cve':
+        return value.strip().upper()
+    return value
+
+
 def is_valid_domain(domain: str) -> bool:
     """Valida formato de dominio"""
     if len(domain) > 253 or len(domain) < 4:
@@ -89,7 +108,7 @@ def detect_ioc_type(ioc: str) -> Optional[str]:
         ioc: Valor del IOC
 
     Returns:
-        'ip', 'hash', 'domain', 'url' o None
+        'ip', 'hash', 'cve', 'domain', 'url' o None
     """
     ioc = ioc.strip()
 
@@ -105,6 +124,10 @@ def detect_ioc_type(ioc: str) -> Optional[str]:
     if is_valid_hash(ioc):
         return 'hash'
 
+    # CVE (antes que el dominio: ningún CVE es un dominio válido, pero así no depende de eso)
+    if is_valid_cve(ioc):
+        return 'cve'
+
     # Domain
     if is_valid_domain(ioc):
         return 'domain'
@@ -118,7 +141,7 @@ def validate_ioc(ioc: str, ioc_type: str) -> tuple:
 
     Args:
         ioc: Valor del IOC
-        ioc_type: Tipo esperado ('ip', 'hash', 'domain', 'url')
+        ioc_type: Tipo esperado ('ip', 'hash', 'domain', 'url', 'cve')
 
     Returns:
         Tuple (is_valid, error_message)
@@ -128,7 +151,7 @@ def validate_ioc(ioc: str, ioc_type: str) -> tuple:
 
     ioc = ioc.strip()
 
-    if ioc_type not in ('ip', 'hash', 'domain', 'url'):
+    if ioc_type not in IOC_TYPES:
         return False, f"Invalid IOC type: {ioc_type}"
 
     validators = {
@@ -136,6 +159,7 @@ def validate_ioc(ioc: str, ioc_type: str) -> tuple:
         'hash': (is_valid_hash, "Invalid hash format (expected MD5/SHA1/SHA256)"),
         'domain': (is_valid_domain, "Invalid domain format"),
         'url': (is_valid_url, "Invalid URL format"),
+        'cve': (is_valid_cve, "Invalid CVE format (expected CVE-YYYY-NNNN)"),
     }
 
     validator_fn, error_msg = validators[ioc_type]
@@ -190,6 +214,7 @@ def extract_iocs_from_text(text: str) -> list:
     patterns = {
         'url': r'https?://[^\s<>"{}|\\^`\[\]]+',
         'ip': r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b',
+        'cve': r'(?i)\bCVE-\d{4}-\d{4,}\b',
         'hash': r'\b[a-fA-F0-9]{32,64}\b',
         # Grupos no-capturantes (?:...): con capturantes, re.findall devuelve
         # tuplas de sub-grupos en vez del match completo (bug real, ver
@@ -221,6 +246,9 @@ def extract_iocs_from_text(text: str) -> list:
             elif ioc_type == 'domain':
                 if is_valid_domain(match):
                     iocs.append((match, 'domain'))
+
+            elif ioc_type == 'cve':
+                iocs.append((match.upper(), 'cve'))
 
             elif ioc_type == 'url':
                 iocs.append((match, 'url'))

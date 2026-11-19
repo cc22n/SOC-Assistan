@@ -215,6 +215,12 @@ class IOCAnalysis(db.Model):
     # APIs v3.3
     crtsh_data = db.Column(JSONB)  # NUEVO v3.3 (crt.sh, Certificate Transparency, sin key)
 
+    # CVEs (WP3): solo se rellenan para IOCs de tipo 'cve'
+    nvd_data = db.Column(JSONB)         # NVD (NIST): CVSS, CWE, referencias
+    cisa_kev_data = db.Column(JSONB)    # CISA KEV: explotada en la naturaleza
+    epss_data = db.Column(JSONB)        # EPSS (FIRST): probabilidad de explotación
+    exploitdb_data = db.Column(JSONB)   # Exploit-DB: exploits públicos
+
     # =========================================================================
     # Análisis LLM y MITRE
     # =========================================================================
@@ -258,6 +264,16 @@ class IOCAnalysis(db.Model):
         """
         return [c.name[:-5] for c in cls.__table__.columns if c.name.endswith('_data')]
 
+    @classmethod
+    def api_data_kwargs(cls, api_results):
+        """
+        {'<api>_data': resultado} para construir un IOCAnalysis desde el dict de resultados de las APIs.
+        Derivado de las columnas *_data: antes cada constructor repetía la lista a mano y añadir una API exigía
+        tocar varios sitios (y olvidarse de uno guardaba el análisis sin ese dato, en silencio).
+        """
+        api_results = api_results or {}
+        return {f'{n}_data': api_results.get(n) for n in cls.api_source_names()}
+
     def to_dict(self, include_details=True):
         data = {
             'id': self.id,
@@ -276,36 +292,8 @@ class IOCAnalysis(db.Model):
 
         if include_details:
             data.update({
-                # APIs Principales
-                'virustotal': self.virustotal_data,
-                'abuseipdb': self.abuseipdb_data,
-                'shodan': self.shodan_data,
-                'otx': self.otx_data,
-                'greynoise': self.greynoise_data,
-
-                # APIs abuse.ch
-                'urlhaus': self.urlhaus_data,
-                'threatfox': self.threatfox_data,
-                'malwarebazaar': self.malwarebazaar_data,
-
-                # Otras APIs
-                'google_safebrowsing': self.google_safebrowsing_data,
-                'securitytrails': self.securitytrails_data,
-                'hybrid_analysis': self.hybrid_analysis_data,
-
-                # Nuevas APIs v3
-                'criminal_ip': self.criminal_ip_data,
-                'pulsedive': self.pulsedive_data,
-                'urlscan': self.urlscan_data,
-                'shodan_internetdb': self.shodan_internetdb_data,
-                'ip_api': self.ip_api_data,
-
-                # APIs v3.1
-                'censys': self.censys_data,
-                'ipinfo': self.ipinfo_data,
-                'ipgeolocation': self.ipgeolocation_data,
-                'web_search': self.web_search_data,
-                'crtsh': self.crtsh_data,
+                # todas las APIs, derivadas de las columnas *_data
+                **{n: getattr(self, f'{n}_data') for n in self.api_source_names()},
 
                 # LLM y MITRE
                 'llm_analysis': self.llm_analysis,

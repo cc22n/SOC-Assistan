@@ -12,7 +12,7 @@ from app import db
 from app.models.ioc import IOCAnalysis
 from app.models.profile import InvestigationProfile
 
-IOC_TYPES = ('ip', 'domain', 'url', 'hash')
+IOC_TYPES = ('ip', 'domain', 'url', 'hash', 'cve')
 MAX_NAME = 120
 MAX_DESCRIPTION = 1000
 MAX_PROFILES_PER_USER = 50
@@ -35,6 +35,10 @@ SYSTEM_PROFILES: List[Dict[str, Any]] = [
     {'name': 'Dominio: investigación', 'ioc_type': 'domain',
      'apis': ['virustotal', 'securitytrails', 'otx', 'urlscan', 'google_safebrowsing', 'crtsh', 'threatfox'],
      'description': 'Dominio: reputación, DNS/WHOIS histórico, certificados, escaneos y listas de bloqueo.'},
+    {'name': 'CVE: explotación rápida', 'ioc_type': 'cve', 'apis': ['cisa_kev', 'epss'],
+     'description': '¿Se está explotando? Catálogo KEV de CISA y probabilidad de explotación (EPSS). Sin LLM-planificador y barata.'},
+    {'name': 'CVE: investigación completa', 'ioc_type': 'cve', 'apis': ['cisa_kev', 'nvd', 'epss', 'exploitdb'],
+     'description': 'CVE: explotación (KEV, EPSS), gravedad (NVD/CVSS) y exploits públicos (Exploit-DB).'},
     {'name': 'URL: phishing', 'ioc_type': 'url',
      'apis': ['virustotal', 'urlscan', 'google_safebrowsing', 'pulsedive'],
      'description': 'URL sospechosa de phishing o ingeniería social.'},

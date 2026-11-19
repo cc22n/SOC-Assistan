@@ -39,6 +39,7 @@ CACHE_TTL_BY_TYPE = {
     'url':    1,    # URLs maliciosas se dan de baja rápido
     'domain': 6,    # Dominios cambian más lentamente
     'hash':   24,   # Hashes son inmutables
+    'cve':    6,    # KEV/EPSS cambian a diario; un CVE puede entrar en KEV en cualquier momento
 }
 
 # Alias legacy para backwards compatibility

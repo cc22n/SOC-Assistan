@@ -29,6 +29,7 @@ class IOCType(str, Enum):
     DOMAIN = 'domain'
     HASH = 'hash'
     URL = 'url'
+    CVE = 'cve'
 
 
 class RiskLevel(str, Enum):
@@ -88,6 +89,7 @@ MD5_PATTERN = re.compile(r'^[a-fA-F0-9]{32}$')
 SHA1_PATTERN = re.compile(r'^[a-fA-F0-9]{40}$')
 SHA256_PATTERN = re.compile(r'^[a-fA-F0-9]{64}$')
 URL_PATTERN = re.compile(r'^https?://.+')
+CVE_PATTERN = re.compile(r'^CVE-\d{4}-\d{4,}$', re.IGNORECASE)
 
 
 def validate_ioc_value(value: str, ioc_type: Optional[str] = None) -> str:
@@ -116,6 +118,9 @@ def validate_ioc_value(value: str, ioc_type: Optional[str] = None) -> str:
     elif ioc_type == 'url':
         if not URL_PATTERN.match(value):
             raise ValueError(f'Invalid URL (must start with http:// or https://): {value}')
+    elif ioc_type == 'cve':
+        if not CVE_PATTERN.match(value):
+            raise ValueError(f'Invalid CVE (expected CVE-YYYY-NNNN): {value}')
 
     return value
 
@@ -137,7 +142,9 @@ class AnalyzeRequest(BaseModel):
     @field_validator('ioc')
     @classmethod
     def clean_ioc(cls, v):
-        return v.strip()
+        v = v.strip()
+        # un CVE se guarda en mayúsculas (si no, 'cve-2021-44228' y 'CVE-2021-44228' serían dos IOCs)
+        return v.upper() if CVE_PATTERN.match(v) else v
 
     @model_validator(mode='after')
     def validate_ioc_by_type(self):

@@ -525,6 +525,7 @@ class DeepAnalysisService:
             'domain': f'"{ioc}" phishing campaign',
             'url': f'"{ioc}" phishing malware',
             'hash': f'"{ioc}" malware sample analysis',
+            'cve': f'"{ioc}" exploit in the wild PoC',
         }.get(ioc_type, f'"{ioc}" indicator compromise')]
 
         # Extraer señales útiles de los resultados de APIs (compacto, no el JSON entero)
@@ -675,6 +676,15 @@ Responde SOLO con un array JSON de strings: ["query 1", "query 2", "query 3"]"""
                     'url': f'https://transparencyreport.google.com/safe-browsing/search?url={ioc}',
                     'type': 'safe_browsing'
                 },
+            ]
+        elif ioc_type == 'cve':
+            sources = [
+                {'name': 'NVD', 'url': f'https://nvd.nist.gov/vuln/detail/{ioc}', 'type': 'vulnerability_database'},
+                {'name': 'CISA KEV', 'url': f'https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve={ioc}',
+                 'type': 'known_exploited'},
+                {'name': 'Exploit-DB', 'url': f'https://www.exploit-db.com/search?cve={ioc.replace("CVE-", "")}',
+                 'type': 'public_exploits'},
+                {'name': 'EPSS', 'url': f'https://api.first.org/data/v1/epss?cve={ioc}', 'type': 'exploit_probability'},
             ]
         
         return sources

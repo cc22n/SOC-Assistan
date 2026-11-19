@@ -91,6 +91,7 @@ class Config:
         'censys': os.environ.get('CENSYS_API_KEY'),
         'ipinfo': os.environ.get('IPINFO_TOKEN'),
         'ipgeolocation': os.environ.get('IPGEOLOCATION_API_KEY'),
+        'nvd': os.environ.get('NVD_API_KEY'),   # OPCIONAL: sin clave 5 peticiones/30 s, con clave 50/30 s
 
         # === Búsqueda web (Deep Analysis) ===
         # Grafía canónica: TAVILY_API_KEY. Se acepta la grafía legacy
@@ -132,6 +133,10 @@ class Config:
         'ipgeolocation': 1000,      # 1K/día forever free (1 crédito/lookup)
         'tavily': 33,               # 1K créditos/mes ≈ 33/día (búsqueda web)
         'crtsh': 1000,              # sin key, sin límite oficial — tope conservador propio
+        'nvd': 1000,                # sin key 5/30 s; con NVD_API_KEY 50/30 s — tope diario propio
+        'cisa_kev': 1000,           # catálogo descargado y cacheado; sin límite oficial
+        'epss': 1000,               # sin key, sin límite oficial documentado
+        'exploitdb': 1000,          # dataset oficial cacheado; sin límite
     }
 
     # ==========================================================================

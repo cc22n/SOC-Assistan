@@ -27,6 +27,7 @@
                     <option value="domain">Dominio</option>
                     <option value="url">URL</option>
                     <option value="hash">Hash</option>
+                    <option value="cve">CVE</option>
                 </select>
             </div>
             <div id="profilesList" class="divide-y divide-gray-100 text-sm">
@@ -53,6 +54,7 @@
                         <option value="domain">Dominio</option>
                         <option value="url">URL</option>
                         <option value="hash">Hash</option>
+                    <option value="cve">CVE</option>
                     </select>
                 </div>
                 <div>
@@ -78,7 +80,7 @@
 
 {% block extra_js %}
 <script nonce="{{ csp_nonce() }}">
-const TYPE_LABEL = { ip: 'IP', domain: 'Dominio', url: 'URL', hash: 'Hash' };
+const TYPE_LABEL = { ip: 'IP', domain: 'Dominio', url: 'URL', hash: 'Hash', cve: 'CVE' };
 let profiles = [];
 let catalog = {};
 let maxApis = 10;

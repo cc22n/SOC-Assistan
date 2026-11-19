@@ -194,6 +194,12 @@ def _resolve_method(api_name: str, client: Any, ioc: str, ioc_type: str) -> Opti
         ('ipgeolocation', 'ip'):    lambda: client.check_ip(ioc),
 
         ('crtsh', 'domain'):        lambda: client.check_domain(ioc),
+
+        # CVEs (WP3)
+        ('nvd', 'cve'):             lambda: client.check_cve(ioc),
+        ('cisa_kev', 'cve'):        lambda: client.check_cve(ioc),
+        ('epss', 'cve'):            lambda: client.check_cve(ioc),
+        ('exploitdb', 'cve'):       lambda: client.check_cve(ioc),
     }
 
     return method_map.get((api_name, ioc_type))

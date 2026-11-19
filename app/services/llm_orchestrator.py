@@ -57,7 +57,9 @@ class LLMOrchestrator:
             'ip': ['greynoise', 'abuseipdb', 'shodan', 'criminal_ip', 'pulsedive', 'otx', 'threatfox'],
             'domain': ['urlhaus', 'otx', 'securitytrails', 'virustotal', 'google_safebrowsing', 'urlscan', 'crtsh', 'threatfox'],
             'url': ['urlhaus', 'google_safebrowsing', 'virustotal', 'urlscan', 'pulsedive'],
-            'hash': ['virustotal', 'threatfox', 'hybrid_analysis', 'malwarebazaar', 'otx', 'pulsedive']
+            'hash': ['virustotal', 'threatfox', 'hybrid_analysis', 'malwarebazaar', 'otx', 'pulsedive'],
+            # CVE: KEV primero (la señal más fuerte: explotada de verdad), luego gravedad, probabilidad y exploits
+            'cve': ['cisa_kev', 'nvd', 'epss', 'exploitdb'],
         }
 
         # Mapeo de qué pregunta necesita qué API (ACTUALIZADO)
@@ -157,6 +159,8 @@ class LLMOrchestrator:
             if not has_app_context():
                 return
 
+            from app.services.cve_clients import NVDClient, CISAKEVClient, EPSSClient, ExploitDBClient
+
             # Importar TODOS los clientes de new_api_clients (unificado v3)
             from app.services.new_api_clients import (
                 VirusTotalClient, AbuseIPDBClient, ShodanClient, OTXClient,
@@ -199,6 +203,12 @@ class LLMOrchestrator:
 
                 # APIs v3.3
                 'crtsh': CrtShClient(),
+
+                # CVEs (WP3)
+                'nvd': NVDClient(),
+                'cisa_kev': CISAKEVClient(),
+                'epss': EPSSClient(),
+                'exploitdb': ExploitDBClient(),
             }
 
             self._clients_initialized = True
@@ -255,6 +265,10 @@ class LLMOrchestrator:
         # Hashes/malware: OpenAI GPT-4 (mayor ventana de contexto, mejor para análisis binario)
         ('hash',   'basic'): ('openai', 'xai'),
         ('hash',   'deep'):  ('openai', 'deepseek'),
+
+        # CVEs: el análisis es de conocimiento (qué es la vuln, cómo se explota); lo calculado ya viene de las APIs
+        ('cve',    'basic'): ('deepseek', 'xai'),
+        ('cve',    'deep'):  ('openai', 'deepseek'),
     }
 
     _DEFAULT_ROUTING = ('xai', 'deepseek')  # Grok como default, DeepSeek como fallback
@@ -389,6 +403,12 @@ class LLMOrchestrator:
             'ipinfo': ['ip'],
             'ipgeolocation': ['ip'],
             'crtsh': ['domain'],
+
+            # CVEs (WP3)
+            'nvd': ['cve'],
+            'cisa_kev': ['cve'],
+            'epss': ['cve'],
+            'exploitdb': ['cve'],
         }
 
         return ioc_type in compatibility.get(api_name, [])
@@ -489,6 +509,11 @@ class LLMOrchestrator:
             risk_level = self._determine_risk_level(confidence_score)
             llm_analysis = self._deterministic_synthesis(api_results, confidence_score, risk_level)
         mitre_techniques = self._correlate_mitre(api_results, llm_analysis)
+        mitre_provenance: Dict[str, str] = {}
+        if ioc_type == 'cve':
+            from app.services.cve_attack_mapper import cve_attack_techniques
+            mitre_provenance = cve_attack_techniques(ioc, api_results)
+            mitre_techniques = list(dict.fromkeys(list(mitre_provenance) + list(mitre_techniques)))
 
         processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
@@ -500,6 +525,7 @@ class LLMOrchestrator:
             'api_results': api_results,
             'llm_analysis': llm_analysis,
             'mitre_techniques': mitre_techniques,
+            'mitre_provenance': mitre_provenance,
             'sources_used': list(api_results.keys()),
             'api_coverage': self._api_coverage(api_results),
             'selected_apis': selected_apis,
@@ -513,7 +539,11 @@ class LLMOrchestrator:
         if not llm:
             return self.strategies.get(ioc_type, [])
 
-        available_apis = list(self.api_clients.keys())
+        # Solo las APIs que SOPORTAN este tipo de IOC: una incompatible se descarta en silencio al ejecutar y, si el
+        # LLM elige seis así (p. ej. VirusTotal para un CVE), el análisis se quedaría sin ningún resultado.
+        available_apis = [a for a in self.api_clients if self._is_api_compatible(a, ioc_type)]
+        if not available_apis:
+            return self.strategies.get(ioc_type, [])
         prompt = f"""Eres un experto analista SOC. Decide qué APIs usar para analizar este IOC.
 
 IOC: {ioc} ({ioc_type})
@@ -729,6 +759,8 @@ Responde SOLO con el JSON."""
                     verdicts = result.get('verdicts', {})
                     if verdicts.get('malicious'):
                         score += 20
+                elif api_name in ('cisa_kev', 'nvd', 'epss', 'exploitdb'):
+                    score += self._cve_points(api_name, result)
 
         return min(100, score)
 
@@ -756,6 +788,32 @@ Responde SOLO con el JSON."""
         if isinstance(reputation, (int, float)) and reputation < 0:
             pts += self.VT_NEGATIVE_REPUTATION_POINTS
         return pts
+
+    @staticmethod
+    def _cve_points(api_name: str, result: Dict) -> int:
+        """
+        Puntos de un CVE. Criterio: lo que importa es si se EXPLOTA, no solo si es grave en el papel.
+          KEV (explotada en la naturaleza)  40   (+10 si se usa en campañas de ransomware)
+          NVD   CVSS >=9 30 | >=7 20 | >=4 10   (un 9.8 sin más señales queda en MEDIO, no en CRÍTICO)
+                referencia con exploit  +5      (un CVE rechazado no puntúa)
+          EPSS  >=0.5 30 | >=0.1 20 | >=0.01 8   (la señal que mejor separa: en la línea base, mediana 0.35 en KEV
+                                                  frente a 0.009 fuera; ver scripts/baseline/CVE_REPORT.md)
+          Exploit-DB  hay exploit público 10
+        """
+        if api_name == 'cisa_kev':
+            if result.get('in_kev'):
+                return 40 + (10 if result.get('known_ransomware') else 0)
+        elif api_name == 'nvd':
+            if result.get('found') and not result.get('rejected'):
+                cvss = result.get('cvss_score') or 0
+                pts = 30 if cvss >= 9 else 20 if cvss >= 7 else 10 if cvss >= 4 else 0
+                return pts + (5 if result.get('exploit_reference_count') else 0)
+        elif api_name == 'epss':
+            e = result.get('epss') or 0
+            return 30 if e >= 0.5 else 20 if e >= 0.1 else 8 if e >= 0.01 else 0
+        elif api_name == 'exploitdb':
+            return 10 if (result.get('exploit_count') or 0) > 0 else 0
+        return 0
 
     @staticmethod
     def _api_coverage(api_results: Dict) -> Dict[str, Any]:
@@ -1321,6 +1379,10 @@ Responde de forma clara, profesional y útil."""
         """Detecta el tipo de IOC"""
         import re
 
+        # CVE
+        if re.match(r'(?i)^CVE-\d{4}-\d{4,}$', ioc.strip()):
+            return 'cve'
+
         # Hash patterns
         if re.match(r'^[a-fA-F0-9]{64}$', ioc):
             return 'hash'  # SHA256
@@ -1365,36 +1427,7 @@ Responde de forma clara, profesional y útil."""
                 risk_level=analysis['risk_level'],
 
                 # APIs Principales
-                virustotal_data=analysis['api_results'].get('virustotal'),
-                abuseipdb_data=analysis['api_results'].get('abuseipdb'),
-                shodan_data=analysis['api_results'].get('shodan'),
-                otx_data=analysis['api_results'].get('otx'),
-                greynoise_data=analysis['api_results'].get('greynoise'),
-
-                # APIs abuse.ch
-                threatfox_data=analysis['api_results'].get('threatfox'),
-                urlhaus_data=analysis['api_results'].get('urlhaus'),
-                malwarebazaar_data=analysis['api_results'].get('malwarebazaar'),
-
-                # Otras APIs
-                google_safebrowsing_data=analysis['api_results'].get('google_safebrowsing'),
-                securitytrails_data=analysis['api_results'].get('securitytrails'),
-                hybrid_analysis_data=analysis['api_results'].get('hybrid_analysis'),
-
-                # Nuevas APIs v3
-                criminal_ip_data=analysis['api_results'].get('criminal_ip'),
-                pulsedive_data=analysis['api_results'].get('pulsedive'),
-                urlscan_data=analysis['api_results'].get('urlscan'),
-                shodan_internetdb_data=analysis['api_results'].get('shodan_internetdb'),
-                ip_api_data=analysis['api_results'].get('ip_api'),
-
-                # APIs v3.1+
-                censys_data=analysis['api_results'].get('censys'),
-                ipinfo_data=analysis['api_results'].get('ipinfo'),
-                ipgeolocation_data=analysis['api_results'].get('ipgeolocation'),
-
-                # APIs v3.3
-                crtsh_data=analysis['api_results'].get('crtsh'),
+                **IOCAnalysis.api_data_kwargs(analysis['api_results']),
 
                 # LLM y metadata
                 llm_analysis=analysis.get('llm_analysis'),
@@ -1548,6 +1581,11 @@ Usa emojis para severidad (🔴🟠🟡🟢)."""
 
     def _extract_ioc_from_message(self, message: str) -> Optional[Tuple[str, str]]:
         """Extrae IOC del mensaje"""
+        # CVE (antes que la IP: no tiene nada que ver, pero es el patrón más específico)
+        cve_match = re.search(r'(?i)\b(CVE-\d{4}-\d{4,})\b', message)
+        if cve_match:
+            return cve_match.group(1).upper(), 'cve'
+
         # IP
         ip_match = re.search(r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b', message)
         if ip_match:

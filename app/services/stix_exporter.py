@@ -79,9 +79,11 @@ class STIXExporter:
             if tid:
                 ap = self._create_attack_pattern(tid, tname)
                 objects.append(ap)
-                rel = self._create_relationship(
-                    indicator['id'], ap['id'], 'indicates'
-                )
+                if indicator['type'] == 'vulnerability':
+                    # un attack-pattern 'targets' una vulnerabilidad
+                    rel = self._create_relationship(ap['id'], indicator['id'], 'targets')
+                else:
+                    rel = self._create_relationship(indicator['id'], ap['id'], 'indicates')
                 objects.append(rel)
 
         # 3. Report (resumen del análisis)
@@ -179,8 +181,35 @@ class STIXExporter:
             'description': 'Automated threat intelligence analysis platform',
         }
 
+    def _cve_to_vulnerability(self, ioc, analysis=None) -> Dict:
+        """
+        Un CVE NO es un indicador de compromiso: en STIX es un objeto `vulnerability` identificado por su referencia
+        externa 'cve'. (Un Indicator con patrón [artifact:payload_bin = 'CVE-...'] sería inválido y sin sentido.)
+        """
+        ts = (ioc.first_seen or utcnow()).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        vuln = {
+            'type': 'vulnerability',
+            'spec_version': STIX_SPEC_VERSION,
+            'id': f'vulnerability--{uuid.uuid5(uuid.NAMESPACE_URL, ioc.value)}',
+            'created': ts,
+            'modified': utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+            'name': ioc.value,
+            'external_references': [{'source_name': 'cve', 'external_id': ioc.value}],
+            'created_by_ref': SOC_AGENT_IDENTITY_ID,
+        }
+        if analysis:
+            nvd = analysis.nvd_data or {}
+            if nvd.get('description'):
+                vuln['description'] = nvd['description']
+            vuln['x_soc_agent_risk'] = {'risk_level': analysis.risk_level, 'score': analysis.confidence_score,
+                                        'in_cisa_kev': bool((analysis.cisa_kev_data or {}).get('in_kev')),
+                                        'epss': (analysis.epss_data or {}).get('epss')}
+        return vuln
+
     def _ioc_to_indicator(self, ioc, analysis=None) -> Dict:
-        """Convierte un IOC a STIX Indicator"""
+        """Convierte un IOC a STIX Indicator (un CVE, a una Vulnerability)"""
+        if ioc.ioc_type == 'cve':
+            return self._cve_to_vulnerability(ioc, analysis)
         pattern = self._build_stix_pattern(ioc.value, ioc.ioc_type)
 
         # Determinar TLP y confianza

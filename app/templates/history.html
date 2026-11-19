@@ -34,6 +34,7 @@
                     <option value="ip" {% if request.args.get('ioc_type') == 'ip' %}selected{% endif %}>IP</option>
                     <option value="domain" {% if request.args.get('ioc_type') == 'domain' %}selected{% endif %}>Dominio</option>
                     <option value="hash" {% if request.args.get('ioc_type') == 'hash' %}selected{% endif %}>Hash</option>
+                    <option value="cve" {% if request.args.get('ioc_type') == 'cve' %}selected{% endif %}>CVE</option>
                     <option value="url" {% if request.args.get('ioc_type') == 'url' %}selected{% endif %}>URL</option>
                 </select>
             </div>
@@ -143,7 +144,7 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-indigo-100">
-                                        <i class="fas fa-{{ 'globe' if analysis.ioc.ioc_type == 'domain' else 'network-wired' if analysis.ioc.ioc_type == 'ip' else 'hashtag' if analysis.ioc.ioc_type == 'hash' else 'link' }} text-indigo-600"></i>
+                                        <i class="fas fa-{{ 'globe' if analysis.ioc.ioc_type == 'domain' else 'network-wired' if analysis.ioc.ioc_type == 'ip' else 'hashtag' if analysis.ioc.ioc_type == 'hash' else 'bug' if analysis.ioc.ioc_type == 'cve' else 'link' }} text-indigo-600"></i>
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900 font-mono">

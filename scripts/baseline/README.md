@@ -74,3 +74,22 @@ Lectura honesta:
   (leave-source-out) el AUC de IPs sigue en 0.70. Este dataset NO demuestra mejora de detección independiente; demuestra
   que no añade falsos positivos y que el cliente funciona. Para medir la mejora real hace falta una etiqueta de otra fuente.
 - `collect.py --add-api <api> --types ip,domain` añade una API a los snapshots sin repetir las demás.
+
+## CVE (WP3, 2026-11-19) — `cve_baseline.py build|collect|evaluate`, informe en `CVE_REPORT.md`
+92 CVEs reales (25 KEV, 27 sin KEV, 40 con mapeo CTID); respuestas en `tests/fixtures/baseline/cve_snapshots.json`.
+Las 4 APIs respondieron 92/92. La etiqueta es la pertenencia a CISA KEV (**sin KEV no es 'no explotado'**: KEV es incompleto).
+
+| qué predice KEV (AUC) | valor |
+|---|---|
+| solo EPSS | 0.93 |
+| solo CVSS (NVD) | 0.70 |
+| solo Exploit-DB | 0.65 |
+| score SIN el cliente KEV (antes de recalibrar EPSS 20/10) | 0.82 |
+| score SIN el cliente KEV (EPSS 30/20/8, vigente) | **0.87** |
+
+- **EPSS es la señal que mejor separa** (mediana 0.35 en KEV vs 0.009 fuera); CVSS y Exploit-DB diluían la mezcla.
+  Se subieron sus puntos y se añadió un escalón bajo. Riesgo de sobreajuste (n=52): repetir con otra muestra.
+- **Heurística MITRE** frente a CTID (40 CVEs): T1190 recall 92 % / precisión 46 % (cota inferior, CTID lista pocas
+  técnicas); **T1203 (0/3 aciertos) y T1068 (25 %/17 %) se eliminaron** por no tener respaldo.
+- CTID cubre solo el 11 % de KEV y 0 % de 2023+: para CVEs modernos las técnicas casi siempre son heurísticas.
+- Limitación general: KEV y EPSS no son independientes (EPSS se entrena con observaciones de explotación).

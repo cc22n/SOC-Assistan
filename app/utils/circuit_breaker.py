@@ -201,6 +201,10 @@ _API_CONFIG: Dict[str, Dict] = {
     'ipinfo':            {'fail_threshold': 5, 'timeout': 60},
     'censys':            {'fail_threshold': 3, 'timeout': 180},
     'crtsh':             {'fail_threshold': 5, 'timeout': 60},
+    'nvd':               {'fail_threshold': 3, 'timeout': 120},   # sin clave: 429 frecuente
+    'cisa_kev':          {'fail_threshold': 5, 'timeout': 60},
+    'epss':              {'fail_threshold': 5, 'timeout': 60},
+    'exploitdb':         {'fail_threshold': 5, 'timeout': 60},
 }
 
 

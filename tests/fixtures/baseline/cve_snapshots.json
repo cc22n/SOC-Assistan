@@ -1,0 +1,5172 @@
+{
+ "CVE-2012-1856": {
+  "cve": "CVE-2012-1856",
+  "collected_at": "2026-11-19T06:26:51Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2012-1856",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "The TabStrip ActiveX control in the Common Controls in MSCOMCTL.OCX in Microsoft Office 2003 SP3, Office 2003 Web Components SP3, Office 2007 SP2 and SP3, Office 2010 SP1, SQL Server 2000 SP4, SQL Server 2005 SP4, SQL Server 2008 SP2, SP3, R2, R2 SP1, and R2 SP2, Commerce Server 2002 SP4, Commerce Server 2007 SP2, Commerce Server 2009 Gold and R2, Host Integration Server 2004 SP1, Visual FoxPro 8.0 SP1, Visual FoxPro 9.0 SP2, and Visual Basic 6.0 Runtime allows remote attackers to execute arbitrary code via a crafted (1) document or (2) web page that triggers system-state corruption, aka \"MSCOMCTL.OCX RCE Vulnerability.\"",
+    "published": "2012-08-15T01:55:01.490",
+    "last_modified": "2026-06-16T23:40:26.290",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 9,
+    "cisa_exploit_add": "2022-03-03",
+    "cvss_version": "3.1",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Office",
+    "vulnerability_name": "Microsoft Office MSCOMCTL.OCX Remote Code Execution Vulnerability",
+    "short_description": "The TabStrip ActiveX control in the Common Controls in MSCOMCTL.OCX in Microsoft Office allows remote attackers to execute arbitrary code via a crafted (1) document or (2) web page that triggers system-state corruption.",
+    "date_added": "2022-03-03",
+    "due_date": "2022-03-24",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-94"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.72032,
+    "percentile": 0.99441,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-0641": {
+  "cve": "CVE-2013-0641",
+  "collected_at": "2026-11-19T06:26:58Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-0641",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Buffer overflow in Adobe Reader and Acrobat 9.x before 9.5.4, 10.x before 10.1.6, and 11.x before 11.0.02 allows remote attackers to execute arbitrary code via a crafted PDF document, as exploited in the wild in February 2013.",
+    "published": "2013-02-14T01:55:02.070",
+    "last_modified": "2026-06-16T23:49:49.270",
+    "cwes": [
+     "CWE-120"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 25,
+    "cisa_exploit_add": "2022-03-03",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Adobe",
+    "product": "Reader",
+    "vulnerability_name": "Adobe Reader Buffer Overflow Vulnerability",
+    "short_description": "A buffer overflow vulnerability exists in Adobe Reader which allows an attacker to perform remote code execution.",
+    "date_added": "2022-03-03",
+    "due_date": "2022-03-24",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-120"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.32346,
+    "percentile": 0.98358,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-4077": {
+  "cve": "CVE-2014-4077",
+  "collected_at": "2026-11-19T06:27:06Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-4077",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Microsoft Windows Server 2003 SP2, Windows Vista SP2, Windows Server 2008 SP2 and R2 SP1, Windows 7 SP1, and Office 2007 SP3, when IMJPDCT.EXE (aka IME for Japanese) is installed, allow remote attackers to bypass a sandbox protection mechanism via a crafted PDF document, aka \"Microsoft IME (Japanese) Elevation of Privilege Vulnerability,\" as exploited in the wild in 2014.",
+    "published": "2014-11-11T22:55:04.637",
+    "last_modified": "2026-06-17T00:09:23.740",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 9,
+    "cisa_exploit_add": "2022-05-25",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Input Method Editor (IME) Japanese",
+    "vulnerability_name": "Microsoft IME Japanese Privilege Escalation Vulnerability",
+    "short_description": "Microsoft Input Method Editor (IME) Japanese is a keyboard with Japanese characters that can be enabled on Windows systems as it is included by default (with the default set as disabled). IME Japanese contains an unspecified vulnerability when IMJPDCT.EXE (IME for Japanese) is installed which allows attackers to bypass a sandbox and perform privilege escalation.",
+    "date_added": "2022-05-25",
+    "due_date": "2022-06-15",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-264"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.54577,
+    "percentile": 0.99038,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2015-3306": {
+  "cve": "CVE-2015-3306",
+  "collected_at": "2026-11-19T06:27:13Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2015-3306",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "The mod_copy module in ProFTPD 1.3.5 allows remote attackers to read and write to arbitrary files via the site cpfr and site cpto commands.",
+    "published": "2015-05-18T15:59:10.743",
+    "last_modified": "2026-10-09T16:17:18.210",
+    "cwes": [
+     "CWE-284"
+    ],
+    "exploit_reference_count": 10,
+    "exploit_references": [
+     "http://packetstormsecurity.com/files/131567/ProFTPd-CPFR-CPTO-Proof-Of-Concept.html",
+     "http://packetstormsecurity.com/files/132218/ProFTPD-1.3.5-Mod_Copy-Command-Execution.html",
+     "http://packetstormsecurity.com/files/162777/ProFTPd-1.3.5-Remote-Command-Execution.html",
+     "https://www.exploit-db.com/exploits/36742/",
+     "https://www.exploit-db.com/exploits/36803/"
+    ],
+    "references_total": 29,
+    "cisa_exploit_add": "2026-10-08",
+    "cvss_version": "3.1",
+    "cvss_score": 10.0,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "ProFTPD",
+    "product": "ProFTPD",
+    "vulnerability_name": "ProFTPD Improper Access Control Vulnerability",
+    "short_description": "ProFTPD contains an improper access control vulnerability that could allow remote attackers to read and write to arbitrary files via the site cpfr and site cpto commands.",
+    "date_added": "2026-10-08",
+    "due_date": "2026-10-11",
+    "required_action": "Apply mitigations in accordance with vendor instructions, ensuring compliance with CISA’s BOD 26-04 Prioritizing Security Updates Based on Risk (see URL in Notes) guidance and CISA’s “Forensics Triage Requirements” (see URL in Notes). Follow applicable BOD 26-04 guidance for cloud services or discontinue use of the product if mitigations are unavailable. Stakeholders are responsible for evaluating each asset's internet exposure and ensuring adherence to BOD 26-04 patching guidelines.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-284"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99497,
+    "percentile": 0.99945,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 4,
+    "verified_count": 3,
+    "exploits": [
+     {
+      "id": "49908",
+      "title": "ProFTPd 1.3.5 - 'mod_copy' Remote Command Execution (2)",
+      "date_published": "2021-05-26",
+      "type": "remote",
+      "platform": "linux",
+      "verified": true
+     },
+     {
+      "id": "37262",
+      "title": "ProFTPd 1.3.5 - 'mod_copy' Command Execution (Metasploit)",
+      "date_published": "2015-06-10",
+      "type": "remote",
+      "platform": "linux",
+      "verified": true
+     },
+     {
+      "id": "36803",
+      "title": "ProFTPd 1.3.5 - 'mod_copy' Remote Command Execution",
+      "date_published": "2015-04-21",
+      "type": "remote",
+      "platform": "linux",
+      "verified": false
+     },
+     {
+      "id": "36742",
+      "title": "ProFTPd 1.3.5 - File Copy",
+      "date_published": "2015-04-13",
+      "type": "remote",
+      "platform": "linux",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2016-1010": {
+  "cve": "CVE-2016-1010",
+  "collected_at": "2026-11-19T06:27:20Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2016-1010",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Integer overflow in Adobe Flash Player before 18.0.0.333 and 19.x through 21.x before 21.0.0.182 on Windows and OS X and before 11.2.202.577 on Linux, Adobe AIR before 21.0.0.176, Adobe AIR SDK before 21.0.0.176, and Adobe AIR SDK & Compiler before 21.0.0.176 allows attackers to execute arbitrary code via unspecified vectors, a different vulnerability than CVE-2016-0963 and CVE-2016-0993.",
+    "published": "2016-03-12T15:59:25.090",
+    "last_modified": "2026-06-17T00:41:06.880",
+    "cwes": [
+     "CWE-190"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 17,
+    "cisa_exploit_add": "2022-05-25",
+    "cvss_version": "3.1",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Adobe",
+    "product": "Flash Player and AIR",
+    "vulnerability_name": "Adobe Flash Player and AIR Integer Overflow Vulnerability",
+    "short_description": "Integer overflow vulnerability in Adobe Flash Player and AIR allows attackers to execute code.",
+    "date_added": "2022-05-25",
+    "due_date": "2022-06-15",
+    "required_action": "The impacted products are end-of-life and should be disconnected if still in use.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-190"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.19333,
+    "percentile": 0.97401,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-17562": {
+  "cve": "CVE-2017-17562",
+  "collected_at": "2026-11-19T06:27:28Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-17562",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Embedthis GoAhead before 3.6.5 allows remote code execution if CGI is enabled and a CGI program is dynamically linked. This is a result of initializing the environment of forked CGI scripts using untrusted HTTP request parameters in the cgiHandler function in cgi.c. When combined with the glibc dynamic linker, this behaviour can be abused for remote code execution using special parameter names such as LD_PRELOAD. An attacker can POST their shared object payload in the body of the request, and reference it using /proc/self/fd/0.",
+    "published": "2017-12-12T19:29:00.207",
+    "last_modified": "2026-06-17T01:11:15.933",
+    "cwes": [],
+    "exploit_reference_count": 6,
+    "exploit_references": [
+     "https://www.elttam.com.au/blog/goahead/",
+     "https://www.exploit-db.com/exploits/43360/",
+     "https://www.exploit-db.com/exploits/43877/",
+     "https://www.elttam.com.au/blog/goahead/",
+     "https://www.exploit-db.com/exploits/43360/"
+    ],
+    "references_total": 17,
+    "cisa_exploit_add": "2021-12-10",
+    "cvss_version": "3.1",
+    "cvss_score": 8.1,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Embedthis",
+    "product": "GoAhead",
+    "vulnerability_name": "Embedthis GoAhead Remote Code Execution Vulnerability",
+    "short_description": "Embedthis GoAhead before 3.6.5 allows remote code execution if CGI is enabled and a CGI program is dynamically linked.",
+    "date_added": "2021-12-10",
+    "due_date": "2022-06-10",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-20"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.97127,
+    "percentile": 0.99894,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 2,
+    "verified_count": 2,
+    "exploits": [
+     {
+      "id": "43877",
+      "title": "GoAhead Web Server 2.5 < 3.6.5 - HTTPd 'LD_PRELOAD' Arbitrary Module Load (Metasploit)",
+      "date_published": "2018-01-24",
+      "type": "remote",
+      "platform": "multiple",
+      "verified": true
+     },
+     {
+      "id": "43360",
+      "title": "GoAhead Web Server 2.5 < 3.6.5 - HTTPd 'LD_PRELOAD' Remote Code Execution",
+      "date_published": "2017-12-18",
+      "type": "remote",
+      "platform": "linux",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-20062": {
+  "cve": "CVE-2018-20062",
+  "collected_at": "2026-11-19T06:27:35Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-20062",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "An issue was discovered in NoneCms V1.3. thinkphp/library/think/App.php allows remote attackers to execute arbitrary PHP code via crafted use of the filter parameter, as demonstrated by the s=index/\\think\\Request/input&filter=phpinfo&data=1 query string.",
+    "published": "2018-12-11T18:29:00.197",
+    "last_modified": "2026-06-17T01:52:14.323",
+    "cwes": [],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://packetstormsecurity.com/files/157218/ThinkPHP-5.0.23-Remote-Code-Execution.html",
+     "https://github.com/nangge/noneCms/issues/21",
+     "http://packetstormsecurity.com/files/157218/ThinkPHP-5.0.23-Remote-Code-Execution.html",
+     "https://github.com/nangge/noneCms/issues/21"
+    ],
+    "references_total": 5,
+    "cisa_exploit_add": "2021-11-03",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "ThinkPHP",
+    "product": "noneCms",
+    "vulnerability_name": "ThinkPHP \"noneCms\" Remote Code Execution Vulnerability",
+    "short_description": "ThinkPHP \"noneCms\" contains an unspecified vulnerability that allows for remote code execution through crafted use of the filter parameter.",
+    "date_added": "2021-11-03",
+    "due_date": "2022-05-03",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-20"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.9953,
+    "percentile": 0.99946,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "48333",
+      "title": "ThinkPHP - Multiple PHP Injection RCEs (Metasploit)",
+      "date_published": "2020-04-16",
+      "type": "remote",
+      "platform": "linux",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-1132": {
+  "cve": "CVE-2019-1132",
+  "collected_at": "2026-11-19T06:27:43Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-1132",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "An elevation of privilege vulnerability exists in Windows when the Win32k component fails to properly handle objects in memory, aka 'Win32k Elevation of Privilege Vulnerability'.",
+    "published": "2019-07-15T19:15:21.107",
+    "last_modified": "2026-06-17T02:27:53.720",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 3,
+    "cisa_exploit_add": "2022-03-15",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Win32k",
+    "vulnerability_name": "Microsoft Win32k Privilege Escalation Vulnerability",
+    "short_description": "A privilege escalation vulnerability exists in Windows when the Win32k component fails to properly handle objects in memory.",
+    "date_added": "2022-03-15",
+    "due_date": "2022-04-05",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.09867,
+    "percentile": 0.95661,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "47176",
+      "title": "Microsoft Windows 7 build 7601 (x86) - Local Privilege Escalation",
+      "date_published": "2019-07-26",
+      "type": "local",
+      "platform": "windows_x86",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-17087": {
+  "cve": "CVE-2020-17087",
+  "collected_at": "2026-11-19T06:27:50Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-17087",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Windows Kernel Local Elevation of Privilege Vulnerability",
+    "published": "2020-11-11T07:15:18.997",
+    "last_modified": "2026-06-17T02:58:39.083",
+    "cwes": [
+     "CWE-131"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 3,
+    "cisa_exploit_add": "2021-11-03",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Windows",
+    "vulnerability_name": "Microsoft Windows Kernel Privilege Escalation Vulnerability",
+    "short_description": "Microsoft Windows kernel contains an unspecified vulnerability that allows for privilege escalation.",
+    "date_added": "2021-11-03",
+    "due_date": "2022-05-03",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-131"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.05431,
+    "percentile": 0.92869,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2021-32030": {
+  "cve": "CVE-2021-32030",
+  "collected_at": "2026-11-19T06:27:57Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2021-32030",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "The administrator application on ASUS GT-AC2900 devices before 3.0.0.4.386.42643 and Lyra Mini before 3.0.0.4_384_46630 allows authentication bypass when processing remote input from an unauthenticated user, leading to unauthorized access to the administrator interface. This relates to handle_request in router/httpd/httpd.c and auth_check in web_hook.o. An attacker-supplied value of '\\0' matches the device's default value of '\\0' in some situations. Note: All versions of Lyra Mini and earlier which are unsupported (End-of-Life, EOL) are also affected by this vulnerability, Consumers can mitigate this vulnerability by disabling the remote access features from WAN.",
+    "published": "2021-05-06T15:15:07.973",
+    "last_modified": "2026-06-17T03:52:42.307",
+    "cwes": [
+     "CWE-287"
+    ],
+    "exploit_reference_count": 3,
+    "exploit_references": [
+     "https://github.com/atredispartners/advisories/blob/master/ATREDIS-2020-0010.md",
+     "https://www.atredis.com/blog/2021/4/30/asus-authentication-bypass",
+     "https://github.com/atredispartners/advisories/blob/master/ATREDIS-2020-0010.md"
+    ],
+    "references_total": 7,
+    "cisa_exploit_add": "2025-06-02",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "ASUS",
+    "product": "Routers",
+    "vulnerability_name": "ASUS Routers Improper Authentication Vulnerability",
+    "short_description": "ASUS Lyra Mini and ASUS GT-AC2900 devices contain an improper authentication vulnerability that allows an attacker to gain unauthorized access to the administrative interface. The impacted products could be end-of-life (EoL) and/or end-of-service (EoS). Users should discontinue product utilization.",
+    "date_added": "2025-06-02",
+    "due_date": "2025-06-23",
+    "required_action": "Apply mitigations per vendor instructions, follow applicable BOD 22-01 guidance for cloud services, or discontinue use of the product if mitigations are unavailable.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-287"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99393,
+    "percentile": 0.99941,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2022-26352": {
+  "cve": "CVE-2022-26352",
+  "collected_at": "2026-11-19T06:28:05Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2022-26352",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "An issue was discovered in the ContentResource API in dotCMS 3.0 through 22.02. Attackers can craft a multipart form request to post a file whose filename is not initially sanitized. This allows directory traversal, in which the file is saved outside of the intended storage location. If anonymous content creation is enabled, this allows an unauthenticated attacker to upload an executable file, such as a .jsp file, that can lead to remote code execution.",
+    "published": "2022-07-17T22:15:08.787",
+    "last_modified": "2026-06-17T04:35:02.220",
+    "cwes": [],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "http://packetstormsecurity.com/files/167365/dotCMS-Shell-Upload.html",
+     "http://packetstormsecurity.com/files/167365/dotCMS-Shell-Upload.html"
+    ],
+    "references_total": 5,
+    "cisa_exploit_add": "2022-08-25",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "dotCMS",
+    "product": "dotCMS",
+    "vulnerability_name": "dotCMS Unrestricted Upload of File Vulnerability",
+    "short_description": "dotCMS ContentResource API contains an unrestricted upload of file with a dangerous type vulnerability that allows for directory traversal, in which the file is saved outside of the intended storage location. Exploitation allows for remote code execution.",
+    "date_added": "2022-08-25",
+    "due_date": "2022-09-15",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": true,
+    "cwes": [
+     "CWE-22",
+     "CWE-138"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.91248,
+    "percentile": 0.99814,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2023-0266": {
+  "cve": "CVE-2023-0266",
+  "collected_at": "2026-11-19T06:28:12Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2023-0266",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "A use after free vulnerability exists in the ALSA PCM package in the Linux Kernel. SNDRV_CTL_IOCTL_ELEM_{READ|WRITE}32 is missing locks that can be used in a use-after-free that can result in a priviledge escalation to gain ring0 access from the system user. We recommend upgrading past commit 56b88b50565cd8b946a2d00b0c83927b7ebb055e",
+    "published": "2023-01-30T14:15:10.500",
+    "last_modified": "2026-06-17T05:25:09.763",
+    "cwes": [
+     "CWE-416"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 9,
+    "cisa_exploit_add": "2023-03-30",
+    "cvss_version": "3.1",
+    "cvss_score": 7.0,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Linux",
+    "product": "Kernel",
+    "vulnerability_name": "Linux Kernel Use-After-Free Vulnerability",
+    "short_description": "Linux kernel contains a use-after-free vulnerability that allows for privilege escalation to gain ring0 access from the system user.",
+    "date_added": "2023-03-30",
+    "due_date": "2023-04-20",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-416"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.02601,
+    "percentile": 0.85663,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2024-8069": {
+  "cve": "CVE-2024-8069",
+  "collected_at": "2026-11-19T06:28:19Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2024-8069",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Limited remote code execution with privilege of a NetworkService Account access in Citrix Session Recording if the attacker is an authenticated user on the same intranet as the session recording server",
+    "published": "2024-11-12T18:15:47.603",
+    "last_modified": "2026-06-17T08:21:48.323",
+    "cwes": [
+     "CWE-502"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": "2025-08-25",
+    "cvss_version": "4.0",
+    "cvss_score": 5.1,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N/E:X/CR:X/IR:X/AR:X/MAV:X/MAC:X/MAT:X/MPR:X/MUI:X/MVC:X/MVI:X/MVA:X/MSC:X/MSI:X/MSA:X/S:X/AU:X/R:X/V:X/RE:X/U:X",
+    "attack_vector": "ADJACENT",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Citrix",
+    "product": "Session Recording",
+    "vulnerability_name": "Citrix Session Recording Deserialization of Untrusted Data Vulnerability",
+    "short_description": "Citrix Session Recording contains a deserialization of untrusted data vulnerability that allows limited remote code execution with privilege of a NetworkService Account access. Attacker must be an authenticated user on the same intranet as the session recording server.",
+    "date_added": "2025-08-25",
+    "due_date": "2025-09-15",
+    "required_action": "Apply mitigations per vendor instructions, follow applicable BOD 22-01 guidance for cloud services, or discontinue use of the product if mitigations are unavailable.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-502"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.18194,
+    "percentile": 0.97266,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2025-22224": {
+  "cve": "CVE-2025-22224",
+  "collected_at": "2026-11-19T06:28:27Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2025-22224",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "VMware ESXi, and Workstation contain a TOCTOU (Time-of-Check Time-of-Use) vulnerability that leads to an out-of-bounds write. A malicious actor with local administrative privileges on a virtual machine may exploit this issue to execute code as the virtual machine's VMX process running on the host.",
+    "published": "2025-03-04T12:15:33.687",
+    "last_modified": "2026-06-17T08:45:43.370",
+    "cwes": [
+     "CWE-367"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": "2025-03-04",
+    "cvss_version": "3.1",
+    "cvss_score": 8.2,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "VMware",
+    "product": "ESXi and Workstation",
+    "vulnerability_name": "VMware ESXi and Workstation TOCTOU Race Condition Vulnerability",
+    "short_description": "VMware ESXi and Workstation contain a time-of-check time-of-use (TOCTOU) race condition vulnerability that leads to an out-of-bounds write. Successful exploitation enables an attacker with local administrative privileges on a virtual machine to execute code as the virtual machine's VMX process running on the host.",
+    "date_added": "2025-03-04",
+    "due_date": "2025-03-25",
+    "required_action": "Apply mitigations per vendor instructions, follow applicable BOD 22-01 guidance for cloud services, or discontinue use of the product if mitigations are unavailable.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-367"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01561,
+    "percentile": 0.75739,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2012-0767": {
+  "cve": "CVE-2012-0767",
+  "collected_at": "2026-11-19T06:28:34Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2012-0767",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Cross-site scripting (XSS) vulnerability in Adobe Flash Player before 10.3.183.15 and 11.x before 11.1.102.62 on Windows, Mac OS X, Linux, and Solaris; before 11.1.111.6 on Android 2.x and 3.x; and before 11.1.115.6 on Android 4.x allows remote attackers to inject arbitrary web script or HTML via unspecified vectors, aka \"Universal XSS (UXSS),\" as exploited in the wild in February 2012.",
+    "published": "2012-02-16T19:55:01.303",
+    "last_modified": "2026-06-16T23:38:13.193",
+    "cwes": [
+     "CWE-79"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 17,
+    "cisa_exploit_add": "2022-06-08",
+    "cvss_version": "3.1",
+    "cvss_score": 6.1,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Adobe",
+    "product": "Flash Player",
+    "vulnerability_name": "Adobe Flash Player Cross-Site Scripting (XSS) Vulnerability",
+    "short_description": "Adobe Flash Player contains a XSS vulnerability that allows remote attackers to inject web script or HTML.",
+    "date_added": "2022-06-08",
+    "due_date": "2022-06-22",
+    "required_action": "The impacted product is end-of-life and should be disconnected if still in use.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-79"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.06187,
+    "percentile": 0.93639,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-2729": {
+  "cve": "CVE-2013-2729",
+  "collected_at": "2026-11-19T06:28:42Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-2729",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Integer overflow in Adobe Reader and Acrobat 9.x before 9.5.5, 10.x before 10.1.7, and 11.x before 11.0.03 allows attackers to execute arbitrary code via unspecified vectors, a different vulnerability than CVE-2013-2727.",
+    "published": "2013-05-16T11:45:31.263",
+    "last_modified": "2026-06-16T23:53:52.700",
+    "cwes": [
+     "CWE-190"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 12,
+    "cisa_exploit_add": "2022-03-28",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Adobe",
+    "product": "Reader and Acrobat",
+    "vulnerability_name": "Adobe Reader and Acrobat Arbitrary Integer Overflow Vulnerability",
+    "short_description": "Integer overflow vulnerability in Adobe Reader and Acrobat allows attackers to execute remote code.",
+    "date_added": "2022-03-28",
+    "due_date": "2022-04-18",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-189"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.66555,
+    "percentile": 0.99301,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "26703",
+      "title": "Adobe Reader X 10.1.4.38 - '.BMP'/'.RLE' Heap Corruption",
+      "date_published": "2013-07-08",
+      "type": "local",
+      "platform": "windows",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-3931": {
+  "cve": "CVE-2014-3931",
+  "collected_at": "2026-11-19T06:28:49Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-3931",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "fastping.c in MRLG (aka Multi-Router Looking Glass) before 5.5.0 allows remote attackers to cause an arbitrary memory write and memory corruption.",
+    "published": "2017-03-31T16:59:00.237",
+    "last_modified": "2026-06-17T00:09:09.423",
+    "cwes": [
+     "CWE-119"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://hackerone.com/reports/16330",
+     "https://hackerone.com/reports/16330"
+    ],
+    "references_total": 7,
+    "cisa_exploit_add": "2025-07-07",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Looking Glass",
+    "product": "Multi-Router Looking Glass (MRLG)",
+    "vulnerability_name": "Multi-Router Looking Glass (MRLG) Buffer Overflow Vulnerability",
+    "short_description": "Multi-Router Looking Glass (MRLG) contains a buffer overflow vulnerability that could allow remote attackers to cause an arbitrary memory write and memory corruption.",
+    "date_added": "2025-07-07",
+    "due_date": "2025-07-28",
+    "required_action": "Apply mitigations per vendor instructions, follow applicable BOD 22-01 guidance for cloud services, or discontinue use of the product if mitigations are unavailable.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-119"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.28978,
+    "percentile": 0.98194,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2015-2387": {
+  "cve": "CVE-2015-2387",
+  "collected_at": "2026-11-19T06:28:56Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2015-2387",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "ATMFD.DLL in the Adobe Type Manager Font Driver in Microsoft Windows Server 2003 SP2, Windows Vista SP2, Windows Server 2008 SP2 and R2 SP1, Windows 7 SP1, Windows 8, Windows 8.1, Windows Server 2012 Gold and R2, and Windows RT Gold and 8.1 allows local users to gain privileges via a crafted application, aka \"ATMFD.DLL Memory Corruption Vulnerability.\"",
+    "published": "2015-07-14T22:59:08.103",
+    "last_modified": "2026-06-17T00:24:01.693",
+    "cwes": [
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 9,
+    "cisa_exploit_add": "2022-03-03",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "ATM Font Driver",
+    "vulnerability_name": "Microsoft ATM Font Driver Privilege Escalation Vulnerability",
+    "short_description": "ATMFD.DLL in the Adobe Type Manager Font Driver in Microsoft Windows Server allows local users to gain privileges via a crafted application.",
+    "date_added": "2022-03-03",
+    "due_date": "2022-03-24",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-264"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.34878,
+    "percentile": 0.98463,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2016-0040": {
+  "cve": "CVE-2016-0040",
+  "collected_at": "2026-11-19T06:29:04Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2016-0040",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "The kernel in Microsoft Windows Vista SP2, Windows Server 2008 SP2 and R2 SP1, and Windows 7 SP1 allows local users to gain privileges via a crafted application, aka \"Windows Elevation of Privilege Vulnerability.\"",
+    "published": "2016-02-10T11:59:06.440",
+    "last_modified": "2026-06-17T00:36:50.320",
+    "cwes": [],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://www.exploit-db.com/exploits/44586/",
+     "https://www.exploit-db.com/exploits/44586/"
+    ],
+    "references_total": 7,
+    "cisa_exploit_add": "2022-03-28",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Windows",
+    "vulnerability_name": "Microsoft Windows Kernel Privilege Escalation Vulnerability",
+    "short_description": "The kernel in Microsoft Windows allows local users to gain privileges via a crafted application.",
+    "date_added": "2022-03-28",
+    "due_date": "2022-04-18",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-264"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.24283,
+    "percentile": 0.97903,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "44586",
+      "title": "Microsoft Windows WMI - Recieve Notification Exploit (Metasploit)",
+      "date_published": "2018-05-04",
+      "type": "local",
+      "platform": "windows_x86-64",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-8464": {
+  "cve": "CVE-2017-8464",
+  "collected_at": "2026-11-19T06:29:11Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-8464",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Windows Shell in Microsoft Windows Server 2008 SP2 and R2 SP1, Windows 7 SP1, Windows 8, Windows 8.1, Windows Server 2012 Gold and R2, Windows RT 8.1, Windows 10 Gold, 1511, 1607, 1703, and Windows Server 2016 allows local users or remote attackers to execute arbitrary code via a crafted .LNK file, which is not properly handled during icon display in Windows Explorer or any other application that parses the icon of the shortcut. aka \"LNK Remote Code Execution Vulnerability.\"",
+    "published": "2017-06-15T01:29:02.727",
+    "last_modified": "2026-06-17T01:26:24.683",
+    "cwes": [],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "https://www.exploit-db.com/exploits/42382/",
+     "https://www.exploit-db.com/exploits/42429/",
+     "https://www.exploit-db.com/exploits/42382/",
+     "https://www.exploit-db.com/exploits/42429/"
+    ],
+    "references_total": 11,
+    "cisa_exploit_add": "2022-02-10",
+    "cvss_version": "3.1",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Windows",
+    "vulnerability_name": "Microsoft Windows Shell (.lnk) Remote Code Execution Vulnerability",
+    "short_description": "Windows Shell in multiple versions of Microsoft Windows allows local users or remote attackers to execute arbitrary code via a crafted .LNK file",
+    "date_added": "2022-02-10",
+    "due_date": "2022-08-10",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.90026,
+    "percentile": 0.99797,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 2,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "42429",
+      "title": "Microsoft Windows - '.LNK' Shortcut File Code Execution",
+      "date_published": "2017-08-06",
+      "type": "local",
+      "platform": "windows",
+      "verified": false
+     },
+     {
+      "id": "42382",
+      "title": "Microsoft Windows - '.LNK' Shortcut File Code Execution (Metasploit)",
+      "date_published": "2017-07-26",
+      "type": "local",
+      "platform": "windows",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-14839": {
+  "cve": "CVE-2018-14839",
+  "collected_at": "2026-11-19T06:29:19Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-14839",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "LG N1A1 NAS 3718.510 is affected by: Remote Command Execution. The impact is: execute arbitrary code (remote). The attack vector is: HTTP POST with parameters.",
+    "published": "2019-05-14T21:29:00.247",
+    "last_modified": "2026-06-17T01:41:44.377",
+    "cwes": [
+     "CWE-78"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://medium.com/%400x616163/lg-n1a1-unauthenticated-remote-command-injection-cve-2018-14839-9d2cf760e247",
+     "https://medium.com/%400x616163/lg-n1a1-unauthenticated-remote-command-injection-cve-2018-14839-9d2cf760e247"
+    ],
+    "references_total": 3,
+    "cisa_exploit_add": "2022-03-25",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "LG",
+    "product": "N1A1 NAS",
+    "vulnerability_name": "LG N1A1 NAS Remote Command Execution Vulnerability",
+    "short_description": "LG N1A1 NAS 3718.510 is affected by a remote code execution vulnerability.",
+    "date_added": "2022-03-25",
+    "due_date": "2022-04-15",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-78"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.89246,
+    "percentile": 0.99786,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-3568": {
+  "cve": "CVE-2019-3568",
+  "collected_at": "2026-11-19T06:29:26Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-3568",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "A buffer overflow vulnerability in WhatsApp VOIP stack allowed remote code execution via specially crafted series of RTCP packets sent to a target phone number. The issue affects WhatsApp for Android prior to v2.19.134, WhatsApp Business for Android prior to v2.19.44, WhatsApp for iOS prior to v2.19.51, WhatsApp Business for iOS prior to v2.19.51, WhatsApp for Windows Phone prior to v2.18.348, and WhatsApp for Tizen prior to v2.18.15.",
+    "published": "2019-05-14T20:29:03.187",
+    "last_modified": "2026-06-17T02:35:14.707",
+    "cwes": [
+     "CWE-122",
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 5,
+    "cisa_exploit_add": "2022-04-19",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Meta Platforms",
+    "product": "WhatsApp",
+    "vulnerability_name": "WhatsApp VOIP Stack Buffer Overflow Vulnerability",
+    "short_description": "A buffer overflow vulnerability in WhatsApp VOIP stack allowed remote code execution via specially crafted series of RTCP packets sent to a target phone number.",
+    "date_added": "2022-04-19",
+    "due_date": "2022-05-10",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-122"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.30076,
+    "percentile": 0.98246,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-10189": {
+  "cve": "CVE-2020-10189",
+  "collected_at": "2026-11-19T06:29:33Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-10189",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Zoho ManageEngine Desktop Central before 10.0.474 allows remote code execution because of deserialization of untrusted data in getChartImage in the FileStorage class. This is related to the CewolfServlet and MDMLogUploaderServlet servlets.",
+    "published": "2020-03-06T17:15:12.383",
+    "last_modified": "2026-06-17T02:47:27.960",
+    "cwes": [
+     "CWE-502"
+    ],
+    "exploit_reference_count": 6,
+    "exploit_references": [
+     "http://packetstormsecurity.com/files/156730/ManageEngine-Desktop-Central-Java-Deserialization.html",
+     "https://srcincite.io/advisories/src-2020-0011/",
+     "https://srcincite.io/pocs/src-2020-0011.py.txt",
+     "http://packetstormsecurity.com/files/156730/ManageEngine-Desktop-Central-Java-Deserialization.html",
+     "https://srcincite.io/advisories/src-2020-0011/"
+    ],
+    "references_total": 13,
+    "cisa_exploit_add": "2021-11-03",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Zoho",
+    "product": "ManageEngine",
+    "vulnerability_name": "Zoho ManageEngine Desktop Central File Upload Vulnerability",
+    "short_description": "Zoho ManageEngine Desktop Central contains a file upload vulnerability that allows for unauthenticated remote code execution.",
+    "date_added": "2021-11-03",
+    "due_date": "2022-05-03",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-502"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99941,
+    "percentile": 0.99972,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "48224",
+      "title": "ManageEngine Desktop Central - Java Deserialization (Metasploit)",
+      "date_published": "2020-03-17",
+      "type": "remote",
+      "platform": "multiple",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2021-22986": {
+  "cve": "CVE-2021-22986",
+  "collected_at": "2026-11-19T06:29:41Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2021-22986",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "On BIG-IP versions 16.0.x before 16.0.1.1, 15.1.x before 15.1.2.1, 14.1.x before 14.1.4, 13.1.x before 13.1.3.6, and 12.1.x before 12.1.5.3 amd BIG-IQ 7.1.0.x before 7.1.0.3 and 7.0.0.x before 7.0.0.2, the iControl REST interface has an unauthenticated remote command execution vulnerability. Note: Software versions which have reached End of Software Development (EoSD) are not evaluated.",
+    "published": "2021-03-31T15:15:15.153",
+    "last_modified": "2026-06-17T03:38:09.413",
+    "cwes": [
+     "CWE-918"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://packetstormsecurity.com/files/162059/F5-iControl-Server-Side-Request-Forgery-Remote-Command-Execution.html",
+     "http://packetstormsecurity.com/files/162066/F5-BIG-IP-16.0.x-Remote-Code-Execution.html",
+     "http://packetstormsecurity.com/files/162059/F5-iControl-Server-Side-Request-Forgery-Remote-Command-Execution.html",
+     "http://packetstormsecurity.com/files/162066/F5-BIG-IP-16.0.x-Remote-Code-Execution.html"
+    ],
+    "references_total": 7,
+    "cisa_exploit_add": "2021-11-03",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "F5",
+    "product": "BIG-IP and BIG-IQ Centralized Management",
+    "vulnerability_name": "F5 BIG-IP and BIG-IQ Centralized Management iControl REST Remote Code Execution Vulnerability",
+    "short_description": "F5 BIG-IP and BIG-IQ Centralized Management contain a remote code execution vulnerability in the iControl REST interface that allows unauthenticated attackers with network access to execute system commands, create or delete files, and disable services.",
+    "date_added": "2021-11-03",
+    "due_date": "2021-11-17",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": true,
+    "cwes": [
+     "CWE-863"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99898,
+    "percentile": 0.99966,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "49738",
+      "title": "F5 BIG-IP 16.0.x - iControl REST Remote Code Execution (Unauthenticated)",
+      "date_published": "2021-04-02",
+      "type": "webapps",
+      "platform": "hardware",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2022-42827": {
+  "cve": "CVE-2022-42827",
+  "collected_at": "2026-11-19T06:29:48Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2022-42827",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "An out-of-bounds write issue was addressed with improved bounds checking. This issue is fixed in iOS 15.7.1 and iPadOS 15.7.1, iOS 16.1 and iPadOS 16. An application may be able to execute arbitrary code with kernel privileges. Apple is aware of a report that this issue may have been actively exploited..",
+    "published": "2022-11-01T20:15:24.333",
+    "last_modified": "2026-06-17T05:05:25.003",
+    "cwes": [
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 5,
+    "cisa_exploit_add": "2022-10-25",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Apple",
+    "product": "iOS and iPadOS",
+    "vulnerability_name": "Apple iOS and iPadOS Out-of-Bounds Write Vulnerability",
+    "short_description": "Apple iOS and iPadOS kernel contain an out-of-bounds write vulnerability which can allow an application to perform code execution with kernel privileges.",
+    "date_added": "2022-10-25",
+    "due_date": "2022-11-15",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-20",
+     "CWE-787"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01062,
+    "percentile": 0.65262,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-6465": {
+  "cve": "CVE-2017-6465",
+  "collected_at": "2026-11-19T06:29:56Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-6465",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Remote Code Execution was discovered in FTPShell Client 6.53. By default, the client sends a PWD command to the FTP server it is connecting to; however, it doesn't check the response's length, leading to a buffer overflow situation.",
+    "published": "2017-03-10T01:59:00.177",
+    "last_modified": "2026-06-17T01:22:23.750",
+    "cwes": [
+     "CWE-119"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://packetstormsecurity.com/files/141456/FTPShell-Client-6.53-Buffer-Overflow.html",
+     "https://www.exploit-db.com/exploits/41511/",
+     "http://packetstormsecurity.com/files/141456/FTPShell-Client-6.53-Buffer-Overflow.html",
+     "https://www.exploit-db.com/exploits/41511/"
+    ],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.50315,
+    "percentile": 0.98933,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "41511",
+      "title": "FTPShell Client 6.53 - Remote Buffer Overflow",
+      "date_published": "2017-03-04",
+      "type": "remote",
+      "platform": "windows",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-2787": {
+  "cve": "CVE-2017-2787",
+  "collected_at": "2026-11-19T06:30:04Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-2787",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A buffer overflows exists in the psnotifyd application of the Pharos PopUp printer client version 9.0. A specially crafted packet can be sent to the victim's computer and can lead to a heap based buffer overflow resulting in potential remote code execution. This client is always listening, has root privileges, and requires no user interaction to exploit.",
+    "published": "2017-03-10T10:59:00.280",
+    "last_modified": "2026-06-17T01:16:51.817",
+    "cwes": [
+     "CWE-119"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.0,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.04038,
+    "percentile": 0.90814,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-6596": {
+  "cve": "CVE-2017-6596",
+  "collected_at": "2026-11-19T06:30:11Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-6596",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "partclone.chkimg in partclone 0.2.89 is prone to a heap-based buffer overflow vulnerability due to insufficient validation of the partclone image header. An attacker may be able to launch a 'Denial of Service attack' in the context of the user running the affected application.",
+    "published": "2017-03-10T10:59:00.423",
+    "last_modified": "2026-06-17T01:22:36.730",
+    "cwes": [
+     "CWE-119"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 5.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00788,
+    "percentile": 0.56924,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-6312": {
+  "cve": "CVE-2018-6312",
+  "collected_at": "2026-11-19T06:30:22Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-6312",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A privileged account with a weak default password on the Foxconn femtocell FEMTO AP-FC4064-T version AP_GT_B38_5.8.3lb15-W47 LTE Build 15 can be used to turn on the TELNET service via the web interface, which allows root login without any password. This vulnerability will lead to full system compromise and disclosure of user communications. The foxconn account with an 8-character lowercase alphabetic password can be used.",
+    "published": "2018-03-10T22:29:00.350",
+    "last_modified": "2026-06-17T02:01:38.757",
+    "cwes": [
+     "CWE-521"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.2,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01314,
+    "percentile": 0.71303,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-8050": {
+  "cve": "CVE-2018-8050",
+  "collected_at": "2026-11-19T06:30:29Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-8050",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The af_get_page() function in lib/afflib_pages.cpp in AFFLIB (aka AFFLIBv3) through 3.7.16 allows remote attackers to cause a denial of service (segmentation fault) via a corrupt AFF image that triggers an unexpected pagesize value.",
+    "published": "2018-03-11T06:29:00.207",
+    "last_modified": "2026-06-17T02:04:10.970",
+    "cwes": [
+     "CWE-20"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 6.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01577,
+    "percentile": 0.75964,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-18223": {
+  "cve": "CVE-2017-18223",
+  "collected_at": "2026-11-19T06:30:37Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-18223",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "BMC Remedy AR System before 9.1 SP3, when Remedy AR Authentication is enabled, allows attackers to obtain administrative access.",
+    "published": "2018-03-10T22:29:00.210",
+    "last_modified": "2026-06-17T01:12:25.737",
+    "cwes": [
+     "CWE-287"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 8.1,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00966,
+    "percentile": 0.62404,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-1618": {
+  "cve": "CVE-2019-1618",
+  "collected_at": "2026-11-19T06:30:45Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-1618",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A vulnerability in the Tetration Analytics agent for Cisco Nexus 9000 Series Switches in standalone NX-OS mode could allow an authenticated, local attacker to execute arbitrary code as root. The vulnerability is due to an incorrect permissions setting. An attacker could exploit this vulnerability by replacing valid agent files with malicious code. A successful exploit could result in the execution of code supplied by the attacker. Nexus 9000 Series Switches in Standalone NX-OS Mode are affected running versions prior to 7.0(3)I7(5).",
+    "published": "2019-03-11T21:29:01.060",
+    "last_modified": "2026-06-17T02:28:53.310",
+    "cwes": [
+     "CWE-275",
+     "CWE-732"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00382,
+    "percentile": 0.32808,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-1615": {
+  "cve": "CVE-2019-1615",
+  "collected_at": "2026-11-19T06:30:52Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-1615",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A vulnerability in the Image Signature Verification feature of Cisco NX-OS Software could allow an authenticated, local attacker with administrator-level credentials to install a malicious software image on an affected device. The vulnerability is due to improper verification of digital signatures for software images. An attacker could exploit this vulnerability by loading an unsigned software image on an affected device. A successful exploit could allow the attacker to boot a malicious software image. Note: The fix for this vulnerability requires a BIOS upgrade as part of the software upgrade. For additional information, see the Details section of this advisory. Nexus 3000 Series Switches are affected running software versions prior to 7.0(3)I7(5). Nexus 9000 Series Fabric Switches in ACI Mode are affected running software versions prior to 13.2(1l). Nexus 9000 Series Switches in Standalone NX-OS Mode are affected running software versions prior to 7.0(3)I7(5). Nexus 9500 R-Series Line Cards and Fabric Modules are affected running software versions prior to 7.0(3)F3(5).",
+    "published": "2019-03-11T21:29:00.920",
+    "last_modified": "2026-06-17T02:28:52.693",
+    "cwes": [
+     "CWE-347"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 6.7,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.0/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00246,
+    "percentile": 0.15963,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-1974": {
+  "cve": "CVE-2018-1974",
+  "collected_at": "2026-11-19T06:31:00Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-1974",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "IBM WebSphere 8.0.0.0 through 9.1.1 could allow an authenticated attacker to escalate their privileges when using multiplexed channels. IBM X-Force ID: 153915.",
+    "published": "2019-03-11T22:29:00.610",
+    "last_modified": "2026-06-17T01:52:06.013",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01252,
+    "percentile": 0.70033,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-1947": {
+  "cve": "CVE-2020-1947",
+  "collected_at": "2026-11-19T06:31:07Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-1947",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In Apache ShardingSphere(incubator) 4.0.0-RC3 and 4.0.0, the ShardingSphere's web console uses the SnakeYAML library for parsing YAML inputs to load datasource configuration. SnakeYAML allows to unmarshal data to a Java type By using the YAML tag. Unmarshalling untrusted data can lead to security flaws of RCE.",
+    "published": "2020-03-11T21:15:11.627",
+    "last_modified": "2026-06-17T03:02:42.010",
+    "cwes": [
+     "CWE-502"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.33918,
+    "percentile": 0.98425,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-0085": {
+  "cve": "CVE-2020-0085",
+  "collected_at": "2026-11-19T06:31:16Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-0085",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In setBluetoothTethering of PanService.java, there is a possible permission bypass due to a missing permission check. This could lead to local escalation of privilege to activate tethering with no additional execution privileges needed. User interaction is not needed for exploitation.Product: AndroidVersions: Android-10Android ID: A-134487438",
+    "published": "2020-03-10T21:15:13.357",
+    "last_modified": "2026-06-17T02:45:12.967",
+    "cwes": [
+     "CWE-862"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00145,
+    "percentile": 0.038,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-19290": {
+  "cve": "CVE-2019-19290",
+  "collected_at": "2026-11-19T06:31:23Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-19290",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A vulnerability has been identified in Control Center Server (CCS) (All versions < V1.5.0). The DOWNLOADS section in the web interface of the Control Center\nServer (CCS) contains a path traversal vulnerability\nthat could allow an authenticated remote attacker to access and download\narbitrary files from the server where CCS is installed.",
+    "published": "2020-03-10T20:15:19.057",
+    "last_modified": "2026-06-17T02:26:26.477",
+    "cwes": [
+     "CWE-22"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 6.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01813,
+    "percentile": 0.79092,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-35225": {
+  "cve": "CVE-2020-35225",
+  "collected_at": "2026-11-19T06:31:31Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-35225",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The NSDP protocol implementation on NETGEAR JGS516PE/GS116Ev2 v2.6.0.43 devices was not properly validating the length of string parameters sent in write requests, potentially allowing denial of service attacks.",
+    "published": "2021-03-10T18:15:13.187",
+    "last_modified": "2026-06-17T03:13:33.683",
+    "cwes": [
+     "CWE-120"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 6.8,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:A/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "ADJACENT_NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00636,
+    "percentile": 0.51226,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2021-26860": {
+  "cve": "CVE-2021-26860",
+  "collected_at": "2026-11-19T06:31:38Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2021-26860",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Windows App-V Overlay Filter Elevation of Privilege Vulnerability",
+    "published": "2021-03-11T16:15:14.050",
+    "last_modified": "2026-08-19T17:17:39.073",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.0072,
+    "percentile": 0.54639,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-29238": {
+  "cve": "CVE-2020-29238",
+  "collected_at": "2026-11-19T06:31:46Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-29238",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "An integer buffer overflow in the Nginx webserver of ExpressVPN Router version 1 allows remote attackers to obtain sensitive information when the server running as reverse proxy via specially crafted request.",
+    "published": "2021-03-10T03:15:12.320",
+    "last_modified": "2026-07-09T01:16:44.650",
+    "cwes": [
+     "CWE-190"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.16483,
+    "percentile": 0.97049,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "49760",
+      "title": "ExpressVPN VPN Router 1.0 - Router Login Panel's Integer Overflow",
+      "date_published": "2021-04-13",
+      "type": "webapps",
+      "platform": "multiple",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2021-40050": {
+  "cve": "CVE-2021-40050",
+  "collected_at": "2026-11-19T06:31:53Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2021-40050",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "There is an out-of-bounds read vulnerability in the IFAA module. Successful exploitation of this vulnerability may cause stack overflow.",
+    "published": "2022-03-10T17:43:17.980",
+    "last_modified": "2026-06-17T04:06:27.570",
+    "cwes": [
+     "CWE-125"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.0106,
+    "percentile": 0.65208,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2022-20056": {
+  "cve": "CVE-2022-20056",
+  "collected_at": "2026-11-19T06:32:01Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2022-20056",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In preloader (usb), there is a possible out of bounds write due to a missing bounds check. This could lead to local escalation of privilege, for an attacker who has physical access to the device, with no additional execution privileges needed. User interaction is needed for exploitation. Patch ID: ALPS06160806; Issue ID: ALPS06160820.",
+    "published": "2022-03-10T17:45:05.983",
+    "last_modified": "2026-06-17T04:23:35.637",
+    "cwes": [
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 6.6,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:P/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "PHYSICAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00135,
+    "percentile": 0.03026,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2021-42854": {
+  "cve": "CVE-2021-42854",
+  "collected_at": "2026-11-19T06:32:08Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2021-42854",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "It was discovered that the SteelCentral AppInternals Dynamic Sampling Agent's (DSA) PluginServlet has directory traversal vulnerabilities at the \"/api/appInternals/1.0/plugin/pmx\" API. The affected endpoint does not have any input validation of the user's input that allows a malicious payload to be injected.",
+    "published": "2022-03-10T17:44:06.840",
+    "last_modified": "2026-06-17T04:10:12.660",
+    "cwes": [
+     "CWE-20",
+     "CWE-22"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01568,
+    "percentile": 0.75841,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2022-47458": {
+  "cve": "CVE-2022-47458",
+  "collected_at": "2026-11-19T06:32:16Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2022-47458",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In wlan driver, there is a possible missing params check. This could lead to local denial of service in wlan services.",
+    "published": "2023-03-10T21:15:13.373",
+    "last_modified": "2026-06-17T05:13:38.423",
+    "cwes": [
+     "CWE-125"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 5.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00088,
+    "percentile": 0.00378,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2023-27577": {
+  "cve": "CVE-2023-27577",
+  "collected_at": "2026-11-19T06:32:23Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2023-27577",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "flarum is a forum software package for building communities. In versions prior to 1.7.0 an admin account which has already been compromised by an attacker may use a vulnerability in the `LESS` parser which can be exploited to read sensitive files on the server through the use of path traversal techniques. An attacker can achieve this by providing an absolute path to a sensitive file in the custom `LESS` setting, which the `LESS` parser will then read. For example, an attacker could use the following code to read the contents of the `/etc/passwd` file on a linux machine. The scope of what files are vulnerable will depend on the permissions given to the running flarum process. The vulnerability has been addressed in version `1.7`. Users should upgrade to this version to mitigate the vulnerability. Users unable to upgrade may mitigate the vulnerability by ensuring that their admin accounts are secured with strong passwords and follow other best practices for account security. Additionally, users can limit the exposure of sensitive files on the server by implementing appropriate file permissions and access controls at the operating system level.\n",
+    "published": "2023-03-10T21:15:15.310",
+    "last_modified": "2026-06-17T05:45:30.320",
+    "cwes": [
+     "CWE-22"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 4.9,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00851,
+    "percentile": 0.58908,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2023-1328": {
+  "cve": "CVE-2023-1328",
+  "collected_at": "2026-11-19T06:32:31Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2023-1328",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A vulnerability was found in Guizhou 115cms 4.2. It has been classified as problematic. Affected is an unknown function of the file /admin/content/index. The manipulation leads to unrestricted upload. It is possible to launch the attack remotely. The exploit has been disclosed to the public and may be used. VDB-222738 is the identifier assigned to this vulnerability.",
+    "published": "2023-03-10T17:15:09.973",
+    "last_modified": "2026-06-17T05:27:39.797",
+    "cwes": [
+     "CWE-434"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://github.com/niukongkong/asdasd/blob/master/115cmsArbitrary%20file%20upload%20vulnerability.md",
+     "https://github.com/niukongkong/asdasd/blob/master/115cmsArbitrary%20file%20upload%20vulnerability.md"
+    ],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.2,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00865,
+    "percentile": 0.59335,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2024-2184": {
+  "cve": "CVE-2024-2184",
+  "collected_at": "2026-11-19T06:32:38Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2024-2184",
+    "vuln_status": "Deferred",
+    "rejected": false,
+    "description": "Buffer overflow in identifier field of WSD probe request process of Small Office Multifunction Printers and Laser Printers(*) which may allow an attacker on the network segment to trigger the affected product being unresponsive or to execute arbitrary code.*:Satera MF740C Series/Satera MF640C Series/Satera LBP660C Series/Satera LBP620C Series firmware v12.07 and earlier, and Satera MF750C Series/Satera LBP670C Series firmware v03.09 and earlier sold in Japan.Color imageCLASS MF740C Series/Color imageCLASS MF640C Series/Color imageCLASS X MF1127C/Color imageCLASS LBP664Cdw/Color imageCLASS LBP622Cdw/Color imageCLASS X LBP1127C firmware v12.07 and earlier, and Color imageCLASS MF750C Series/Color imageCLASS X MF1333C/Color imageCLASS LBP674Cdw/Color imageCLASS X LBP1333C firmware v03.09 and earlier sold in US.i-SENSYS MF740C Series/i-SENSYS MF640C Series/C1127i Series/i-SENSYS LBP660C Series/i-SENSYS LBP620C Series/C1127P firmware v12.07 and earlier, and i-SENSYS MF750C Series/C1333i Series/i-SENSYS LBP673Cdw/C1333P firmware v03.09 and earlier sold in Europe.\n\n",
+    "published": "2024-03-11T01:15:50.270",
+    "last_modified": "2026-06-17T07:23:53.450",
+    "cwes": [
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00815,
+    "percentile": 0.57779,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2024-1290": {
+  "cve": "CVE-2024-1290",
+  "collected_at": "2026-11-19T06:32:45Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2024-1290",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "The User Registration WordPress plugin before 2.12 does not prevent users with at least the contributor role from rendering sensitive shortcodes, allowing them to generate, and leak, valid password reset URLs, which they can use to take over any accounts.",
+    "published": "2024-03-11T18:15:18.003",
+    "last_modified": "2026-06-17T07:03:54.073",
+    "cwes": [],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://wpscan.com/vulnerability/a60187d4-9491-435a-bc36-8dd348a1ffa3/",
+     "https://wpscan.com/vulnerability/a60187d4-9491-435a-bc36-8dd348a1ffa3/"
+    ],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 6.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00554,
+    "percentile": 0.46975,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2024-23608": {
+  "cve": "CVE-2024-23608",
+  "collected_at": "2026-11-19T06:32:53Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2024-23608",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "An out of bounds write due to a missing bounds check in LabVIEW may result in remote code execution.  Successful exploitation requires an attacker to provide a user with a specially crafted VI.  This vulnerability affects LabVIEW 2024 Q1 and prior versions.\n",
+    "published": "2024-03-11T16:15:07.897",
+    "last_modified": "2026-06-17T07:13:13.357",
+    "cwes": [
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00591,
+    "percentile": 0.4899,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2025-25907": {
+  "cve": "CVE-2025-25907",
+  "collected_at": "2026-11-19T06:33:00Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2025-25907",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "tianti v2.3 was discovered to contain a Cross-Site Request Forgery (CSRF) via the component /user/ajax/save. This vulnerability allows attackers to execute arbitrary operations via a crafted GET or POST request.",
+    "published": "2025-03-10T22:15:26.533",
+    "last_modified": "2026-06-17T09:01:17.683",
+    "cwes": [
+     "CWE-352"
+    ],
+    "exploit_reference_count": 1,
+    "exploit_references": [
+     "https://github.com/xujeff/tianti/issues/39"
+    ],
+    "references_total": 1,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00229,
+    "percentile": 0.13763,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2025-24035": {
+  "cve": "CVE-2025-24035",
+  "collected_at": "2026-11-19T06:33:08Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2025-24035",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Sensitive data storage in improperly locked memory in Windows Remote Desktop Services allows an unauthorized attacker to execute code over a network.",
+    "published": "2025-03-11T17:16:25.373",
+    "last_modified": "2026-06-17T08:57:55.927",
+    "cwes": [
+     "CWE-591"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 1,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 8.1,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01719,
+    "percentile": 0.77924,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2025-24431": {
+  "cve": "CVE-2025-24431",
+  "collected_at": "2026-11-19T06:33:15Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2025-24431",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Acrobat Reader versions 24.001.30225, 20.005.30748, 25.001.20428 and earlier are affected by an out-of-bounds read vulnerability that could lead to disclosure of sensitive memory. An attacker could leverage this vulnerability to bypass mitigations such as ASLR. Exploitation of this issue requires user interaction in that a victim must open a malicious file.",
+    "published": "2025-03-11T18:15:30.277",
+    "last_modified": "2026-06-17T08:59:01.593",
+    "cwes": [
+     "CWE-125"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 1,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 5.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.0044,
+    "percentile": 0.38912,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-15170": {
+  "cve": "CVE-2020-15170",
+  "collected_at": "2026-11-19T06:33:23Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-15170",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "apollo-adminservice before version 1.7.1 does not implement access controls. If users expose apollo-adminservice to internet(which is not recommended), there are potential security issues since apollo-adminservice is designed to work in intranet and it doesn't have access control built-in. Malicious hackers may access apollo-adminservice apis directly to access/edit the application's configurations. To fix the potential issue without upgrading, simply follow the advice that do not expose apollo-adminservice to internet.",
+    "published": "2020-09-10T19:15:13.583",
+    "last_modified": "2026-06-17T02:56:11.417",
+    "cwes": [
+     "CWE-20"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.0,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:L",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01315,
+    "percentile": 0.71341,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-1715": {
+  "cve": "CVE-2019-1715",
+  "collected_at": "2026-11-19T06:33:30Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-1715",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A vulnerability in the Deterministic Random Bit Generator (DRBG), also known as Pseudorandom Number Generator (PRNG), used in Cisco Adaptive Security Appliance (ASA) Software and Cisco Firepower Threat Defense (FTD) Software could allow an unauthenticated, remote attacker to cause a cryptographic collision, enabling the attacker to discover the private key of an affected device. The vulnerability is due to insufficient entropy in the DRBG when generating cryptographic keys. An attacker could exploit this vulnerability by generating a large number of cryptographic keys on an affected device and looking for collisions with target devices. A successful exploit could allow the attacker to impersonate an affected target device or to decrypt traffic secured by an affected key that is sent to or from an affected target device.",
+    "published": "2019-05-03T17:29:00.593",
+    "last_modified": "2026-08-11T19:33:44.513",
+    "cwes": [
+     "CWE-332"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01726,
+    "percentile": 0.78009,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-19207": {
+  "cve": "CVE-2018-19207",
+  "collected_at": "2026-11-19T06:33:37Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-19207",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The Van Ons WP GDPR Compliance (aka wp-gdpr-compliance) plugin before 1.4.3 for WordPress allows remote attackers to execute arbitrary code because $wpdb->prepare() input is mishandled, as exploited in the wild in November 2018.",
+    "published": "2018-11-12T17:29:00.333",
+    "last_modified": "2026-06-17T01:48:58.527",
+    "cwes": [
+     "CWE-425"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "https://wpvulndb.com/vulnerabilities/9144",
+     "https://www.wordfence.com/blog/2018/11/trends-following-vulnerability-in-wp-gdpr-compliance-plugin/",
+     "https://wpvulndb.com/vulnerabilities/9144",
+     "https://www.wordfence.com/blog/2018/11/trends-following-vulnerability-in-wp-gdpr-compliance-plugin/"
+    ],
+    "references_total": 8,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.88065,
+    "percentile": 0.9977,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-5254": {
+  "cve": "CVE-2020-5254",
+  "collected_at": "2026-11-19T06:33:45Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-5254",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In NetHack before 3.6.6, some out-of-bound values for the hilite_status option can be exploited. NetHack 3.6.6 resolves this issue.",
+    "published": "2020-03-10T17:15:13.080",
+    "last_modified": "2026-06-17T03:21:08.383",
+    "cwes": [
+     "CWE-125",
+     "CWE-119"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 8.1,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01142,
+    "percentile": 0.67312,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-3566": {
+  "cve": "CVE-2014-3566",
+  "collected_at": "2026-11-19T06:33:52Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-3566",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The SSL protocol 3.0, as used in OpenSSL through 1.0.1i and other products, uses nondeterministic CBC padding, which makes it easier for man-in-the-middle attackers to obtain cleartext data via a padding-oracle attack, aka the \"POODLE\" issue.",
+    "published": "2014-10-15T00:55:02.137",
+    "last_modified": "2026-06-17T00:08:29.637",
+    "cwes": [
+     "CWE-310",
+     "CWE-329"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 487,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 3.4,
+    "cvss_severity": "LOW",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99999,
+    "percentile": 1.0,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-1471": {
+  "cve": "CVE-2020-1471",
+  "collected_at": "2026-11-19T06:33:59Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-1471",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "<p>An elevation of privilege vulnerability exists when Microsoft Windows CloudExperienceHost fails to check COM objects. An attacker who successfully exploited the vulnerability could gain elevated privileges on a targeted system.</p>\n<p>To exploit the vulnerability, an attacker would have to log on to an affected system and run a specially crafted script or application.</p>\n<p>The security update addresses the vulnerability by checking COM objects.</p>",
+    "published": "2020-09-11T17:15:20.917",
+    "last_modified": "2026-06-17T03:01:29.620",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.3,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:L/A:N",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01209,
+    "percentile": 0.69007,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-15393": {
+  "cve": "CVE-2020-15393",
+  "collected_at": "2026-11-19T06:34:07Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-15393",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In the Linux kernel 4.4 through 5.7.6, usbtest_disconnect in drivers/usb/misc/usbtest.c has a memory leak, aka CID-28ebeb8db770.",
+    "published": "2020-06-29T22:15:10.883",
+    "last_modified": "2026-06-17T02:56:36.967",
+    "cwes": [
+     "CWE-401"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 24,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 5.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.0045,
+    "percentile": 0.3973,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2016-9192": {
+  "cve": "CVE-2016-9192",
+  "collected_at": "2026-11-19T06:34:14Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2016-9192",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "A vulnerability in Cisco AnyConnect Secure Mobility Client for Windows could allow an authenticated, local attacker to install and execute an arbitrary executable file with privileges equivalent to the Microsoft Windows operating system SYSTEM account. More Information: CSCvb68043. Known Affected Releases: 4.3(2039) 4.3(748). Known Fixed Releases: 4.3(4019) 4.4(225).",
+    "published": "2016-12-14T00:59:15.223",
+    "last_modified": "2026-06-17T00:55:39.490",
+    "cwes": [
+     "CWE-264"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 10,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.03473,
+    "percentile": 0.89321,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2016-9684": {
+  "cve": "CVE-2016-9684",
+  "collected_at": "2026-11-19T06:34:22Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2016-9684",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The SonicWall Secure Remote Access server (version 8.1.0.2-14sv) is vulnerable to a Remote Command Injection vulnerability in its web administrative interface. This vulnerability occurs in the 'viewcert' CGI (/cgi-bin/viewcert) component responsible for processing SSL certificate information. The CGI application doesn't properly escape the information it's passed in the 'CERT' variable before a call to system() is performed - allowing for remote command injection. Exploitation of this vulnerability yields shell access to the remote machine under the nobody user account.",
+    "published": "2017-02-22T05:59:00.247",
+    "last_modified": "2026-06-17T00:56:26.083",
+    "cwes": [
+     "CWE-77"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 8,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.07064,
+    "percentile": 0.94325,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "41416",
+      "title": "Sonicwall 8.1.0.2-14sv - 'viewcert.cgi' Remote Command Injection (Metasploit)",
+      "date_published": "2016-12-24",
+      "type": "webapps",
+      "platform": "hardware",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-5057": {
+  "cve": "CVE-2013-5057",
+  "collected_at": "2026-11-19T06:34:29Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-5057",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "hxds.dll in Microsoft Office 2007 SP3 and 2010 SP1 and SP2 does not implement the ASLR protection mechanism, which makes it easier for remote attackers to execute arbitrary code via a crafted COM component on a web site that is visited with Internet Explorer, as exploited in the wild in December 2013, aka \"HXDS ASLR Vulnerability.\"",
+    "published": "2013-12-11T00:55:04.177",
+    "last_modified": "2026-06-16T23:58:19.243",
+    "cwes": [
+     "CWE-264"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 4.3,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.09926,
+    "percentile": 0.95682,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-15189": {
+  "cve": "CVE-2020-15189",
+  "collected_at": "2026-11-19T06:34:36Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-15189",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "SOY CMS 3.0.2 and earlier is affected by Remote Code Execution (RCE) using Unrestricted File Upload. Cross-Site Scripting(XSS) vulnerability that was used in CVE-2020-15183 can be used to increase impact by redirecting the administrator to access a specially crafted page. This vulnerability is caused by insecure configuration in elFinder. This is fixed in version 3.0.2.328.",
+    "published": "2020-09-18T18:15:16.863",
+    "last_modified": "2026-06-17T02:56:13.657",
+    "cwes": [
+     "CWE-434"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "https://github.com/inunosinsi/soycms/issues/9",
+     "https://youtu.be/FWIDFNXmr9g",
+     "https://github.com/inunosinsi/soycms/issues/9",
+     "https://youtu.be/FWIDFNXmr9g"
+    ],
+    "references_total": 10,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 7.2,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "HIGH"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.02807,
+    "percentile": 0.86774,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2009-1136": {
+  "cve": "CVE-2009-1136",
+  "collected_at": "2026-11-19T06:34:44Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2009-1136",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The Microsoft Office Web Components Spreadsheet ActiveX control (aka OWC10 or OWC11), as distributed in Office XP SP3 and Office 2003 SP3, Office XP Web Components SP3, Office 2003 Web Components SP3, Office 2003 Web Components SP1 for the 2007 Microsoft Office System, Internet Security and Acceleration (ISA) Server 2004 SP3 and 2006 Gold and SP1, and Office Small Business Accounting 2006, when used in Internet Explorer, allows remote attackers to execute arbitrary code via a crafted call to the msDataSourceObject method, as exploited in the wild in July and August 2009, aka \"Office Web Components HTML Script Vulnerability.\"",
+    "published": "2009-07-15T15:30:01.360",
+    "last_modified": "2026-06-16T23:06:35.050",
+    "cwes": [
+     "CWE-94"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://trac.metasploit.com/browser/framework3/trunk/modules/exploits/windows/browser/owc_spreadsheet_msdso.rb",
+     "http://xeye.us/blog/2009/07/one-0day/",
+     "http://trac.metasploit.com/browser/framework3/trunk/modules/exploits/windows/browser/owc_spreadsheet_msdso.rb",
+     "http://xeye.us/blog/2009/07/one-0day/"
+    ],
+    "references_total": 18,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 9.3,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.6202,
+    "percentile": 0.99196,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 2,
+    "verified_count": 2,
+    "exploits": [
+     {
+      "id": "16537",
+      "title": "Microsoft Office Web Components (OWC) Spreadsheet - msDataSourceObject Memory Corruption (MS09-043) (Metasploit)",
+      "date_published": "2010-07-20",
+      "type": "remote",
+      "platform": "windows",
+      "verified": true
+     },
+     {
+      "id": "9163",
+      "title": "Microsoft Office Web Components (OWC) Spreadsheet - ActiveX Buffer Overflow (PoC)",
+      "date_published": "2009-07-16",
+      "type": "dos",
+      "platform": "windows",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2016-3393": {
+  "cve": "CVE-2016-3393",
+  "collected_at": "2026-11-19T06:34:51Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2016-3393",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Graphics Device Interface (aka GDI or GDI+) in Microsoft Windows Vista SP2; Windows Server 2008 SP2 and R2 SP1; Windows 7 SP1; Windows 8.1; Windows Server 2012 Gold and R2; Windows RT 8.1; and Windows 10 Gold, 1511, and 1607 allows remote attackers to execute arbitrary code via a crafted web site, aka \"Windows Graphics Component RCE Vulnerability.\"",
+    "published": "2016-10-14T02:59:30.290",
+    "last_modified": "2026-06-17T00:45:36.537",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 7,
+    "cisa_exploit_add": "2022-05-25",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Windows",
+    "vulnerability_name": "Microsoft Windows Graphics Device Interface (GDI) Remote Code Execution Vulnerability",
+    "short_description": "A remote code execution vulnerability exists due to the way the Windows GDI component handles objects in the memory. An attacker who successfully exploits this vulnerability could take control of the affected system.",
+    "date_added": "2022-05-25",
+    "due_date": "2022-06-15",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-284"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.68465,
+    "percentile": 0.99349,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-10590": {
+  "cve": "CVE-2018-10590",
+  "collected_at": "2026-11-19T06:34:59Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-10590",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "In Advantech WebAccess versions V8.2_20170817 and prior, WebAccess versions V8.3.0 and prior, WebAccess Dashboard versions V.2.0.15 and prior, WebAccess Scada Node versions prior to 8.3.1, and WebAccess/NMS 2.0.3 and prior, an information exposure vulnerability through directory listing has been identified, which may allow an attacker to find important files that are not normally visible.",
+    "published": "2018-05-15T22:29:00.317",
+    "last_modified": "2026-06-17T01:34:13.807",
+    "cwes": [
+     "CWE-548",
+     "CWE-538"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01633,
+    "percentile": 0.76763,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-15821": {
+  "cve": "CVE-2019-15821",
+  "collected_at": "2026-11-19T06:35:06Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-15821",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The bold-page-builder plugin before 2.3.2 for WordPress has no protection against modifying settings and importing data.",
+    "published": "2019-08-30T13:15:11.687",
+    "last_modified": "2026-06-17T02:21:08.657",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.11019,
+    "percentile": 0.95991,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-6271": {
+  "cve": "CVE-2014-6271",
+  "collected_at": "2026-11-19T06:35:13Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-6271",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "GNU Bash through 4.3 processes trailing strings after function definitions in the values of environment variables, which allows remote attackers to execute arbitrary code via a crafted environment, as demonstrated by vectors involving the ForceCommand feature in OpenSSH sshd, the mod_cgi and mod_cgid modules in the Apache HTTP Server, scripts executed by unspecified DHCP clients, and other situations in which setting the environment occurs across a privilege boundary from Bash execution, aka \"ShellShock.\"  NOTE: the original fix for this issue was incorrect; CVE-2014-7169 has been assigned to cover the vulnerability that is still present after the incorrect fix.",
+    "published": "2014-09-24T18:48:04.477",
+    "last_modified": "2026-06-17T00:12:48.020",
+    "cwes": [
+     "CWE-78"
+    ],
+    "exploit_reference_count": 30,
+    "exploit_references": [
+     "http://lcamtuf.blogspot.com/2014/09/quick-notes-about-bash-bug-its-impact.html",
+     "http://packetstormsecurity.com/files/128517/VMware-Security-Advisory-2014-0010.html",
+     "http://packetstormsecurity.com/files/128567/CA-Technologies-GNU-Bash-Shellshock.html",
+     "http://packetstormsecurity.com/files/128573/Apache-mod_cgi-Remote-Command-Execution.html",
+     "http://packetstormsecurity.com/files/137376/IPFire-Bash-Environment-Variable-Injection-Shellshock.html"
+    ],
+    "references_total": 341,
+    "cisa_exploit_add": "2022-01-28",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "GNU",
+    "product": "Bourne-Again Shell (Bash)",
+    "vulnerability_name": "GNU Bourne-Again Shell (Bash) Arbitrary Code Execution Vulnerability",
+    "short_description": "GNU Bash through 4.3 processes trailing strings after function definitions in the values of environment variables, which allows remote attackers to execute code.",
+    "date_added": "2022-01-28",
+    "due_date": "2022-07-28",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-78"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99999,
+    "percentile": 0.99993,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 21,
+    "verified_count": 13,
+    "exploits": [
+     {
+      "id": "42938",
+      "title": "Qmail SMTP - Bash Environment Variable Injection (Metasploit)",
+      "date_published": "2017-10-02",
+      "type": "remote",
+      "platform": "linux",
+      "verified": true
+     },
+     {
+      "id": "40938",
+      "title": "RedStar 3.0 Server - 'Shellshock' 'BEAM' / 'RSSMON' Command Injection",
+      "date_published": "2016-12-18",
+      "type": "local",
+      "platform": "linux",
+      "verified": true
+     },
+     {
+      "id": "40619",
+      "title": "TrendMicro InterScan Web Security Virtual Appliance - 'Shellshock' Remote Command Injection",
+      "date_published": "2016-10-21",
+      "type": "remote",
+      "platform": "hardware",
+      "verified": false
+     },
+     {
+      "id": "39918",
+      "title": "IPFire - 'Shellshock' Bash Environment Variable Command Injection (Metasploit)",
+      "date_published": "2016-06-10",
+      "type": "remote",
+      "platform": "cgi",
+      "verified": true
+     },
+     {
+      "id": "38849",
+      "title": "Advantech Switch - 'Shellshock' Bash Environment Variable Command Injection (Metasploit)",
+      "date_published": "2015-12-02",
+      "type": "remote",
+      "platform": "cgi",
+      "verified": true
+     },
+     {
+      "id": "37816",
+      "title": "Cisco Unified Communications Manager - Multiple Vulnerabilities",
+      "date_published": "2015-08-18",
+      "type": "webapps",
+      "platform": "multiple",
+      "verified": false
+     },
+     {
+      "id": "36609",
+      "title": "Kemp Load Master 7.1.16 - Multiple Vulnerabilities",
+      "date_published": "2015-04-02",
+      "type": "webapps",
+      "platform": "multiple",
+      "verified": false
+     },
+     {
+      "id": "36503",
+      "title": "QNAP - Admin Shell via Bash Environment Variable Code Injection (Metasploit)",
+      "date_published": "2015-03-26",
+      "type": "remote",
+      "platform": "hardware",
+      "verified": false
+     },
+     {
+      "id": "36504",
+      "title": "QNAP - Web Server Remote Code Execution via Bash Environment Variable Code Injection (Metasploit)",
+      "date_published": "2015-03-26",
+      "type": "remote",
+      "platform": "hardware",
+      "verified": false
+     },
+     {
+      "id": "35146",
+      "title": "PHP < 5.6.2 - 'Shellshock' Safe Mode / disable_functions Bypass / Command Injection",
+      "date_published": "2014-11-03",
+      "type": "webapps",
+      "platform": "php",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-4113": {
+  "cve": "CVE-2014-4113",
+  "collected_at": "2026-11-19T06:35:21Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-4113",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "win32k.sys in the kernel-mode drivers in Microsoft Windows Server 2003 SP2, Windows Vista SP2, Windows Server 2008 SP2 and R2 SP1, Windows 7 SP1, Windows 8, Windows 8.1, Windows Server 2012 Gold and R2, and Windows RT Gold and 8.1 allows local users to gain privileges via a crafted application, as exploited in the wild in October 2014, aka \"Win32k.sys Elevation of Privilege Vulnerability.\"",
+    "published": "2014-10-15T10:55:07.473",
+    "last_modified": "2026-06-17T00:09:27.350",
+    "cwes": [],
+    "exploit_reference_count": 8,
+    "exploit_references": [
+     "http://blog.trendmicro.com/trendlabs-security-intelligence/an-analysis-of-a-windows-kernel-mode-vulnerability-cve-2014-4113/",
+     "http://packetstormsecurity.com/files/131964/Windows-8.0-8.1-x64-TrackPopupMenu-Privilege-Escalation.html",
+     "http://www.exploit-db.com/exploits/35101",
+     "https://www.exploit-db.com/exploits/37064/",
+     "http://blog.trendmicro.com/trendlabs-security-intelligence/an-analysis-of-a-windows-kernel-mode-vulnerability-cve-2014-4113/"
+    ],
+    "references_total": 23,
+    "cisa_exploit_add": "2022-05-04",
+    "cvss_version": "3.1",
+    "cvss_score": 7.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "LOCAL",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Microsoft",
+    "product": "Win32k",
+    "vulnerability_name": "Microsoft Win32k Privilege Escalation Vulnerability",
+    "short_description": "Microsoft Win32k contains an unspecified vulnerability that allows for privilege escalation.",
+    "date_added": "2022-05-04",
+    "due_date": "2022-05-25",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-264"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.86648,
+    "percentile": 0.99745,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 4,
+    "verified_count": 2,
+    "exploits": [
+     {
+      "id": "39666",
+      "title": "Microsoft Windows Kernel - 'win32k.sys' Local Privilege Escalation (MS14-058)",
+      "date_published": "2016-04-05",
+      "type": "local",
+      "platform": "windows",
+      "verified": false
+     },
+     {
+      "id": "37064",
+      "title": "Microsoft Windows 8.0/8.1 (x64) - 'TrackPopupMenu' Local Privilege Escalation (MS14-058)",
+      "date_published": "2015-05-19",
+      "type": "local",
+      "platform": "windows_x86-64",
+      "verified": true
+     },
+     {
+      "id": "46945",
+      "title": "Microsoft Windows 8.1/ Server 2012 - 'Win32k.sys' Local Privilege Escalation (MS14-058)",
+      "date_published": "2014-11-24",
+      "type": "local",
+      "platform": "windows",
+      "verified": false
+     },
+     {
+      "id": "35101",
+      "title": "Microsoft Windows - TrackPopupMenu Win32k Null Pointer Dereference (MS14-058) (Metasploit)",
+      "date_published": "2014-10-28",
+      "type": "local",
+      "platform": "windows",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-0307": {
+  "cve": "CVE-2014-0307",
+  "collected_at": "2026-11-19T06:35:28Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-0307",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Use-after-free vulnerability in Microsoft Internet Explorer 9 allows remote attackers to execute arbitrary code or cause a denial of service (memory corruption) via a certain sequence of manipulations of a TextRange element, aka \"Internet Explorer Memory Corruption Vulnerability.\"",
+    "published": "2014-03-12T05:15:19.567",
+    "last_modified": "2026-06-17T00:02:46.017",
+    "cwes": [
+     "CWE-119",
+     "CWE-416"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "http://www.exploit-db.com/exploits/32438",
+     "http://www.exploit-db.com/exploits/32438"
+    ],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 9.3,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.69452,
+    "percentile": 0.99373,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "32438",
+      "title": "Microsoft Internet Explorer - TextRange Use-After-Free (MS14-012) (Metasploit)",
+      "date_published": "2014-03-22",
+      "type": "remote",
+      "platform": "windows",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-3066": {
+  "cve": "CVE-2017-3066",
+  "collected_at": "2026-11-19T06:35:36Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-3066",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Adobe ColdFusion 2016 Update 3 and earlier, ColdFusion 11 update 11 and earlier, ColdFusion 10 Update 22 and earlier have a Java deserialization vulnerability in the Apache BlazeDS library. Successful exploitation could lead to arbitrary code execution.",
+    "published": "2017-04-27T14:59:00.233",
+    "last_modified": "2026-06-17T01:17:26.550",
+    "cwes": [
+     "CWE-502"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://www.exploit-db.com/exploits/43993/",
+     "https://www.exploit-db.com/exploits/43993/"
+    ],
+    "references_total": 9,
+    "cisa_exploit_add": "2025-02-24",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Adobe",
+    "product": "ColdFusion",
+    "vulnerability_name": "Adobe ColdFusion Deserialization Vulnerability",
+    "short_description": "Adobe ColdFusion contains a deserialization vulnerability in the Apache BlazeDS library that allows for arbitrary code execution.",
+    "date_added": "2025-02-24",
+    "due_date": "2025-03-17",
+    "required_action": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable.",
+    "known_ransomware": false,
+    "cwes": [
+     "CWE-502"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.90597,
+    "percentile": 0.99806,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 0,
+    "exploits": [
+     {
+      "id": "43993",
+      "title": "Adobe Coldfusion 11.0.03.292866 - BlazeDS Java Object Deserialization Remote Code Execution",
+      "date_published": "2018-02-07",
+      "type": "remote",
+      "platform": "windows",
+      "verified": false
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-15767": {
+  "cve": "CVE-2018-15767",
+  "collected_at": "2026-11-19T06:35:43Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-15767",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The Dell OpenManage Network Manager virtual appliance versions prior to 6.5.3 contain an improper authorization vulnerability caused by a misconfiguration in the /etc/sudoers file.",
+    "published": "2018-11-30T17:29:00.317",
+    "last_modified": "2026-06-17T01:43:05.073",
+    "cwes": [
+     "CWE-863"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://www.exploit-db.com/exploits/45852/",
+     "https://www.exploit-db.com/exploits/45852/"
+    ],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.12324,
+    "percentile": 0.96272,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "45852",
+      "title": "Dell OpenManage Network Manager 6.2.0.51 SP3 - Multiple Vulnerabilities",
+      "date_published": "2018-11-14",
+      "type": "webapps",
+      "platform": "linux",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-3706": {
+  "cve": "CVE-2019-3706",
+  "collected_at": "2026-11-19T06:35:51Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-3706",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Dell EMC iDRAC9 versions prior to 3.24.24.24, 3.21.26.22, 3.22.22.22 and 3.21.25.22 contain an authentication bypass vulnerability. A remote attacker may potentially exploit this vulnerability to bypass authentication and gain access to the system by sending specially crafted data to the iDRAC web interface.",
+    "published": "2019-04-26T19:29:00.587",
+    "last_modified": "2026-06-17T02:35:25.460",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.03308,
+    "percentile": 0.88799,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-5054": {
+  "cve": "CVE-2013-5054",
+  "collected_at": "2026-11-19T06:35:58Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-5054",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Microsoft Office 2013 and 2013 RT allows remote attackers to discover authentication tokens via a crafted response to a file-open request for an Office file on a web site, as exploited in the wild in 2013, aka \"Token Hijacking Vulnerability.\"",
+    "published": "2013-12-11T00:55:04.067",
+    "last_modified": "2026-06-16T23:58:19.020",
+    "cwes": [
+     "CWE-200"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 4.3,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "AV:N/AC:M/Au:N/C:P/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.11686,
+    "percentile": 0.96143,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2017-5638": {
+  "cve": "CVE-2017-5638",
+  "collected_at": "2026-11-19T06:36:05Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2017-5638",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "The Jakarta Multipart parser in Apache Struts 2 2.3.x before 2.3.32 and 2.5.x before 2.5.10.1 has incorrect exception handling and error-message generation during file-upload attempts, which allows remote attackers to execute arbitrary commands via a crafted Content-Type, Content-Disposition, or Content-Length HTTP header, as exploited in the wild in March 2017 with a Content-Type header containing a #cmd= string.",
+    "published": "2017-03-11T02:59:00.150",
+    "last_modified": "2026-06-17T01:20:54.013",
+    "cwes": [
+     "CWE-755"
+    ],
+    "exploit_reference_count": 20,
+    "exploit_references": [
+     "http://blog.talosintelligence.com/2017/03/apache-0-day-exploited.html",
+     "http://blog.trendmicro.com/trendlabs-security-intelligence/cve-2017-5638-apache-struts-vulnerability-remote-code-execution/",
+     "https://arstechnica.com/security/2017/03/critical-vulnerability-under-massive-attack-imperils-high-impact-sites/",
+     "https://exploit-db.com/exploits/41570",
+     "https://github.com/mazen160/struts-pwn"
+    ],
+    "references_total": 67,
+    "cisa_exploit_add": "2021-11-03",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Apache",
+    "product": "Struts",
+    "vulnerability_name": "Apache Struts Remote Code Execution Vulnerability",
+    "short_description": "Apache Struts Jakarta Multipart parser allows for malicious file upload using the Content-Type value, leading to remote code execution.",
+    "date_added": "2021-11-03",
+    "due_date": "2022-05-03",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": true,
+    "cwes": [
+     "CWE-20"
+    ],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.99999,
+    "percentile": 0.99995,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 2,
+    "verified_count": 2,
+    "exploits": [
+     {
+      "id": "41614",
+      "title": "Apache Struts 2.3.5 < 2.3.31 / 2.5 < 2.5.10 - 'Jakarta' Multipart Parser OGNL Injection (Metasploit)",
+      "date_published": "2017-03-15",
+      "type": "remote",
+      "platform": "multiple",
+      "verified": true
+     },
+     {
+      "id": "41570",
+      "title": "Apache Struts 2.3.5 < 2.3.31 / 2.5 < 2.5.10 - Remote Code Execution",
+      "date_published": "2017-03-07",
+      "type": "webapps",
+      "platform": "linux",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-14802": {
+  "cve": "CVE-2018-14802",
+  "collected_at": "2026-11-19T06:36:13Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-14802",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Fuji Electric FRENIC LOADER v3.3 v7.3.4.1a of FRENIC-Mini (C1), FRENIC-Mini (C2), FRENIC-Eco, FRENIC-Multi, FRENIC-MEGA, FRENIC-Ace. The program does not properly check user-supplied comments which may allow for arbitrary remote code execution.",
+    "published": "2018-10-01T13:29:00.817",
+    "last_modified": "2026-06-17T01:41:40.240",
+    "cwes": [
+     "CWE-121",
+     "CWE-119"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.03577,
+    "percentile": 0.89623,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-15771": {
+  "cve": "CVE-2018-15771",
+  "collected_at": "2026-11-19T06:36:20Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-15771",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Dell EMC RecoverPoint versions prior to 5.1.2.1 and RecoverPoint for VMs versions prior to 5.2.0.2 contain an information disclosure vulnerability. A malicious boxmgmt user may potentially be able to determine the existence of any system file via Boxmgmt CLI.",
+    "published": "2018-11-13T14:29:00.260",
+    "last_modified": "2026-06-17T01:43:05.480",
+    "cwes": [
+     "CWE-200"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 5.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+    "attack_vector": "LOCAL",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00417,
+    "percentile": 0.36707,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2012-2319": {
+  "cve": "CVE-2012-2319",
+  "collected_at": "2026-11-19T06:36:28Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2012-2319",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Multiple buffer overflows in the hfsplus filesystem implementation in the Linux kernel before 3.3.5 allow local users to gain privileges via a crafted HFS plus filesystem, a related issue to CVE-2009-4020.",
+    "published": "2012-05-17T11:00:38.867",
+    "last_modified": "2026-06-16T23:41:21.060",
+    "cwes": [
+     "CWE-264"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 18,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 7.2,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:L/AC:L/Au:N/C:C/I:C/A:C",
+    "attack_vector": "LOCAL",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00397,
+    "percentile": 0.34577,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-1493": {
+  "cve": "CVE-2013-1493",
+  "collected_at": "2026-11-19T06:36:35Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-1493",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The color management (CMM) functionality in the 2D component in Oracle Java SE 7 Update 15 and earlier, 6 Update 41 and earlier, and 5.0 Update 40 and earlier allows remote attackers to execute arbitrary code or cause a denial of service (crash) via an image with crafted raster parameters, which triggers (1) an out-of-bounds read or (2) memory corruption in the JVM, as exploited in the wild in February 2013.",
+    "published": "2013-03-05T22:06:35.043",
+    "last_modified": "2026-06-16T23:51:32.180",
+    "cwes": [
+     "CWE-119"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 62,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 10.0,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.86151,
+    "percentile": 0.99736,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "24904",
+      "title": "Java CMM - Remote Code Execution (Metasploit)",
+      "date_published": "2013-03-29",
+      "type": "remote",
+      "platform": "windows",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-15105": {
+  "cve": "CVE-2020-15105",
+  "collected_at": "2026-11-19T06:36:42Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-15105",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Django Two-Factor Authentication before 1.12, stores the user's password in clear text in the user session (base64-encoded). The password is stored in the session when the user submits their username and password, and is removed once they complete authentication by entering a two-factor authentication code. This means that the password is stored in clear text in the session for an arbitrary amount of time, and potentially forever if the user begins the login process by entering their username and password and then leaves before entering their two-factor authentication code. The severity of this issue depends on which type of session storage you have configured: in the worst case, if you're using Django's default database session storage, then users' passwords are stored in clear text in your database. In the best case, if you're using Django's signed cookie session, then users' passwords are only stored in clear text within their browser's cookie store. In the common case of using Django's cache session store, the users' passwords are stored in clear text in whatever cache storage you have configured (typically Memcached or Redis). This has been fixed in 1.12. After upgrading, users should be sure to delete any clear text passwords that have been stored. For example, if you're using the database session backend, you'll likely want to delete any session record from the database and purge that data from any database backups or replicas. In addition, affected organizations who h",
+    "published": "2020-07-10T21:15:10.950",
+    "last_modified": "2026-06-17T02:56:03.837",
+    "cwes": [
+     "CWE-312"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 6,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 5.4,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:H/I:L/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00698,
+    "percentile": 0.53815,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-10620": {
+  "cve": "CVE-2018-10620",
+  "collected_at": "2026-11-19T06:36:50Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-10620",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "AVEVA InduSoft Web Studio v8.1 and v8.1SP1, and InTouch Machine Edition v2017 8.1 and v2017 8.1 SP1 a remote user could send a carefully crafted packet to exploit a stack-based buffer overflow vulnerability during tag, alarm, or event related actions such as read and write, with potential for code to be executed.",
+    "published": "2018-07-19T19:29:00.217",
+    "last_modified": "2026-06-17T01:34:17.790",
+    "cwes": [
+     "CWE-121",
+     "CWE-787"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://www.tenable.com/security/research/tra-2018-19",
+     "https://www.tenable.com/security/research/tra-2018-19"
+    ],
+    "references_total": 8,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.04198,
+    "percentile": 0.91146,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-6129": {
+  "cve": "CVE-2013-6129",
+  "collected_at": "2026-11-19T06:36:57Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-6129",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The install/upgrade.php scripts in vBulletin 4.1 and 5 allow remote attackers to create administrative accounts via the customerid, htmldata[password], htmldata[confirmpassword], and htmldata[email] parameters, as exploited in the wild in October 2013.",
+    "published": "2013-10-19T10:36:09.633",
+    "last_modified": "2026-06-17T00:00:00.113",
+    "cwes": [
+     "CWE-264"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "http://www.net-security.org/secworld.php?id=15743",
+     "http://www.net-security.org/secworld.php?id=15743"
+    ],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.51887,
+    "percentile": 0.98974,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "38785",
+      "title": "vBulletin 4.1.x - '/install/upgrade.php' Security Bypass",
+      "date_published": "2013-10-13",
+      "type": "webapps",
+      "platform": "php",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2012-1675": {
+  "cve": "CVE-2012-1675",
+  "collected_at": "2026-11-19T06:37:05Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2012-1675",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The TNS Listener, as used in Oracle Database 11g 11.1.0.7, 11.2.0.2, and 11.2.0.3, and 10g 10.2.0.3, 10.2.0.4, and 10.2.0.5, as used in Oracle Fusion Middleware, Enterprise Manager, E-Business Suite, and possibly other products, allows remote attackers to execute arbitrary database commands by performing a remote registration of a database (1) instance or (2) service name that already exists, then conducting a man-in-the-middle (MITM) attack to hijack database connections, aka \"TNS Poison.\"",
+    "published": "2012-05-08T22:55:01.010",
+    "last_modified": "2026-06-16T23:40:04.343",
+    "cwes": [
+     "CWE-264"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://seclists.org/fulldisclosure/2012/Apr/204",
+     "http://www.securityfocus.com/bid/53308",
+     "http://seclists.org/fulldisclosure/2012/Apr/204",
+     "http://www.securityfocus.com/bid/53308"
+    ],
+    "references_total": 20,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 7.5,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.77426,
+    "percentile": 0.99567,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-10610": {
+  "cve": "CVE-2018-10610",
+  "collected_at": "2026-11-19T06:37:13Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-10610",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "An out-of-bounds vulnerability in LeviStudioU, Versions 1.8.29 and 1.8.44 can be exploited when the application processes specially crafted project files.",
+    "published": "2018-10-09T21:29:00.327",
+    "last_modified": "2026-06-17T01:34:16.470",
+    "cwes": [
+     "CWE-787"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "REQUIRED",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01117,
+    "percentile": 0.66748,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-2465": {
+  "cve": "CVE-2013-2465",
+  "collected_at": "2026-11-19T06:37:20Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-2465",
+    "vuln_status": "Analyzed",
+    "rejected": false,
+    "description": "Unspecified vulnerability in the Java Runtime Environment (JRE) component in Oracle Java SE 7 Update 21 and earlier, 6 Update 45 and earlier, and 5.0 Update 45 and earlier, and OpenJDK 7, allows remote attackers to affect confidentiality, integrity, and availability via unknown vectors related to 2D.  NOTE: the previous information is from the June 2013 CPU. Oracle has not commented on claims from another vendor that this issue allows remote attackers to bypass the Java sandbox via vectors related to \"Incorrect image channel verification\" in 2D.",
+    "published": "2013-06-18T22:55:02.807",
+    "last_modified": "2026-06-16T23:53:30.330",
+    "cwes": [
+     "CWE-693"
+    ],
+    "exploit_reference_count": 2,
+    "exploit_references": [
+     "https://www.vicarius.io/vsociety/posts/cve-2013-2465-detect-java-vulnerability",
+     "https://www.vicarius.io/vsociety/posts/cve-2013-2465-mitigate-java-vulnerability"
+    ],
+    "references_total": 65,
+    "cisa_exploit_add": "2022-03-28",
+    "cvss_version": "3.1",
+    "cvss_score": 9.8,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": true,
+    "in_kev": true,
+    "vendor_project": "Oracle",
+    "product": "Java SE",
+    "vulnerability_name": "Oracle Java SE Unspecified Vulnerability",
+    "short_description": "Unspecified vulnerability in the Java Runtime Environment (JRE) component in Oracle Java SE allows remote attackers to affect confidentiality, integrity, and availability via Unknown vectors related to 2D",
+    "date_added": "2022-03-28",
+    "due_date": "2022-04-18",
+    "required_action": "Apply updates per vendor instructions.",
+    "known_ransomware": true,
+    "cwes": [],
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.98773,
+    "percentile": 0.99927,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "27705",
+      "title": "Java - 'storeImageArray()' Invalid Array Indexing (Metasploit)",
+      "date_published": "2013-08-19",
+      "type": "remote",
+      "platform": "multiple",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-5954": {
+  "cve": "CVE-2019-5954",
+  "collected_at": "2026-11-19T06:37:27Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-5954",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "JR East Japan train operation information push notification App for Android version 1.2.4 and earlier allows remote attackers to bypass access restriction to obtain or alter the user's registered information via unspecified vectors.",
+    "published": "2019-05-17T16:29:05.453",
+    "last_modified": "2026-06-17T02:38:27.990",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 9.1,
+    "cvss_severity": "CRITICAL",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01921,
+    "percentile": 0.80335,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2019-6538": {
+  "cve": "CVE-2019-6538",
+  "collected_at": "2026-11-19T06:37:35Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2019-6538",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The Conexus telemetry protocol utilized within Medtronic MyCareLink Monitor versions 24950 and 24952, CareLink Monitor version 2490C, CareLink 2090 Programmer, Amplia CRT-D, Claria CRT-D, Compia CRT-D, Concerto CRT-D, Concerto II CRT-D, Consulta CRT-D, Evera ICD, Maximo II CRT-D and ICD, Mirro ICD, Nayamed ND ICD, Primo ICD, Protecta ICD and CRT-D, Secura ICD, Virtuoso ICD, Virtuoso II ICD, Visia AF ICD, and Viva CRT-D does not implement authentication or authorization. An attacker with adjacent short-range access to an affected product, in situations where the product’s radio is turned on, can inject, replay, modify, and/or intercept data within the telemetry communication. This communication protocol provides the ability to read and write memory values to affected implanted cardiac devices; therefore, an attacker could exploit this communication protocol to change memory in the implanted cardiac device.",
+    "published": "2019-03-25T22:29:00.763",
+    "last_modified": "2026-06-17T02:39:12.980",
+    "cwes": [
+     "CWE-284",
+     "CWE-306",
+     "CWE-862"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 6.5,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+    "attack_vector": "ADJACENT_NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "NONE"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.00895,
+    "percentile": 0.60235,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2015-4051": {
+  "cve": "CVE-2015-4051",
+  "collected_at": "2026-11-19T06:37:42Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2015-4051",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Beckhoff IPC Diagnostics before 1.8 does not properly restrict access to functions in /config, which allows remote attackers to cause a denial of service (reboot or shutdown), create arbitrary users, or possibly have unspecified other impact via a crafted request, as demonstrated by a beckhoff.com:service:cxconfig:1#Write SOAP action to /upnpisapi.",
+    "published": "2015-06-08T14:59:12.790",
+    "last_modified": "2026-06-17T00:26:41.793",
+    "cwes": [
+     "CWE-284"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://seclists.org/fulldisclosure/2015/Jun/10",
+     "http://www.thesecurityfactory.be/permalink/beckhoff-authentication-bypass.html",
+     "http://seclists.org/fulldisclosure/2015/Jun/10",
+     "http://www.thesecurityfactory.be/permalink/beckhoff-authentication-bypass.html"
+    ],
+    "references_total": 12,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 9.0,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:L/Au:N/C:P/I:P/A:C",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.0574,
+    "percentile": 0.93207,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2018-15761": {
+  "cve": "CVE-2018-15761",
+  "collected_at": "2026-11-19T06:37:50Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2018-15761",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Cloud Foundry UAA release, versions prior to v64.0, and UAA, versions prior to 4.23.0, contains a validation error which allows for privilege escalation. A remote authenticated user may modify the url and content of a consent page to gain a token with arbitrary scopes that escalates their privileges.",
+    "published": "2018-11-19T14:29:00.467",
+    "last_modified": "2026-06-17T01:43:04.323",
+    "cwes": [],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 2,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.0",
+    "cvss_score": 8.8,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.01713,
+    "percentile": 0.77857,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2013-5576": {
+  "cve": "CVE-2013-5576",
+  "collected_at": "2026-11-19T06:37:57Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2013-5576",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "administrator/components/com_media/helpers/media.php in the media manager in Joomla! 2.5.x before 2.5.14 and 3.x before 3.1.5 allows remote authenticated users or remote attackers to bypass intended access restrictions and upload files with dangerous extensions via a filename with a trailing . (dot), as exploited in the wild in August 2013.",
+    "published": "2013-10-09T14:54:26.780",
+    "last_modified": "2026-06-16T23:59:02.613",
+    "cwes": [
+     "CWE-20"
+    ],
+    "exploit_reference_count": 4,
+    "exploit_references": [
+     "http://www.exploit-db.com/exploits/27610",
+     "https://github.com/joomla/joomla-cms/commit/fa5645208eefd70f521cd2e4d53d5378622133d8",
+     "http://www.exploit-db.com/exploits/27610",
+     "https://github.com/joomla/joomla-cms/commit/fa5645208eefd70f521cd2e4d53d5378622133d8"
+    ],
+    "references_total": 18,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 6.8,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "AV:N/AC:M/Au:N/C:P/I:P/A:P",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.48191,
+    "percentile": 0.98885,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": true,
+    "exploit_count": 1,
+    "verified_count": 1,
+    "exploits": [
+     {
+      "id": "27610",
+      "title": "Joomla! Component Media Manager - Arbitrary File Upload (Metasploit)",
+      "date_published": "2013-08-15",
+      "type": "remote",
+      "platform": "php",
+      "verified": true
+     }
+    ],
+    "stale": false
+   }
+  }
+ },
+ "CVE-2014-0266": {
+  "cve": "CVE-2014-0266",
+  "collected_at": "2026-11-19T06:38:05Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2014-0266",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "The XMLHTTP ActiveX controls in XML Core Services 3.0 in Microsoft Windows XP SP2 and SP3, Windows Server 2003 SP2, Windows Vista SP2, Windows Server 2008 SP2 and R2 SP1, Windows 7 SP1, Windows 8, Windows 8.1, Windows Server 2012 Gold and R2, and Windows RT Gold and 8.1 allow remote attackers to bypass the Same Origin Policy via a web page that is visited in Internet Explorer, aka \"MSXML Information Disclosure Vulnerability.\"",
+    "published": "2014-02-12T04:50:40.063",
+    "last_modified": "2026-06-17T00:02:40.097",
+    "cwes": [
+     "CWE-200"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 8,
+    "cisa_exploit_add": null,
+    "cvss_version": "2.0",
+    "cvss_score": 7.1,
+    "cvss_severity": "HIGH",
+    "cvss_vector": "AV:N/AC:M/Au:N/C:C/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": null,
+    "privileges_required": null
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.1941,
+    "percentile": 0.97417,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ },
+ "CVE-2020-5284": {
+  "cve": "CVE-2020-5284",
+  "collected_at": "2026-11-19T06:38:12Z",
+  "api_results": {
+   "nvd": {
+    "found": true,
+    "id": "CVE-2020-5284",
+    "vuln_status": "Modified",
+    "rejected": false,
+    "description": "Next.js versions before 9.3.2 have a directory traversal vulnerability. Attackers could craft special requests to access files in the dist directory (.next). This does not affect files outside of the dist directory (.next). In general, the dist directory only holds build assets unless your application intentionally stores other assets under this directory. This issue is fixed in version 9.3.2.",
+    "published": "2020-03-30T22:15:15.400",
+    "last_modified": "2026-06-17T03:21:12.070",
+    "cwes": [
+     "CWE-23",
+     "CWE-22"
+    ],
+    "exploit_reference_count": 0,
+    "exploit_references": [],
+    "references_total": 4,
+    "cisa_exploit_add": null,
+    "cvss_version": "3.1",
+    "cvss_score": 4.3,
+    "cvss_severity": "MEDIUM",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N",
+    "attack_vector": "NETWORK",
+    "user_interaction": "NONE",
+    "privileges_required": "LOW"
+   },
+   "cisa_kev": {
+    "found": false,
+    "in_kev": false,
+    "catalog_version": "2026.11.18",
+    "catalog_count": 1786,
+    "stale": false
+   },
+   "epss": {
+    "found": true,
+    "epss": 0.44776,
+    "percentile": 0.98798,
+    "date": "2026-11-18"
+   },
+   "exploitdb": {
+    "found": false,
+    "exploit_count": 0,
+    "stale": false
+   }
+  }
+ }
+}

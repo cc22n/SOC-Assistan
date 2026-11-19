@@ -47,7 +47,7 @@ class TestValidacion:
     @pytest.mark.parametrize('kw', [
         dict(name=''), dict(name='   '), dict(name=None), dict(name=5), dict(name='x' * 121),
         dict(description='x' * 1001), dict(description=['a']),
-        dict(ioc_type='cve'), dict(ioc_type=None),
+        dict(ioc_type='mac'), dict(ioc_type=None),
         dict(apis=[]), dict(apis=None), dict(apis='abuseipdb'), dict(apis=[1, 2]),
         dict(apis=['abuseipdb', 'abuseipdb']),                         # repetidas
         dict(apis=['no_existe']),                                      # inexistente
@@ -78,16 +78,16 @@ class TestPerfilesDelSistema:
         _, err = validate_profile_fields('x', '', 'ip', ['abuseipdb', 'api_borrada'])
         assert err
 
-    def test_hay_ocho_y_cubren_los_cuatro_tipos(self):
-        assert len(SYSTEM_PROFILES) == 8
-        assert {s['ioc_type'] for s in SYSTEM_PROFILES} == {'ip', 'domain', 'url', 'hash'}
+    def test_hay_diez_y_cubren_los_cinco_tipos(self):
+        assert len(SYSTEM_PROFILES) == 10
+        assert {s['ioc_type'] for s in SYSTEM_PROFILES} == {'ip', 'domain', 'url', 'hash', 'cve'}
         nombres = [s['name'].lower() for s in SYSTEM_PROFILES]
         assert len(set(nombres)) == len(nombres)
 
     def test_siembra_idempotente(self, app, db_session):
-        assert ensure_system_profiles() == {'created': 8, 'updated': 0}
+        assert ensure_system_profiles() == {'created': 10, 'updated': 0}
         assert ensure_system_profiles() == {'created': 0, 'updated': 0}
-        assert InvestigationProfile.query.filter_by(is_system=True).count() == 8
+        assert InvestigationProfile.query.filter_by(is_system=True).count() == 10
 
     def test_siembra_repara_una_definicion_desviada(self, app, db_session):
         ensure_system_profiles()
@@ -138,7 +138,7 @@ class TestCrud:
         assert _crear(client).status_code in (302, 401)
         assert client.get(BASE).status_code in (302, 401)
 
-    @pytest.mark.parametrize('over', [dict(apis=['no_existe']), dict(ioc_type='cve'), dict(name=''), dict(apis=[])])
+    @pytest.mark.parametrize('over', [dict(apis=['no_existe']), dict(ioc_type='mac'), dict(name=''), dict(apis=[])])
     def test_datos_invalidos_400(self, analyst_client, over):
         r = _crear(analyst_client, **over)
         assert r.status_code == 400 and r.get_json()['details']
@@ -182,7 +182,7 @@ class TestVisibilidadYSistema:
         _perfil_db(other_user, name='de other')
         nombres = {p['name'] for p in analyst_client.get(BASE).get_json()['profiles']}
         assert 'de analyst' in nombres and 'de other' not in nombres
-        assert sum(1 for p in analyst_client.get(BASE).get_json()['profiles'] if p['is_system']) == 8
+        assert sum(1 for p in analyst_client.get(BASE).get_json()['profiles'] if p['is_system']) == 10
 
     def test_admin_ve_todos(self, app, db_session, admin_client, analyst_user):
         _perfil_db(analyst_user, name='de analyst')
@@ -192,7 +192,7 @@ class TestVisibilidadYSistema:
         ensure_system_profiles()
         ps = analyst_client.get(f'{BASE}?ioc_type=hash').get_json()['profiles']
         assert ps and all(p['ioc_type'] == 'hash' for p in ps)
-        assert analyst_client.get(f'{BASE}?ioc_type=cve').status_code == 400
+        assert analyst_client.get(f'{BASE}?ioc_type=mac').status_code == 400
 
     @pytest.mark.parametrize('metodo', ['put', 'delete'])
     def test_sistema_inmutable_incluso_para_admin(self, app, db_session, admin_client, metodo):
@@ -210,7 +210,7 @@ class TestVisibilidadYSistema:
 
     def test_catalogo(self, app, analyst_client):
         cat = analyst_client.get(f'{BASE}/catalog').get_json()
-        assert set(cat['catalog']) == {'ip', 'domain', 'url', 'hash'}
+        assert set(cat['catalog']) == {'ip', 'domain', 'url', 'hash', 'cve'}
         assert cat['catalog']['ip'] == compatible_apis('ip')
 
 
