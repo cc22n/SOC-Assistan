@@ -25,6 +25,7 @@ if not KEY:
     sys.exit('falta ABUSECH_AUTH_KEY en .env')
 H = {'Auth-Key': KEY}
 OUT = Path(__file__).with_name('malicious_candidates.json')
+UA = {'User-Agent': 'Mozilla/5.0'}
 
 
 def threatfox(days=3):
@@ -48,8 +49,31 @@ def bazaar_recent():
     return r.json().get('data') or []
 
 
+def independent():
+    """Etiquetas que NO vienen de abuse.ch (las otras son circulares con ThreatFox/URLhaus/MalwareBazaar)."""
+    out = {'ip_indep': [], 'url_indep': []}
+    for name, url in (('cins_army', 'https://cinsscore.com/list/ci-badguys.txt'),
+                      ('emerging_threats', 'https://rules.emergingthreats.net/blockrules/compromised-ips.txt')):
+        try:
+            r = requests.get(url, headers=UA, timeout=40)
+            r.raise_for_status()
+            for line in r.text.split():
+                if line.count('.') == 3 and all(p.isdigit() for p in line.split('.')):
+                    out['ip_indep'].append({'value': line, 'source': name})
+        except Exception as e:
+            print(name, 'ERROR', type(e).__name__, str(e)[:100])
+    try:
+        r = requests.get('https://openphish.com/feed.txt', headers=UA, timeout=40, allow_redirects=True)
+        r.raise_for_status()
+        out['url_indep'] = [{'value': u.strip(), 'source': 'openphish'} for u in r.text.split('\n') if u.startswith('http')]
+    except Exception as e:
+        print('openphish ERROR', type(e).__name__, str(e)[:100])
+    return out
+
+
 def main():
     out = {'ip': [], 'domain': [], 'url': [], 'hash': []}
+    out.update(independent())
     try:
         for x in threatfox():
             t, v = x.get('ioc_type'), x.get('ioc')

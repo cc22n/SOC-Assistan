@@ -11,12 +11,14 @@ Selección de maliciosos determinista (semilla fija) y priorizando confianza alt
 """
 import hashlib
 import json
+import os
 import random
 from pathlib import Path
 
 HERE = Path(__file__).parent
 cand = json.loads((HERE / 'malicious_candidates.json').read_text(encoding='utf-8'))
-rnd = random.Random(20261118)
+TAG = os.environ.get('BASELINE_TAG', '')      # '' = la línea base original (2026-11-18); '_2026-11-19' = el repaso
+rnd = random.Random(int(''.join(c for c in (TAG or '20261118') if c.isdigit())))
 N = 10
 
 
@@ -54,6 +56,14 @@ for x in pick(cand['url'], N):
 for x in pick(cand['hash'], N):
     add(x['value'], 'hash', 'malicious', 'ioc_reciente', 'malwarebazaar', f"sig={x.get('malware')}")
 
+# ---- maliciosos con etiqueta INDEPENDIENTE de abuse.ch (solo si la fuente respondió; ver fetch_malicious.py)
+for src in ('cins_army', 'emerging_threats'):
+    pool = [x for x in cand.get('ip_indep', []) if x['source'] == src]
+    for x in pick(pool, 5):
+        add(x['value'], 'ip', 'malicious', 'ip_en_lista_negra', src, 'IP en lista negra pública (atacante, no necesariamente C2)')
+for x in pick(cand.get('url_indep', []), N):
+    add(x['value'], 'url', 'malicious', 'phishing_reciente', 'openphish', 'URL de phishing')
+
 # ---- benignos
 for ip, nota in [('8.8.8.8', 'Google DNS'), ('1.1.1.1', 'Cloudflare DNS'), ('9.9.9.9', 'Quad9 DNS'),
                  ('208.67.222.222', 'OpenDNS'), ('140.82.112.3', 'GitHub'), ('151.101.1.69', 'Fastly/Reddit CDN'),
@@ -83,7 +93,7 @@ for ip, nota in [('71.6.135.131', 'escáner Shodan'), ('162.142.125.10', 'escán
 for d in ['pastebin.com', 'ngrok.io', 'duckdns.org']:
     add(d, 'domain', 'ambiguous', 'servicio_doble_uso', 'conocimiento_publico', 'abusado a menudo, legítimo en sí')
 
-out = HERE / 'dataset.json'
+out = HERE / f'dataset{TAG}.json'
 out.write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding='utf-8')
 from collections import Counter
 print(len(rows), 'IOCs ->', out.name)

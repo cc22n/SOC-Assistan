@@ -126,3 +126,32 @@ Se verificó cada hallazgo con código o ejecución antes de actuar; el resumen 
   dimensionar en el VPS); R5 logs de `feeds` en el sistema de archivos del contenedor.
 - Para el VPS (acciones del usuario): definir NVD_API_KEY, ALLOWED_HOSTS, DEEPSEEK/KIMI y POSTGRES_PASSWORD en `.env.docker`,
   proxy con TLS en el host y probar un restore real de un backup.
+
+## Línea base repetida con otra muestra y etiquetas INDEPENDIENTES (2026-11-19)
+`BASELINE_TAG=_2026-11-19` (dataset/snapshots/results/REPORT con ese sufijo; la del 18 queda intacta). 105 IOCs: los 45 benignos y
+ambiguos son los mismos; **los 60 maliciosos son TODOS nuevos**: 40 de abuse.ch (circulares) y 20 de fuentes ajenas a abuse.ch:
+CINS Army (5 IP) y Emerging Threats (5 IP) como listas negras, y OpenPhish (10 URL de phishing).
+
+| AUC (malicioso vs benigno) | 18-nov | 19-nov |
+|---|---|---|
+| global, análisis completo | 0.99 | 0.97 |
+| global, SIN la fuente de la etiqueta | 0.92 | 0.91 |
+| IPs, SIN la fuente de la etiqueta | 0.70 | 0.75 |
+| dominios, SIN la fuente de la etiqueta | 0.97 | 0.97 |
+| URLs / hashes | 1.00 / 1.00 | 1.00 / 1.00 |
+| **solo etiqueta independiente: IPs (CINS + ET)** | - | **0.95** |
+| **solo etiqueta independiente: URLs (OpenPhish)** | - | **1.00** |
+
+- **Las bandas de VirusTotal NO sobreajustaron**: con una muestra distinta de maliciosos el AUC se mantiene.
+- **Falsos positivos: 0 de 34 benignos** otra vez (sin umbral ni distinguir tipos).
+- **Recall real (etiquetas independientes), umbral MEDIO o peor: IPs 70 % (ET 100 %, CINS 40 %), URLs de phishing 90 %**; a ALTO o peor
+  solo 30 % y 10 %. El umbral efectivo de alerta es MEDIO (score >= 30): con él hay 0 falsos positivos en los 34 benignos.
+  CINS recoge sobre todo escáneres y fuerza bruta (poco reportados en AbuseIPDB), por eso rinde menos que las IP de Emerging Threats.
+- El AUC es alto pero el recall a umbral es menor: el RANKING separa bien, los puntos son conservadores (sobre todo para IPs y dominios).
+- **LÍMITE de esta repetición: cuotas gratuitas agotadas.** Dos recolecciones completas el mismo día agotan Criminal IP (`limit exceeded`
+  desde la primera consulta: 0/36 ok) y Pulsedive (`50 requests per day`: 6/82 ok); Shodan exige membresía para IPs y urlscan da 403.
+  El texto 'service temporarily unavailable' de la tabla de cobertura es NUESTRO circuit breaker abierto, no cuatro proveedores caídos.
+  Las IPs de hoy se puntuaron SIN Criminal IP: el recall de IPs es una cota inferior de un día normal.
+- Pendiente: dominios con etiqueta independiente (ninguna fuente usada aquí; sin la de abuse.ch los dominios de hoy quedan en BAJO).
+
+Regla práctica: una recolección completa por día como máximo (o `--limit`); la repetición ya hecha sirve de referencia.

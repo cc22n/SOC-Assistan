@@ -1,0 +1,842 @@
+[
+ {
+  "value": "144.172.99.150",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown malware conf=100"
+ },
+ {
+  "value": "106.12.35.83",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown malware conf=100"
+ },
+ {
+  "value": "170.64.164.97",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Potassium conf=100"
+ },
+ {
+  "value": "124.220.224.8",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown malware conf=100"
+ },
+ {
+  "value": "117.55.229.137",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown malware conf=100"
+ },
+ {
+  "value": "104.64.15.245",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Potassium conf=100"
+ },
+ {
+  "value": "124.222.77.67",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=VShell conf=100"
+ },
+ {
+  "value": "38.46.15.202",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=VShell conf=100"
+ },
+ {
+  "value": "124.221.190.118",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown malware conf=100"
+ },
+ {
+  "value": "45.198.224.146",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=CECbot conf=100"
+ },
+ {
+  "value": "va.ankasanet4drtp.org",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Vidar conf=100"
+ },
+ {
+  "value": "d65vnso5.adeac.com.mx",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=ClearFake conf=100"
+ },
+ {
+  "value": "geminoargotai.net",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown Stealer conf=100"
+ },
+ {
+  "value": "al08.store",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=ClearFake conf=100"
+ },
+ {
+  "value": "m.gp108.org",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Vidar conf=100"
+ },
+ {
+  "value": "aez.asia211.org",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Vidar conf=100"
+ },
+ {
+  "value": "3iksoaw0.tpdistanbul.com",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=ClearFake conf=100"
+ },
+ {
+  "value": "perplexityauauai.net",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Unknown Stealer conf=100"
+ },
+ {
+  "value": "ww.ankasanet4drtp.org",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=Vidar conf=100"
+ },
+ {
+  "value": "90xfksds.americaspadel.com",
+  "type": "domain",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "threatfox",
+  "note": "malware=ClearFake conf=100"
+ },
+ {
+  "value": "https://cdn.discordapp.com/attachments/695865424750837862/1573100523333226546/127b568e2a?ex=6b00c787&is=6aff7607&hm=ae3efbc2a90f27224c0a2b177d0f1044538e2514adba247c2eb6eef7fb95b5bc&",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "http://119.116.156.211:50240/i",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "http://115.48.149.239:53645/i",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "https://github.com/Magentacluplay/Telegram-Fix/releases/download/Telegram-Fix/TgWsProxy_windows.exe",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "https://github.com/Magentacluplay/Tg-Ws-Proxy/releases/download/Tg-Ws-Proxy/TgWsProxy_windows_7_32bit.exe",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "https://github.com/Magentacluplay/tg-fix/releases/download/tg-fix/TgWsProxy_windows.exe",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "http://219.155.14.191:33881/bin.sh",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "http://115.48.149.239:53645/bin.sh",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "http://42.238.132.220:45133/i",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "https://github.com/Magentacluplay/Telegram-Fix/releases/download/Telegram-Fix/TgWsProxy_windows_7_64bit.exe",
+  "type": "url",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "urlhaus",
+  "note": "threat=malware_download"
+ },
+ {
+  "value": "702ed5c402503f4d8fc39db0ddb2d6a816067db169a5ec31cd8b3bbf63e27ce3",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=AgentTesla"
+ },
+ {
+  "value": "a7c847e23006789614742b27ff320ff263d0936ef2a38395dd8fda3adcedf570",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=None"
+ },
+ {
+  "value": "c47f0cb5a0c51d908fbcc38be70ade963762e4f4adca8fb32f33440cb9af4376",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=WARDENStealer"
+ },
+ {
+  "value": "1202486ea139e1f3b8f4add4b4a8e3d016c32c2f219523f2330d02ac7061ba27",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=WARDENStealer"
+ },
+ {
+  "value": "afd1ba88447d99dcb17e72d357116546666dfc2cfa108adb3f3932bf5bd1a452",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=None"
+ },
+ {
+  "value": "8b33a31e8a688126c7352b5f4795cd95f1c1f6e253319b87c7ca11e30252459d",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=None"
+ },
+ {
+  "value": "2bdd74a995a3c5545eca1d8da28697f356b987b0af582ce6a38fa70c2016b021",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=None"
+ },
+ {
+  "value": "2f5cf669b33ef7e88bb546dbfbc60f0cb3c1ab0ff3c8323c8091fe91c0bf74da",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=None"
+ },
+ {
+  "value": "d227cc88764a44a60a28d4da40a4cfd4241180b18627903385a7117220213383",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=None"
+ },
+ {
+  "value": "d924db45dad7593437fa86b6eef4ff03155dc2ebb961c2c7a6009f5c085ef86c",
+  "type": "hash",
+  "label": "malicious",
+  "category": "ioc_reciente",
+  "label_source": "malwarebazaar",
+  "note": "sig=AgentTesla"
+ },
+ {
+  "value": "1.24.16.110",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "cins_army",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "1.24.16.117",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "cins_army",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "1.24.16.112",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "cins_army",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "1.192.129.106",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "cins_army",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "1.24.16.122",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "cins_army",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "101.59.102.62",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "emerging_threats",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "101.32.126.162",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "emerging_threats",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "102.220.161.173",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "emerging_threats",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "102.220.161.119",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "emerging_threats",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "101.33.68.140",
+  "type": "ip",
+  "label": "malicious",
+  "category": "ip_en_lista_negra",
+  "label_source": "emerging_threats",
+  "note": "IP en lista negra pública (atacante, no necesariamente C2)"
+ },
+ {
+  "value": "http://roblox.rw/users/696317506556/profile",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "https://flhealthlicense-three.vercel.app/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "https://roblox.ly/users/3670776404/profilemalwarenetworkurl/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "http://www.vngiuu.top/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "https://fresh-network-276970.framer.app/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "http://projeto-netflix-livid.vercel.app/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "https://facebook-esp.blogspot.com/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "https://wptjn078mjw-kxlrqrel-9w6t2g-yr166a.pages.dev/send_appeal_request/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "http://instagram-zeta.vercel.app/",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "http://delinea.ar/dfg/index.html",
+  "type": "url",
+  "label": "malicious",
+  "category": "phishing_reciente",
+  "label_source": "openphish",
+  "note": "URL de phishing"
+ },
+ {
+  "value": "8.8.8.8",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "Google DNS"
+ },
+ {
+  "value": "1.1.1.1",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "Cloudflare DNS"
+ },
+ {
+  "value": "9.9.9.9",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "Quad9 DNS"
+ },
+ {
+  "value": "208.67.222.222",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "OpenDNS"
+ },
+ {
+  "value": "140.82.112.3",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "GitHub"
+ },
+ {
+  "value": "151.101.1.69",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "Fastly/Reddit CDN"
+ },
+ {
+  "value": "13.107.42.14",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "Microsoft"
+ },
+ {
+  "value": "17.253.144.10",
+  "type": "ip",
+  "label": "benign",
+  "category": "infra_legitima",
+  "label_source": "conocimiento_publico",
+  "note": "Apple"
+ },
+ {
+  "value": "google.com",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "github.com",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "microsoft.com",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "wikipedia.org",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "python.org",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "mozilla.org",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "debian.org",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "kernel.org",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "apache.org",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "cloudflare.com",
+  "type": "domain",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://www.google.com/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://github.com/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://www.python.org/downloads/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://en.wikipedia.org/wiki/Malware",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://www.mozilla.org/en-US/firefox/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://docs.python.org/3/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://www.debian.org/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "https://kernel.org/",
+  "type": "url",
+  "label": "benign",
+  "category": "sitio_legitimo",
+  "label_source": "conocimiento_publico",
+  "note": ""
+ },
+ {
+  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "type": "hash",
+  "label": "benign",
+  "category": "archivo_vacio",
+  "label_source": "conocimiento_publico",
+  "note": "SHA-256 del archivo vacío (lo conoce todo el mundo)"
+ },
+ {
+  "value": "2d0b3948c1edc5c6a1d1f3e3658613252cfbbfa1b98b46cb7cc8e5bf2efb158f",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "notepad.exe de este equipo"
+ },
+ {
+  "value": "621ba3934afc45c35a4ee16386f4da30119f39fa243e8dc8fef3491a76f829d8",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "calc.exe de este equipo"
+ },
+ {
+  "value": "ccd79a7568ea9240ccd6fe124807b9d3e4dbc3a4cf92954299ac3029f4a91d02",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "cmd.exe de este equipo"
+ },
+ {
+  "value": "e4224d18c3c96826e6f4240893fac02c8a1ff335ce92614fc8744369594dd468",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "ping.exe de este equipo"
+ },
+ {
+  "value": "62800679c55682f2f5f38b3df9080d12480bea78b5b8476eace9df014f353b14",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "tasklist.exe de este equipo"
+ },
+ {
+  "value": "23240ef9f8b0a9a324110b1c2331de31dc1b0e08f5359cb707e51a939af56cd3",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "whoami.exe de este equipo"
+ },
+ {
+  "value": "7bf6bdd266f2fa3d3634c4f1fb21ece653642fd1b852ed1ced80d597cce3acdb",
+  "type": "hash",
+  "label": "benign",
+  "category": "binario_sistema",
+  "label_source": "windows_local",
+  "note": "hostname.exe de este equipo"
+ },
+ {
+  "value": "171.25.193.25",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "nodo_tor",
+  "label_source": "check.torproject.org",
+  "note": "nodo de salida Tor: anonimizador, no malware"
+ },
+ {
+  "value": "80.67.167.81",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "nodo_tor",
+  "label_source": "check.torproject.org",
+  "note": "nodo de salida Tor: anonimizador, no malware"
+ },
+ {
+  "value": "109.70.100.4",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "nodo_tor",
+  "label_source": "check.torproject.org",
+  "note": "nodo de salida Tor: anonimizador, no malware"
+ },
+ {
+  "value": "192.42.116.99",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "nodo_tor",
+  "label_source": "check.torproject.org",
+  "note": "nodo de salida Tor: anonimizador, no malware"
+ },
+ {
+  "value": "192.42.116.44",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "nodo_tor",
+  "label_source": "check.torproject.org",
+  "note": "nodo de salida Tor: anonimizador, no malware"
+ },
+ {
+  "value": "71.6.135.131",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "escaner_internet",
+  "label_source": "conocimiento_publico",
+  "note": "escáner Shodan"
+ },
+ {
+  "value": "162.142.125.10",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "escaner_internet",
+  "label_source": "conocimiento_publico",
+  "note": "escáner Censys"
+ },
+ {
+  "value": "198.20.69.74",
+  "type": "ip",
+  "label": "ambiguous",
+  "category": "escaner_internet",
+  "label_source": "conocimiento_publico",
+  "note": "escáner Shodan"
+ },
+ {
+  "value": "pastebin.com",
+  "type": "domain",
+  "label": "ambiguous",
+  "category": "servicio_doble_uso",
+  "label_source": "conocimiento_publico",
+  "note": "abusado a menudo, legítimo en sí"
+ },
+ {
+  "value": "ngrok.io",
+  "type": "domain",
+  "label": "ambiguous",
+  "category": "servicio_doble_uso",
+  "label_source": "conocimiento_publico",
+  "note": "abusado a menudo, legítimo en sí"
+ },
+ {
+  "value": "duckdns.org",
+  "type": "domain",
+  "label": "ambiguous",
+  "category": "servicio_doble_uso",
+  "label_source": "conocimiento_publico",
+  "note": "abusado a menudo, legítimo en sí"
+ }
+]

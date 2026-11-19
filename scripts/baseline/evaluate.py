@@ -14,6 +14,7 @@ score no usa el texto del LLM, ver llm_orchestrator.py):
   * Cuántos puntos de un IOC limpio vienen solo de "la API respondió" (+5 por API sin error).
 """
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -24,7 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / '.env')
 HERE = Path(__file__).parent
-SNAP = ROOT / 'tests' / 'fixtures' / 'baseline' / 'snapshots.json'
+TAG = os.environ.get('BASELINE_TAG', '')      # '' = la línea base original (2026-11-18); '_2026-11-19' = el repaso
+SNAP = ROOT / 'tests' / 'fixtures' / 'baseline' / f'snapshots{TAG}.json'
 
 LEVELS = ['LIMPIO', 'BAJO', 'MEDIO', 'ALTO', 'CRÍTICO']
 # APIs que comparten fuente con la etiqueta (abuse.ch) -> se excluyen en leave-source-out
@@ -40,7 +42,7 @@ def main():
     from app import create_app
     from app.services.llm_orchestrator import LLMOrchestrator
     app = create_app()
-    dataset = json.loads((HERE / 'dataset.json').read_text(encoding='utf-8'))
+    dataset = json.loads((HERE / f'dataset{TAG}.json').read_text(encoding='utf-8'))
     snaps = json.loads(SNAP.read_text(encoding='utf-8'))
 
     with app.app_context():
@@ -66,7 +68,7 @@ def main():
     w = L.append
     w('# Línea base de calidad del análisis (fase 0.2 de PLAN-FUSION)\n')
     w(f'IOCs evaluados: **{len(rows)}** de {len(dataset)} del dataset. Respuestas reales congeladas en '
-      f'`tests/fixtures/baseline/snapshots.json`. Se mide el scoring determinista actual '
+      f'`tests/fixtures/baseline/snapshots{TAG}.json`. Se mide el scoring determinista actual '
       f'(`_calculate_enhanced_score`); el texto del LLM no entra en el score.\n')
     cnt = Counter(r['label'] for r in rows)
     w('Composición: ' + ', '.join(f'{k}={v}' for k, v in cnt.items()) + '\n')
@@ -104,14 +106,6 @@ def main():
     metrics('level_los', {'MEDIO', 'ALTO', 'CRÍTICO'}, 'Alerta = MEDIO o peor, SIN APIs de la fuente de la etiqueta')
 
     ben = [r for r in rows if r['label'] == 'benign']
-    if ben:
-        w('### ¿Cuánto del score de un IOC limpio es solo "la API respondió"? (+5 por API sin error)\n')
-        avg_s = sum(r['score'] for r in ben) / len(ben)
-        avg_p = sum(r['presence_points'] for r in ben) / len(ben)
-        w(f'Benignos: score medio **{avg_s:.1f}**, de los cuales **{avg_p:.1f}** son puntos de presencia '
-          f'({pct(avg_p, avg_s)}). Benignos que subirían de nivel solo por estos puntos: '
-          f'{sum(1 for r in ben if r["level"] != "LIMPIO" and r["score"] - r["presence_points"] < 10)} de {len(ben)}.\n')
-
     w('### Falsos positivos (benignos con nivel ≥ MEDIO)\n')
     fps = [r for r in ben if r['level'] in ('MEDIO', 'ALTO', 'CRÍTICO')]
     for r in sorted(fps, key=lambda r: -r['score']):
@@ -154,8 +148,20 @@ def main():
         w(f"| {api} | {c['ok']} | {c['error']} | {pct(c['ok'], tot)} | {top[0][0] + f' (×{top[0][1]})' if top else ''} |")
     w('')
 
-    (HERE / 'REPORT.md').write_text('\n'.join(L), encoding='utf-8')
-    (HERE / 'results.json').write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding='utf-8')
+    # recall por fuente de la etiqueta: las INDEPENDIENTES de abuse.ch son las que miden recall real (sin circularidad)
+    w('### Recall de maliciosos por fuente de la etiqueta (ALTO o peor | MEDIO o peor)\n')
+    w('| fuente de la etiqueta | tipo | n | ALTO+ | MEDIO+ | independiente de abuse.ch |')
+    w('|---|---|---|---|---|---|')
+    for src in sorted({r['label_source'] for r in rows if r['label'] == 'malicious'}):
+        sub = [r for r in rows if r['label'] == 'malicious' and r['label_source'] == src]
+        hi = sum(r['level'] in ('ALTO', 'CRÍTICO') for r in sub)
+        mid = sum(r['level'] in ('MEDIO', 'ALTO', 'CRÍTICO') for r in sub)
+        indep = 'sí' if src in ('cins_army', 'emerging_threats', 'openphish') else 'no (circular)'
+        w(f"| {src} | {sub[0]['type']} | {len(sub)} | {pct(hi, len(sub))} ({hi}) | {pct(mid, len(sub))} ({mid}) | {indep} |")
+    w('')
+
+    (HERE / f'REPORT{TAG}.md').write_text('\n'.join(L), encoding='utf-8')
+    (HERE / f'results{TAG}.json').write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding='utf-8')
     print('\n'.join(L))
 
 
