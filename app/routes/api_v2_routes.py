@@ -179,6 +179,14 @@ def analyze_enhanced(data: AnalyzeRequest):
             session_context=session_context
         )
 
+        # Si NINGUNA fuente respondió no hay evidencia: guardar un veredicto "LIMPIO" sería afirmar algo falso
+        cov = analysis_result.get('api_coverage') or {}
+        if cov.get('total') and cov.get('ok') == 0:
+            return jsonify({
+                'error': 'Ninguna fuente de inteligencia respondió; el IOC no se pudo verificar',
+                'api_coverage': cov,
+            }), 502
+
         # Guardar en BD
         ioc_obj, _created = IOC.get_or_create(
             ioc_value, ioc_type, first_seen=utcnow(), times_analyzed=0)
@@ -256,6 +264,7 @@ def analyze_enhanced(data: AnalyzeRequest):
             'risk_level': analysis_result['risk_level'],
             'llm_analysis': analysis_result.get('llm_analysis'),
             'sources_used': analysis_result.get('sources_used', []),
+            'api_coverage': analysis_result.get('api_coverage'),
             'api_results': analysis_result['api_results'],
             'mitre_techniques': analysis_result.get('mitre_techniques', []),
             'processing_time': analysis_result['processing_time'],

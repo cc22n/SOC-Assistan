@@ -486,6 +486,7 @@ class LLMOrchestrator:
             'llm_analysis': llm_analysis,
             'mitre_techniques': mitre_techniques,
             'sources_used': list(api_results.keys()),
+            'api_coverage': self._api_coverage(api_results),
             'selected_apis': selected_apis,
             'processing_time': processing_time,
             'timestamp': datetime.now(timezone.utc).isoformat()
@@ -650,17 +651,19 @@ Responde SOLO con el JSON."""
         return list(set(techniques))
 
     def _calculate_enhanced_score(self, api_results: Dict, llm_analysis: Dict) -> int:
-        """Calcula score de riesgo (ACTUALIZADO v5 con nuevas APIs)"""
+        """
+        Calcula el score de riesgo (0-100) SOLO con evidencia de amenaza.
+
+        Antes se sumaban +5 por cada API que respondía sin error aunque no dijera nada malo: el 98 % del score
+        de un IOC benigno era eso (línea base 2026-11-18, scripts/baseline/README.md), de modo que google.com
+        salía MEDIO. Ahora una API que responde "limpio" aporta 0, y una que FALLA tampoco cuenta como limpia:
+        queda reflejada en `api_coverage` (ver `_api_coverage`).
+        """
         score = 0
         for api_name, result in api_results.items():
             if 'error' not in result:
-                score += 5
-
                 if api_name == 'virustotal':
-                    # VT v3 usa 'malicious' en vez de 'positive_detections'
-                    detections = result.get('malicious', result.get('positive_detections', 0))
-                    if detections and detections > 0:
-                        score += min(30, detections * 2)
+                    score += self._virustotal_points(result)
                 elif api_name == 'greynoise':
                     if result.get('classification') == 'malicious':
                         score += 25
@@ -699,6 +702,39 @@ Responde SOLO con el JSON."""
                         score += 20
 
         return min(100, score)
+
+    # VirusTotal: motores que marcan malicioso. 1-2 motores es señal débil (posible falso positivo); la
+    # práctica habitual considera sospechoso a partir de ~3. Bandas: 10 puntos con 1 motor, +3 por cada
+    # motor adicional, tope 40. 'suspicious' (+2 c/u, tope 10) y reputación de la comunidad negativa (+10)
+    # ya vienen en la respuesta y antes se ignoraban. Calibrado con la línea base (n pequeño: ver README).
+    VT_BASE_POINTS = 10
+    VT_EXTRA_PER_ENGINE = 3
+    VT_MAX_ENGINE_POINTS = 40
+    VT_SUSPICIOUS_POINTS = 2
+    VT_MAX_SUSPICIOUS_POINTS = 10
+    VT_NEGATIVE_REPUTATION_POINTS = 10
+
+    def _virustotal_points(self, result: Dict) -> int:
+        malicious = result.get('malicious', result.get('positive_detections', 0)) or 0
+        suspicious = result.get('suspicious', 0) or 0
+        reputation = result.get('reputation')
+        pts = 0
+        if malicious > 0:
+            pts += min(self.VT_MAX_ENGINE_POINTS,
+                       self.VT_BASE_POINTS + self.VT_EXTRA_PER_ENGINE * (malicious - 1))
+        if suspicious > 0:
+            pts += min(self.VT_MAX_SUSPICIOUS_POINTS, self.VT_SUSPICIOUS_POINTS * suspicious)
+        if isinstance(reputation, (int, float)) and reputation < 0:
+            pts += self.VT_NEGATIVE_REPUTATION_POINTS
+        return pts
+
+    @staticmethod
+    def _api_coverage(api_results: Dict) -> Dict[str, Any]:
+        """Qué fuentes respondieron y cuáles fallaron. Un fallo NO es "limpio": es "no verificado"."""
+        failed = sorted(k for k, v in api_results.items() if not isinstance(v, dict) or 'error' in v)
+        total = len(api_results)
+        return {'ok': total - len(failed), 'failed': failed, 'total': total,
+                'incomplete': bool(failed)}
 
     def _determine_risk_level(self, score: int) -> str:
         if score >= 70: return 'CRÍTICO'

@@ -40,3 +40,26 @@ calidad no está medida aquí.
 - Una sola fecha (2026-11-18). Los benignos son sitios muy populares (sesgo a favor); falta ruido realista.
 - Los ambiguos no puntúan.
 - Pulsedive/urlscan pudieron fallar por ráfaga de peticiones de la recolección, no por el servicio.
+
+## Después del cambio de scoring (mismo día, mismas respuestas congeladas)
+Se quitó el +5 por respuesta, VirusTotal pasó a bandas (1 motor=10, +3 por motor, tope 40; suspicious y reputación
+negativa suman) y se añadió `api_coverage`. `results_before_2026-11-18.json` conserva los resultados anteriores.
+
+| | antes | después |
+|---|---|---|
+| benignos marcados MEDIO o peor | 29 % (10/34) | **0 %** |
+| AUC global (separa malicioso de benigno) | 0.89 | 0.92 |
+| AUC dominios | 0.71 | **0.97** |
+| AUC IPs | 0.76 | 0.70 |
+| AUC URLs / hashes | 1.00 / 1.00 | 1.00 / 1.00 |
+| recall a ALTO o peor (global) | 40 % | 32 % |
+| recall a MEDIO o peor (global) | 85 % | 58 % |
+
+Lectura honesta:
+- Quitar la presencia elimina los falsos positivos por umbral, pero **por sí sola no mejora el ranking**: la mejora
+  de AUC en dominios viene de VirusTotal (la señal ya estaba en la respuesta y se ignoraba).
+- El recall BAJA porque antes parte del 'recall' era ruido (todo suma 30+). No es una pérdida de detección real.
+- **IPs: el score sigue sin señal** (0 de 10 maliciosas a MEDIO). Ahí hay que añadir fuentes (ThreatFox en la
+  estrategia de IP, OTX pulses con cuidado con Tor/CDN), no calibrar umbrales.
+- Las bandas de VT se eligieron mirando estos datos (n pequeño): hay riesgo de sobreajuste. Repetir la línea base
+  con otra fecha antes de darlas por definitivas.
