@@ -35,3 +35,6 @@ with app.app_context():
 
     upgrade()
     print('[init_db] Migraciones aplicadas.', flush=True)
+
+    from app.services.profile_service import ensure_system_profiles
+    print(f'[init_db] Perfiles del sistema: {ensure_system_profiles()}', flush=True)

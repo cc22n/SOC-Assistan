@@ -81,6 +81,17 @@ def analyze_enhanced(data: AnalyzeRequest):
             if not ioc_type:
                 return jsonify({'error': 'No se pudo detectar tipo de IOC'}), 400
 
+        # === PERFIL DE INVESTIGACIÓN (opcional): fija las APIs; sin planificador LLM ===
+        profile = None
+        if data.profile_id:
+            from app.models.profile import InvestigationProfile
+            profile = db.session.get(InvestigationProfile, data.profile_id)
+            if profile is None or not profile.is_visible_to(current_user):
+                return jsonify({'error': 'Perfil no encontrado'}), 404      # ajeno = inexistente: no se revela
+            if profile.ioc_type != ioc_type:
+                return jsonify({'error': f'El perfil es para IOCs de tipo {profile.ioc_type}, '
+                                         f'pero este IOC es {ioc_type}'}), 400
+
         # === WHITELIST CHECK ===
         wl = IOC.query.filter_by(value=ioc_value, ioc_type=ioc_type, is_whitelisted=True).first()
         if wl:
@@ -96,7 +107,7 @@ def analyze_enhanced(data: AnalyzeRequest):
         # === CACHE CHECK ===
         if not force_refresh:
             from app.services.ioc_cache import get_cached_analysis
-            cached = get_cached_analysis(ioc_value, ioc_type)
+            cached = get_cached_analysis(ioc_value, ioc_type, profile_id=profile.id if profile else None)
             if cached:
                 # Si hay sesion, vincular el IOC existente
                 if session_id:
@@ -176,12 +187,14 @@ def analyze_enhanced(data: AnalyzeRequest):
             ioc_type=ioc_type,
             user_context=user_context,
             use_llm_planning=use_llm_planning,
-            session_context=session_context
+            session_context=session_context,
+            profile_apis=list(profile.apis) if profile else None,
+            llm_synthesis=profile.llm_synthesis if profile else True
         )
 
         # Si NINGUNA fuente respondió no hay evidencia: guardar un veredicto "LIMPIO" sería afirmar algo falso
         cov = analysis_result.get('api_coverage') or {}
-        if cov.get('total') and cov.get('ok') == 0:
+        if cov and cov.get('ok') == 0:
             return jsonify({
                 'error': 'Ninguna fuente de inteligencia respondió; el IOC no se pudo verificar',
                 'api_coverage': cov,
@@ -224,7 +237,9 @@ def analyze_enhanced(data: AnalyzeRequest):
             llm_analysis=analysis_result.get('llm_analysis'),
             mitre_techniques=analysis_result.get('mitre_techniques', []),
             sources_used=analysis_result.get('sources_used', []),
-            processing_time=analysis_result['processing_time']
+            processing_time=analysis_result['processing_time'],
+            from_profile=profile is not None,
+            profile_id=profile.id if profile else None
         )
         db.session.add(analysis)
         db.session.flush()
@@ -265,6 +280,7 @@ def analyze_enhanced(data: AnalyzeRequest):
             'llm_analysis': analysis_result.get('llm_analysis'),
             'sources_used': analysis_result.get('sources_used', []),
             'api_coverage': analysis_result.get('api_coverage'),
+            'profile': {'id': profile.id, 'name': profile.name} if profile else None,
             'api_results': analysis_result['api_results'],
             'mitre_techniques': analysis_result.get('mitre_techniques', []),
             'processing_time': analysis_result['processing_time'],

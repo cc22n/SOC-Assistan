@@ -166,6 +166,12 @@ class IOCAnalysis(db.Model):
     ioc_id = db.Column(db.Integer, db.ForeignKey('iocs.id'), nullable=False, index=True)
     # SET NULL: el análisis sobrevive al borrado del analista (migración d3e5f7a9b1c2)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    # Hecho con un perfil de investigación (subconjunto de APIs elegido por el analista = análisis PARCIAL).
+    # `from_profile` sobrevive al borrado del perfil (profile_id pasaría a NULL): sin él la caché serviría esa
+    # ejecución parcial como si fuera un análisis completo.
+    from_profile = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    profile_id = db.Column(db.Integer, db.ForeignKey('investigation_profiles.id', ondelete='SET NULL'),
+                           nullable=True, index=True)
 
     # Resultados del análisis
     confidence_score = db.Column(db.Integer, default=0, index=True)

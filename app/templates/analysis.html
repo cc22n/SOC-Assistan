@@ -43,6 +43,15 @@
                             </select>
                         </div>
                     </div>
+                    <div class="mb-4">
+                        <label for="profileSelector" class="block text-sm font-medium text-gray-700 mb-1">
+                            Perfil de investigación
+                            <a href="{{ url_for('profiles_pages.profiles_page') }}" class="ml-2 text-xs text-indigo-600 hover:underline">Gestionar perfiles</a>
+                        </label>
+                        <select id="profileSelector" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Automático (el LLM elige las APIs)</option>
+                        </select>
+                    </div>
                     <button type="submit" id="analyzeBtn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg">
                         <i class="fas fa-bolt mr-2"></i>Analizar Ahora
                     </button>
@@ -228,7 +237,28 @@ let currentIocId = null;
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAPIStatus();
     await loadLLMProviders();
+    await loadProfiles();
 });
+
+// ================================================================
+// PERFILES DE INVESTIGACION (fijan las APIs; sin planificador LLM)
+// ================================================================
+async function loadProfiles() {
+    try {
+        const r = await fetch('/api/v2/profiles');
+        const d = await r.json();
+        if (!d.success) return;
+        const labels = { ip: 'IP', domain: 'Dominio', url: 'URL', hash: 'Hash' };
+        const sel = document.getElementById('profileSelector');
+        const groups = {};
+        d.profiles.forEach(p => { (groups[p.ioc_type] = groups[p.ioc_type] || []).push(p); });
+        sel.innerHTML = '<option value="">Automático (el LLM elige las APIs)</option>' +
+            Object.entries(groups).map(([t, ps]) =>
+                `<optgroup label="${escapeHtml(labels[t] || t)}">` +
+                ps.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${escapeHtml(p.apis.length)} APIs)</option>`).join('') +
+                '</optgroup>').join('');
+    } catch (e) { console.error('Profiles error:', e); }
+}
 
 // ================================================================
 // API STATUS (dinamico, ver IOCAnalysis.api_source_names())
@@ -314,6 +344,8 @@ async function analyzeIOC(ioc, type, forceRefresh = false) {
         if (type) body.type = type;
         body.llm_provider = document.getElementById('llmSelector').value;
         if (forceRefresh) body.force_refresh = true;
+        const profileId = document.getElementById('profileSelector').value;
+        if (profileId) body.profile_id = Number(profileId);
 
         const response = await fetch('/api/v2/analyze/enhanced', {
             method: 'POST',

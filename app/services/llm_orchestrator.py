@@ -444,9 +444,17 @@ class LLMOrchestrator:
             ioc_type: str,
             user_context: str = "",
             use_llm_planning: bool = True,
-            session_context: Optional[str] = None
+            session_context: Optional[str] = None,
+            profile_apis: Optional[List[str]] = None,
+            llm_synthesis: bool = True
     ) -> Dict[str, Any]:
-        """Análisis inteligente multi-etapa"""
+        """
+        Análisis inteligente multi-etapa.
+
+        profile_apis: si se da (perfil de investigación), esas APIs se consultan TAL CUAL (en paralelo), sin
+                      planificador LLM (use_llm_planning se ignora). Solo se omiten las que no tienen cliente.
+        llm_synthesis: False = sin LLM en absoluto; el resumen sale de los datos (`_deterministic_synthesis`).
+        """
         from app.utils.security import sanitize_user_context
         user_context = sanitize_user_context(user_context)
 
@@ -457,7 +465,9 @@ class LLMOrchestrator:
         if session_context:
             full_context = f"{session_context}\n\nConsulta actual: {user_context}"
 
-        if use_llm_planning:
+        if profile_apis is not None:
+            selected_apis = [a for a in profile_apis if a in self.api_clients]
+        elif use_llm_planning:
             selected_apis = self._plan_analysis_with_llm(ioc, ioc_type, full_context)
         else:
             selected_apis = self.strategies.get(ioc_type, [])
@@ -470,10 +480,15 @@ class LLMOrchestrator:
             kw in full_context.lower() for kw in self.deep_analysis_keywords
         )
         _depth = 'deep' if _is_deep else 'basic'
-        llm_analysis = self._synthesize_with_llm(ioc, ioc_type, api_results, full_context, _depth)
+        if llm_synthesis:
+            llm_analysis = self._synthesize_with_llm(ioc, ioc_type, api_results, full_context, _depth)
+            confidence_score = self._calculate_enhanced_score(api_results, llm_analysis)
+            risk_level = self._determine_risk_level(confidence_score)
+        else:
+            confidence_score = self._calculate_enhanced_score(api_results, {})
+            risk_level = self._determine_risk_level(confidence_score)
+            llm_analysis = self._deterministic_synthesis(api_results, confidence_score, risk_level)
         mitre_techniques = self._correlate_mitre(api_results, llm_analysis)
-        confidence_score = self._calculate_enhanced_score(api_results, llm_analysis)
-        risk_level = self._determine_risk_level(confidence_score)
 
         processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
@@ -632,6 +647,20 @@ Responde SOLO con el JSON."""
             'indicators': list(api_results.keys()),
             'recommendations': ["Revisar resultados detallados", "Correlacionar con logs internos"],
             'confidence_reasoning': 'Análisis automático'
+        }
+
+    def _deterministic_synthesis(self, api_results: Dict, score: int, risk_level: str) -> Dict:
+        """Resumen SIN LLM para perfiles con llm_synthesis=False: solo hechos calculados, nada inventado."""
+        cov = self._api_coverage(api_results)
+        fallaron = f" No respondieron: {', '.join(cov['failed'])}." if cov['failed'] else ''
+        return {
+            'executive_summary': (f"Consulta por perfil sin síntesis LLM. Nivel de riesgo calculado: {risk_level} "
+                                  f"(score {score}/100). Respondieron {cov['ok']} de {cov['total']} fuentes.{fallaron}"),
+            'threat_level': risk_level,
+            'key_findings': [],
+            'indicators': list(api_results.keys()),
+            'recommendations': [],
+            'confidence_reasoning': 'Score determinista a partir de las fuentes consultadas; sin interpretación LLM.',
         }
 
     def _correlate_mitre(self, api_results: Dict, llm_analysis: Dict) -> List[str]:

@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Perfiles de investigación - SOC Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-sliders-h text-indigo-600 mr-2"></i>Perfiles de investigación
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">
+            Un perfil fija qué APIs se consultan para un tipo de IOC: misma consulta, mismas fuentes y sin que el LLM
+            decida cuáles usar. Se eligen en la página de análisis. Las APIs se consultan en paralelo.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Lista -->
+        <div class="lg:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+            <div class="px-4 py-3 border-b flex items-center justify-between">
+                <span class="font-semibold text-gray-700">Perfiles disponibles</span>
+                <select id="filterType" data-change="renderTable" class="text-sm border border-gray-300 rounded px-2 py-1">
+                    <option value="">Todos los tipos</option>
+                    <option value="ip">IP</option>
+                    <option value="domain">Dominio</option>
+                    <option value="url">URL</option>
+                    <option value="hash">Hash</option>
+                </select>
+            </div>
+            <div id="profilesList" class="divide-y divide-gray-100 text-sm">
+                <div class="px-4 py-6 text-center text-gray-400">Cargando…</div>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="bg-white rounded-lg shadow p-4 self-start">
+            <h2 id="formTitle" class="font-semibold text-gray-700 mb-3">Nuevo perfil</h2>
+            <div class="space-y-3">
+                <div>
+                    <label for="pfName" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <input id="pfName" maxlength="120" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label for="pfDesc" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <textarea id="pfDesc" rows="2" maxlength="1000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"></textarea>
+                </div>
+                <div>
+                    <label for="pfType" class="block text-sm font-medium text-gray-700 mb-1">Tipo de IOC</label>
+                    <select id="pfType" data-change="renderApiChoices" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="ip">IP</option>
+                        <option value="domain">Dominio</option>
+                        <option value="url">URL</option>
+                        <option value="hash">Hash</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1">APIs a consultar <span id="apiCount" class="text-gray-400 font-normal"></span></span>
+                    <div id="apiChoices" class="grid grid-cols-2 gap-1 text-sm"></div>
+                </div>
+                <label class="flex items-center text-sm text-gray-700">
+                    <input id="pfSynth" type="checkbox" checked class="mr-2">
+                    Resumen con LLM (si se desmarca: sin LLM, solo datos de las fuentes)
+                </label>
+                <div id="formError" class="text-sm text-red-600 hidden"></div>
+                <div class="flex gap-2">
+                    <button data-action="saveProfile" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm">
+                        <i class="fas fa-save mr-1"></i><span id="saveLabel">Crear perfil</span>
+                    </button>
+                    <button data-action="resetForm" class="px-3 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Limpiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce() }}">
+const TYPE_LABEL = { ip: 'IP', domain: 'Dominio', url: 'URL', hash: 'Hash' };
+let profiles = [];
+let catalog = {};
+let maxApis = 10;
+let editingId = null;
+let pendingDelete = null;
+
+async function loadAll() {
+    try {
+        const [cat, lst] = await Promise.all([
+            fetch('/api/v2/profiles/catalog').then(r => r.json()),
+            fetch('/api/v2/profiles').then(r => r.json()),
+        ]);
+        catalog = cat.catalog || {};
+        maxApis = cat.max_apis || 10;
+        profiles = lst.profiles || [];
+        renderApiChoices();
+        renderTable();
+    } catch (e) {
+        document.getElementById('profilesList').innerHTML = '<div class="px-4 py-6 text-center text-red-500">No se pudieron cargar los perfiles</div>';
+    }
+}
+
+function renderTable() {
+    const filter = document.getElementById('filterType').value;
+    const rows = profiles.filter(p => !filter || p.ioc_type === filter);
+    const box = document.getElementById('profilesList');
+    if (!rows.length) {
+        box.innerHTML = '<div class="px-4 py-6 text-center text-gray-400">Sin perfiles.</div>';
+        return;
+    }
+    box.innerHTML = rows.map(p => {
+        const chips = p.apis.map(a => `<span class="inline-block bg-gray-100 text-gray-700 rounded px-2 py-0.5 text-xs mr-1 mb-1">${escapeHtml(a)}</span>`).join('');
+        const origen = p.is_system ? '<span class="text-xs text-indigo-600"><i class="fas fa-lock mr-1"></i>Sistema</span>' : '<span class="text-xs text-gray-500">Propio</span>';
+        const sintesis = p.llm_synthesis ? '' : '<span class="text-xs text-amber-600 ml-2"><i class="fas fa-ban mr-1"></i>sin LLM</span>';
+        const del = pendingDelete === p.id
+            ? `<button data-action="deleteProfile" data-args='${escapeHtml(JSON.stringify([p.id]))}' class="px-2 py-1 text-xs bg-red-600 text-white rounded">¿Seguro? Borrar</button>`
+            : `<button data-action="deleteProfile" data-args='${escapeHtml(JSON.stringify([p.id]))}' class="px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50">Borrar</button>`;
+        const acciones = p.is_system
+            ? `<button data-action="copyProfile" data-args='${escapeHtml(JSON.stringify([p.id]))}' class="px-2 py-1 text-xs text-indigo-600 border border-indigo-200 rounded hover:bg-indigo-50">Usar como plantilla</button>`
+            : `<button data-action="editProfile" data-args='${escapeHtml(JSON.stringify([p.id]))}' class="px-2 py-1 text-xs text-indigo-600 border border-indigo-200 rounded hover:bg-indigo-50 mr-1">Editar</button>${del}`;
+        return `<div class="px-4 py-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="font-medium text-gray-800">${escapeHtml(p.name)}
+                        <span class="text-xs text-gray-400 ml-1">${escapeHtml(TYPE_LABEL[p.ioc_type] || p.ioc_type)}</span>${sintesis}</div>
+                    <div class="text-xs text-gray-500 mb-1">${escapeHtml(p.description || '')}</div>
+                    <div>${chips}</div>
+                </div>
+                <div class="text-right shrink-0">${origen}<div class="mt-2">${acciones}</div></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectedApis() {
+    return Array.from(document.querySelectorAll('#apiChoices input[type=checkbox]:checked')).map(c => c.value);
+}
+
+function renderApiChoices(preselect) {
+    const type = document.getElementById('pfType').value;
+    const keep = new Set(preselect || selectedApis());
+    const apis = catalog[type] || [];
+    document.getElementById('apiChoices').innerHTML = apis.map(a =>
+        `<label class="flex items-center"><input type="checkbox" class="mr-2" value="${escapeHtml(a)}" ${keep.has(a) ? 'checked' : ''}>${escapeHtml(a)}</label>`
+    ).join('');
+    document.getElementById('apiCount').textContent = `(máx. ${maxApis})`;
+}
+
+function showFormError(msg) {
+    const el = document.getElementById('formError');
+    el.textContent = msg || '';
+    el.classList.toggle('hidden', !msg);
+}
+
+function resetForm() {
+    editingId = null;
+    document.getElementById('pfName').value = '';
+    document.getElementById('pfDesc').value = '';
+    document.getElementById('pfType').value = 'ip';
+    document.getElementById('pfType').disabled = false;
+    document.getElementById('pfSynth').checked = true;
+    document.getElementById('formTitle').textContent = 'Nuevo perfil';
+    document.getElementById('saveLabel').textContent = 'Crear perfil';
+    renderApiChoices([]);
+    showFormError('');
+}
+
+function fillForm(p, asNew) {
+    document.getElementById('pfName').value = asNew ? p.name + ' (copia)' : p.name;
+    document.getElementById('pfDesc').value = p.description || '';
+    document.getElementById('pfType').value = p.ioc_type;
+    document.getElementById('pfType').disabled = !asNew;          // el tipo de un perfil existente no se cambia
+    document.getElementById('pfSynth').checked = p.llm_synthesis;
+    renderApiChoices(p.apis);
+    showFormError('');
+    document.getElementById('pfName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function editProfile(id) {
+    const p = profiles.find(x => x.id === id);
+    if (!p) return;
+    editingId = id;
+    fillForm(p, false);
+    document.getElementById('formTitle').textContent = 'Editar perfil';
+    document.getElementById('saveLabel').textContent = 'Guardar cambios';
+}
+
+function copyProfile(id) {
+    const p = profiles.find(x => x.id === id);
+    if (!p) return;
+    editingId = null;
+    fillForm(p, true);
+    document.getElementById('formTitle').textContent = 'Nuevo perfil (desde plantilla)';
+    document.getElementById('saveLabel').textContent = 'Crear perfil';
+}
+
+async function saveProfile() {
+    showFormError('');
+    const body = {
+        name: document.getElementById('pfName').value,
+        description: document.getElementById('pfDesc').value,
+        apis: selectedApis(),
+        llm_synthesis: document.getElementById('pfSynth').checked,
+    };
+    let url = '/api/v2/profiles', method = 'POST';
+    if (editingId) { url += '/' + editingId; method = 'PUT'; } else { body.ioc_type = document.getElementById('pfType').value; }
+    try {
+        const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (!r.ok) {
+            showFormError((d.details && d.details.join(' · ')) || d.error || 'No se pudo guardar');
+            return;
+        }
+        showToast(editingId ? 'Perfil actualizado' : 'Perfil creado', 'success');
+        resetForm();
+        await loadAll();
+    } catch (e) {
+        showFormError('Error de red');
+    }
+}
+
+async function deleteProfile(id) {
+    if (pendingDelete !== id) {          // primer clic: pide confirmación en el propio botón (sin diálogos del navegador)
+        pendingDelete = id;
+        renderTable();
+        return;
+    }
+    pendingDelete = null;
+    try {
+        const r = await fetch(`/api/v2/profiles/${id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (r.ok) { showToast('Perfil borrado', 'success'); if (editingId === id) resetForm(); }
+        else { showToast(d.error || 'No se pudo borrar', 'error'); }
+    } catch (e) {
+        showToast('Error de red', 'error');
+    }
+    await loadAll();
+}
+
+loadAll();
+</script>
+{% endblock %}

@@ -15,9 +15,10 @@ import json
 import pytest
 
 from app.models.ioc import IOC, IOCAnalysis, Incident, IncidentIOC, User
+from app.models.profile import InvestigationProfile
 from app.models.session import InvestigationSession
 
-OWNER_SCOPED = {'session_id', 'incident_id', 'analysis_id'}   # el recurso tiene dueño: solo él o un admin
+OWNER_SCOPED = {'session_id', 'incident_id', 'analysis_id', 'profile_id'}   # el recurso tiene dueño: solo él o un admin
 GLOBAL_PARAMS = {'ioc_id', 'api_name', 'malware_name', 'technique_id'}   # recursos/catálogos globales (RBAC por rol)
 DENIED = {401, 302, 403, 404}
 
@@ -29,6 +30,7 @@ BODIES = {
     ('PUT', '/api/v2/incidents/<int:incident_id>/status'): {'status': 'investigating'},
     ('PATCH', '/api/v2/sessions/<int:session_id>'): {'title': 'titulo no autorizado'},
     ('PUT', '/api/v2/sessions/<int:session_id>'): {'title': 'titulo no autorizado'},
+    ('PUT', '/api/v2/profiles/<int:profile_id>'): {'name': 'renombrado sin permiso'},
 }
 
 
@@ -72,7 +74,9 @@ def mundo(app, db_session):
     sesion = InvestigationSession(user_id=dueno.id, status='active', title='sesion privada')
     incidente = Incident(ticket_id='MX-1', title='incidente privado', severity='P2', status='open',
                          created_by=dueno.id)
-    db_session.session.add_all([analisis, sesion, incidente])
+    perfil = InvestigationProfile(owner_id=dueno.id, name='perfil privado', ioc_type='ip',
+                                  apis=['abuseipdb', 'greynoise'])
+    db_session.session.add_all([analisis, sesion, incidente, perfil])
     db_session.session.commit()
     # vínculo incidente<->IOC existente: sin él, el DELETE da un 404 legítimo ("Vínculo no encontrado") que
     # impediría distinguir "no autorizado" de "no existe" y debilitaría la prueba
@@ -80,7 +84,7 @@ def mundo(app, db_session):
     db_session.session.commit()
     return SimpleNamespace_(
         ids={'session_id': sesion.id, 'incident_id': incidente.id, 'analysis_id': analisis.id,
-             'ioc_id': ioc.id, 'api_name': 'virustotal', 'malware_name': 'Emotet', 'technique_id': 'T1071'},
+             'profile_id': perfil.id, 'ioc_id': ioc.id, 'api_name': 'virustotal', 'malware_name': 'Emotet', 'technique_id': 'T1071'},
         dueno=dueno,
         viewer=_usuario(db_session, 'mx_viewer', 'viewer'),
         otro_analyst=_usuario(db_session, 'mx_otro', 'analyst'),

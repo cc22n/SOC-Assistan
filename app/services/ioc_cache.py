@@ -61,7 +61,8 @@ def get_cached_analysis(
     ioc_value: str,
     ioc_type: str = None,
     max_age_hours: int = None,
-    force_refresh: bool = False
+    force_refresh: bool = False,
+    profile_id: Optional[int] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Busca un analisis reciente en cache para el IOC dado.
@@ -71,6 +72,9 @@ def get_cached_analysis(
         ioc_type: Tipo del IOC (opcional, para filtrar)
         max_age_hours: Edad maxima del cache en horas (None = usar TTL por riesgo)
         force_refresh: Si True, ignorar cache y forzar re-analisis
+        profile_id: None = solo analisis normales (from_profile=False; los hechos con un perfil son parciales:
+                    solo consultan su subconjunto de APIs, aunque luego se borre el perfil).
+                    Un id = solo analisis hechos con ESE perfil.
 
     Returns:
         Dict con datos del analisis cacheado, o None si no hay cache valido
@@ -90,8 +94,9 @@ def get_cached_analysis(
             return None
 
         # Buscar el analisis mas reciente
-        analysis = IOCAnalysis.query.filter_by(
-            ioc_id=ioc.id
+        analysis = IOCAnalysis.query.filter(
+            IOCAnalysis.ioc_id == ioc.id,
+            IOCAnalysis.from_profile.is_(False) if profile_id is None else IOCAnalysis.profile_id == profile_id,
         ).order_by(
             IOCAnalysis.created_at.desc()
         ).first()

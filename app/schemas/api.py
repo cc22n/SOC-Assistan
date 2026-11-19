@@ -132,6 +132,7 @@ class AnalyzeRequest(BaseModel):
     use_llm_planning: bool = Field(True, description='Enable LLM-guided API selection')
     session_id: Optional[int] = Field(None, ge=1, description='Investigation session ID')
     force_refresh: bool = Field(False, description='Bypass cache and force fresh analysis')
+    profile_id: Optional[int] = Field(None, ge=1, description='Perfil de investigación: fija las APIs a consultar')
 
     @field_validator('ioc')
     @classmethod

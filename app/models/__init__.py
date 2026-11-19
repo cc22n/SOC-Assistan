@@ -4,6 +4,7 @@ Modelos de la aplicación
 """
 from app.models.ioc import User, IOC, IOCAnalysis, Incident, APIUsage
 from app.models.audit import AuditEvent
+from app.models.profile import InvestigationProfile
 from app.models.mitre import (
     MITRE_TECHNIQUES_DB,
     MALWARE_TO_TECHNIQUES,
@@ -21,6 +22,7 @@ __all__ = [
     'Incident',
     'APIUsage',
     'AuditEvent',
+    'InvestigationProfile',
     'InvestigationSession',
     'SessionIOC',
     'SessionMessage',
