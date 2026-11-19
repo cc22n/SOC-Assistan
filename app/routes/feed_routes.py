@@ -12,6 +12,7 @@ El stack es GLOBAL (de la organización). Los CVE son información pública: los
 servicio `feeds` (`flask feeds daemon`), no esta API: una petición web de ~15 s que además podría duplicarse con el daemon no es
 un buen sitio para ello.
 """
+import logging
 from datetime import timedelta
 
 from flask import Blueprint, jsonify, render_template, request
@@ -30,8 +31,20 @@ from app.utils.time_utils import utcnow
 bp = Blueprint('feeds_api', __name__, url_prefix='/api/v2/feeds')
 pages_bp = Blueprint('feeds_pages', __name__)
 
+logger = logging.getLogger(__name__)
 MAX_STACK = 200
 RISK_ORDER = ['LIMPIO', 'BAJO', 'MEDIO', 'ALTO', 'CRÍTICO']
+
+
+def _safe_recompute():
+    """La entrada del stack YA está guardada: si recalcular la relevancia falla no se responde 500 (el cliente reintentaría y
+    chocaría con el duplicado); se devuelve None y la siguiente ejecución del feed la reconcilia."""
+    try:
+        return feed_runner.recompute_relevance()
+    except Exception:
+        db.session.rollback()
+        logger.exception('recompute_relevance falló tras modificar el stack')
+        return None
 
 
 def _clean(v):
@@ -125,7 +138,7 @@ def add_stack_entry():
         AuditEvent.log('feed_stack_added', resource_type='feed_stack', resource_id=e.id,
                        details={'vendor': vendor, 'product': product})
         db.session.commit()
-        rel = feed_runner.recompute_relevance()
+        rel = _safe_recompute()
         return jsonify({'success': True, 'entry': e.to_dict(), 'relevance': rel}), 201
     except IntegrityError:
         db.session.rollback()
@@ -149,7 +162,7 @@ def delete_stack_entry(entry_id):
         db.session.flush()
         AuditEvent.log('feed_stack_removed', resource_type='feed_stack', resource_id=entry_id, details=detalles)
         db.session.commit()
-        return jsonify({'success': True, 'relevance': feed_runner.recompute_relevance()}), 200
+        return jsonify({'success': True, 'relevance': _safe_recompute()}), 200
     except Exception as ex:
         db.session.rollback()
         return safe_error_response(ex, "Delete stack entry error")

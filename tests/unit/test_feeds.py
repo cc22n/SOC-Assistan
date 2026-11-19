@@ -442,7 +442,8 @@ class TestRunSource:
 
     def test_un_error_no_cuenta_como_ultima_ok(self, app, db_session):
         feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': self._fetchers(boom=FeedError('x'))}, enrich_epss=False)
-        assert feed_runner.last_ok_run('nvd_recent') is None and feed_runner.is_due('nvd_recent', NOW)
+        assert feed_runner.last_ok_run('nvd_recent') is None
+        assert feed_runner.is_due('nvd_recent', NOW + feed_runner.ERROR_BACKOFF)        # pasada la espera, vuelve a intentarse
 
     def test_enriquece_con_epss_y_deja_none_a_los_no_puntuados(self, app, db_session):
         f = self._fetchers([_item('CVE-2026-1'), _item('CVE-2026-2')])
@@ -774,3 +775,149 @@ class TestDespliegue:
         sh = (ROOT / 'scripts' / 'ops' / 'verify_docker.sh').read_text(encoding='utf-8')
         assert 'feeds daemon iniciado' in sh and 'feeds sin reinicios' in sh and 'cisa_kev .*última=ok' in sh
         assert 'feeds:' in sh and '\r\n' not in sh
+
+
+# ============================================================================ REPASO (auditoría 2026-11-19)
+
+class TestEsperaTrasUnFallo:
+    """R2: sin espera, con NVD caído el daemon reintentaba cada 5 min indefinidamente y escribía una fila en feed_runs cada vez."""
+
+    def _fallo(self, db_session):
+        boom = lambda s, n: (_ for _ in ()).throw(FeedError('NVD HTTP 429'))
+        feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': boom}, enrich_epss=False)
+
+    def test_no_reintenta_dentro_de_la_espera(self, app, db_session):
+        self._fallo(db_session)
+        assert not feed_runner.is_due('nvd_recent', NOW)
+        assert not feed_runner.is_due('nvd_recent', NOW + feed_runner.ERROR_BACKOFF - timedelta(minutes=1))
+        assert feed_runner.is_due('nvd_recent', NOW + feed_runner.ERROR_BACKOFF)
+
+    def test_control_sin_fallos_previos_esta_vencida_al_instante(self, app, db_session):
+        assert feed_runner.is_due('nvd_recent', NOW)
+
+    def test_la_espera_es_por_fuente(self, app, db_session):
+        self._fallo(db_session)
+        assert feed_runner.is_due('cisa_kev', NOW)
+
+    def test_un_exito_posterior_cancela_la_espera(self, app, db_session):
+        self._fallo(db_session)
+        later = NOW + feed_runner.ERROR_BACKOFF
+        feed_runner.run_source('nvd_recent', now=later, fetchers={'nvd_recent': lambda s, n: []}, enrich_epss=False)
+        assert not feed_runner.is_due('nvd_recent', later + timedelta(hours=1))
+        assert feed_runner.is_due('nvd_recent', later + feed_runner.SOURCES['nvd_recent'].interval)
+
+    def test_el_daemon_no_martilla_la_fuente(self, app, db_session):
+        """4 ciclos de 5 min con la fuente caída = 1 ejecución, no 4."""
+        calls = []
+
+        def boom(since, now):
+            calls.append(now)
+            raise FeedError('caído')
+
+        for minutos in (0, 5, 10, 15):
+            if feed_runner.is_due('nvd_recent', NOW + timedelta(minutes=minutos)):
+                feed_runner.run_source('nvd_recent', now=NOW + timedelta(minutes=minutos),
+                                       fetchers={'nvd_recent': boom}, enrich_epss=False)
+        assert len(calls) == 1 and FeedRun.query.filter_by(source='nvd_recent').count() == 1
+
+
+class TestEjecucionesColgadas:
+    """F6/R8: un kill -9 a mitad de ejecución dejaba un 'running' eterno."""
+
+    def test_se_marcan_como_error_al_siguiente_run(self, app, db_session):
+        fantasma = FeedRun(source='nvd_recent', started_at=NOW - timedelta(hours=2), status='running')
+        otra = FeedRun(source='cisa_kev', started_at=NOW - timedelta(hours=2), status='running')
+        db_session.session.add_all([fantasma, otra])
+        db_session.session.commit()
+        feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': lambda s, n: []}, enrich_epss=False)
+        db_session.session.refresh(fantasma)
+        db_session.session.refresh(otra)
+        assert fantasma.status == 'error' and 'interrumpida' in fantasma.error and fantasma.finished_at
+        assert otra.status == 'running'                          # control: no toca otras fuentes
+
+    def test_no_se_toca_la_ejecucion_de_otra_instancia_que_tiene_el_lock(self, app, db_session):
+        """Si el lock lo tiene otra instancia, run_source sale ANTES de limpiar: su 'running' es legítimo."""
+        viva = FeedRun(source='nvd_recent', started_at=NOW, status='running')
+        db_session.session.add(viva)
+        db_session.session.commit()
+        other = db.engine.connect()
+        try:
+            other.execute(text('SELECT pg_try_advisory_lock(:k)'), {'k': feed_runner._lock_key('nvd_recent')})
+            assert feed_runner.run_source('nvd_recent', now=NOW, fetchers={}, enrich_epss=False)['status'] == 'skipped'
+            db_session.session.refresh(viva)
+            assert viva.status == 'running'
+        finally:
+            other.execute(text('SELECT pg_advisory_unlock(:k)'), {'k': feed_runner._lock_key('nvd_recent')})
+            other.close()
+
+
+class TestLockSinTransaccionAbierta:
+    """F5: la conexión del lock no debe quedar 'idle in transaction' durante el fetch HTTP."""
+
+    def test_durante_la_ejecucion_no_hay_transaccion_ociosa_del_lock(self, app, db_session):
+        visto = {}
+
+        def fetcher(since, now):
+            visto['n'] = db.session.execute(text(
+                "select count(*) from pg_stat_activity where datname = current_database() "
+                "and state like 'idle in transaction%' and query ilike '%pg_try_advisory_lock%'")).scalar()
+            return []
+
+        feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': fetcher}, enrich_epss=False)
+        assert visto['n'] == 0
+
+    def test_el_lock_se_mantiene_durante_la_ejecucion(self, app, db_session):
+        """Control: AUTOCOMMIT no debe haber roto el lock: mientras corre, otra conexión NO puede tomarlo."""
+        visto = {}
+
+        def fetcher(since, now):
+            c = db.engine.connect()
+            try:
+                visto['otro_puede'] = c.execute(text('SELECT pg_try_advisory_lock(:k)'),
+                                                {'k': feed_runner._lock_key('nvd_recent')}).scalar()
+            finally:
+                c.close()
+            return []
+
+        feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': fetcher}, enrich_epss=False)
+        assert visto['otro_puede'] is False
+
+
+class TestReconciliacionDeRelevancia:
+    """F4: el runner lee el stack al empezar el upsert; si cambia mientras tanto, su commit dejaba la relevancia vieja."""
+
+    def test_un_cambio_de_stack_durante_el_upsert_no_se_pierde(self, app, db_session):
+        original = feed_runner.upsert_item
+        hecho = {'n': 0}
+
+        def upsert_y_cambia_el_stack(data, entries, now):
+            r = original(data, entries, now)
+            if not hecho['n']:                                   # otra sesión añade la entrada a mitad de la ejecución
+                hecho['n'] = 1
+                db.session.add(TechStackEntry(vendor='Cisco'))
+                db.session.commit()
+            return r
+
+        with patch.object(feed_runner, 'upsert_item', side_effect=upsert_y_cambia_el_stack):
+            feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': lambda s, n: [_item()]}, enrich_epss=False)
+        assert FeedItem.query.one().is_relevant is True
+
+    def test_si_la_reconciliacion_falla_el_run_sigue_siendo_ok(self, app, db_session):
+        with patch.object(feed_runner, 'recompute_relevance', side_effect=RuntimeError('boom')):
+            r = feed_runner.run_source('nvd_recent', now=NOW, fetchers={'nvd_recent': lambda s, n: [_item()]}, enrich_epss=False)
+        assert r['status'] == 'ok' and FeedItem.query.count() == 1 and FeedRun.query.one().status == 'ok'
+
+
+class TestStackSiRecalcularFalla:
+    """F7: la entrada ya está guardada; un 500 haría reintentar al cliente y chocar con el duplicado."""
+
+    def test_alta_responde_201_y_la_entrada_queda(self, app, db_session, senior):
+        with patch.object(feed_runner, 'recompute_relevance', side_effect=RuntimeError('boom')):
+            r = senior.post(f'{BASE}/stack', json={'vendor': 'Cisco'})
+        assert r.status_code == 201 and r.get_json()['relevance'] is None and TechStackEntry.query.count() == 1
+
+    def test_baja_responde_200(self, app, db_session, senior):
+        e = _stack(db_session, ('Cisco', None))[0]
+        with patch.object(feed_runner, 'recompute_relevance', side_effect=RuntimeError('boom')):
+            r = senior.delete(f'{BASE}/stack/{e.id}')
+        assert r.status_code == 200 and TechStackEntry.query.count() == 0

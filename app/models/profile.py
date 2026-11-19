@@ -24,8 +24,11 @@ class InvestigationProfile(db.Model):
     MAX_APIS = 10
 
     id = db.Column(db.Integer, primary_key=True)
-    # NULL = perfil del sistema o de un usuario borrado (el perfil es configuración, sobrevive al analista)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    # NULL = perfil del SISTEMA. Un perfil de usuario se borra CON el usuario (CASCADE): con SET NULL los perfiles
+    # huérfanos caían en el mismo 'cubo' (owner NULL) que los del sistema y dos usuarios con un perfil homónimo hacían
+    # fallar el borrado del segundo por el índice único (auditoría 2026-11-19, F1). Los ANÁLISIS hechos con él se conservan
+    # (ioc_analyses.profile_id pasa a NULL y `from_profile` sigue marcándolos como parciales).
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True, index=True)
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text, nullable=False, default='')
     ioc_type = db.Column(db.String(20), nullable=False, index=True)       # ip | domain | url | hash

@@ -7,6 +7,7 @@ la API solo-admin, la CLI y la UI. Cada prueba de "ahora funciona" tiene su cont
 from datetime import timedelta
 
 import pytest
+from unittest.mock import patch
 from click.testing import CliRunner
 
 from app.models.audit import AuditEvent
@@ -185,3 +186,32 @@ class TestUi:
     def test_enlace_de_barra_lateral_solo_para_admin(self, admin_client, analyst_client):
         assert '/admin/accounts' in admin_client.get('/dashboard').get_data(as_text=True)
         assert '/admin/accounts' not in analyst_client.get('/dashboard').get_data(as_text=True)
+
+
+
+class TestListadoEscalable:
+    """S-3: un atacante que pruebe nombres aleatorios encarecía la página con 1 + 2 consultas POR NOMBRE."""
+
+    def test_solo_evalua_los_nombres_cerca_del_umbral(self, app, db_session):
+        for i in range(60):                                        # 60 nombres con 1 fallo (ruido de un atacante)
+            _fallos(db_session, f'ruido{i}', 1)
+        _fallos(db_session, 'casi', LOCKOUT_THRESHOLD - 1)        # 4 fallos: no puede estar bloqueado
+        _fallos(db_session, 'bloqueado', LOCKOUT_THRESHOLD)
+        import app.utils.login_throttle as lt
+        reales = lt.lockout_remaining
+        llamadas = []
+
+        def espia(u, now=None):
+            llamadas.append(u)
+            return reales(u, now)
+
+        with patch.object(lt, 'lockout_remaining', side_effect=espia):
+            cuentas = lt.locked_accounts()
+        assert [c['username'] for c in cuentas] == ['bloqueado'] and llamadas == ['bloqueado']
+
+    def test_control_un_login_correcto_o_desbloqueo_sigue_reiniciando_la_cuenta(self, app, db_session):
+        """El prefiltro es una condición NECESARIA: la regla exacta sigue en lockout_remaining."""
+        _fallos(db_session, 'ana', LOCKOUT_THRESHOLD)
+        assert [c['username'] for c in locked_accounts()] == ['ana']
+        unlock_account('ana', by='test')
+        assert locked_accounts() == []

@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 SHAPE_ERROR = 'respuesta con forma inesperada (¿cambió la API?)'
 
 
+FAIL_COOLDOWN = 60      # s: tras una descarga fallida (sin copia previa) no se reintenta antes; las demás peticiones fallan al instante
+
+
 class _CachedCatalog:
     """
     Catálogo grande descargado una vez y compartido por el proceso (KEV ≈ 1.8 MB, Exploit-DB ≈ 10 MB).
@@ -45,30 +48,43 @@ class _CachedCatalog:
         self._lock = threading.Lock()
         self._data: Any = None
         self._loaded_at: float = 0.0
+        self._failed_at: float = 0.0
+        self._failure: str = ''
+
+    def _cooling_down(self, now: float) -> bool:
+        return self._data is None and self._failed_at > 0 and now - self._failed_at < FAIL_COOLDOWN
 
     def get(self):
         """(datos, stale). Lanza la excepción del loader si no hay ni copia anterior."""
         now = time.time()
         if self._data is not None and now - self._loaded_at < self.ttl:
             return self._data, False
+        if self._cooling_down(now):          # sin esperar al lock: con la fuente caída, N hilos no deben hacer cola N x timeout
+            raise RuntimeError(self._failure)
         with self._lock:
             now = time.time()
             if self._data is not None and now - self._loaded_at < self.ttl:      # otro hilo ya refrescó
                 return self._data, False
+            if self._cooling_down(now):
+                raise RuntimeError(self._failure)
             try:
                 self._data = self._loader()
                 self._loaded_at = time.time()
+                self._failed_at, self._failure = 0.0, ''
                 return self._data, False
             except Exception as e:
                 if self._data is not None:
                     logger.warning('%s: refresco falló (%s); se sirve la copia anterior', self.name, e)
                     return self._data, True
+                self._failed_at = time.time()
+                self._failure = f'{e} (sin reintento durante {FAIL_COOLDOWN} s)'
                 raise
 
     def reset(self):
         """Solo para tests."""
         with self._lock:
             self._data, self._loaded_at = None, 0.0
+            self._failed_at, self._failure = 0.0, ''
 
 
 # ============================================================================ NVD

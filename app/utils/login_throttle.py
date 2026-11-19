@@ -104,10 +104,14 @@ def locked_accounts(now=None):
     Se calcula con la misma regla que el login (`lockout_remaining`), no con una aproximación.
     """
     now = now or utcnow()
+    # Solo nombres con al menos LOCKOUT_THRESHOLD fallos en la ventana (condición NECESARIA del bloqueo): sin esto, un atacante
+    # que pruebe nombres aleatorios encarecía la página con 1 + 2 consultas por nombre (auditoría S-3). La regla EXACTA
+    # (login correcto o desbloqueo que reinicia el contador) la sigue aplicando `lockout_remaining`.
+    nombre = func.lower(func.trim(AuditEvent.details['username'].astext))
     candidatos = (
-        db.session.query(func.lower(func.trim(AuditEvent.details['username'].astext)))
+        db.session.query(nombre)
         .filter(AuditEvent.action == 'login_failed', AuditEvent.created_at > now - LOCKOUT_WINDOW)
-        .distinct().all()
+        .group_by(nombre).having(func.count() >= LOCKOUT_THRESHOLD).all()
     )
     out = []
     for (key,) in candidatos:

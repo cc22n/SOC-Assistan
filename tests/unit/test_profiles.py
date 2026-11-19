@@ -9,6 +9,7 @@ from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy import text
 
 from app import db
 from app.models.audit import AuditEvent
@@ -418,3 +419,64 @@ class TestInterfaz:
                              ('/api/v2/profiles/catalog', 'GET'), ('/api/v2/profiles/{id}', 'PUT'),
                              ('/api/v2/profiles/{id}', 'DELETE')]:
             assert (ruta, metodo) in reglas, (ruta, metodo)
+
+
+# ============================================================================ REPASO (auditoría 2026-11-19)
+
+class TestBorradoDeUsuarios:
+    """F1 (reproducido): con ON DELETE SET NULL, dos usuarios con un perfil homónimo hacían fallar el borrado del segundo
+    por el índice único (coalesce(owner_id,0), lower(name)): los huérfanos caían en el cubo de los perfiles del sistema."""
+
+    def _dos_usuarios_con_perfil_homonimo(self, db_session):
+        us = []
+        for i in (1, 2):
+            u = User(username=f'hom_{i}', email=f'hom_{i}@t.local', role='analyst', is_active=True)
+            u.password_hash = 'x'
+            db_session.session.add(u)
+            db_session.session.flush()
+            db_session.session.add(InvestigationProfile(owner_id=u.id, name='Mi perfil', ioc_type='ip', apis=['abuseipdb']))
+            us.append(u)
+        db_session.session.commit()
+        return us
+
+    def test_se_pueden_borrar_ambos_usuarios(self, app, db_session):
+        us = self._dos_usuarios_con_perfil_homonimo(db_session)
+        for u in us:
+            db_session.session.delete(u)
+            db_session.session.commit()                       # antes: UniqueViolation en el segundo
+        assert InvestigationProfile.query.filter_by(name='Mi perfil').count() == 0
+
+    def test_el_perfil_se_va_con_su_dueno_pero_el_analisis_se_conserva_como_parcial(self, app, db_session):
+        (u, _) = self._dos_usuarios_con_perfil_homonimo(db_session)
+        p = InvestigationProfile.query.filter_by(owner_id=u.id).one()
+        ioc = IOC(value='203.0.113.77', ioc_type='ip')
+        db_session.session.add(ioc)
+        db_session.session.flush()
+        a = IOCAnalysis(ioc_id=ioc.id, confidence_score=5, risk_level='BAJO', from_profile=True, profile_id=p.id)
+        db_session.session.add(a)
+        db_session.session.commit()
+        db_session.session.delete(u)
+        db_session.session.commit()
+        db_session.session.refresh(a)
+        assert a.profile_id is None and a.from_profile is True            # sigue siendo parcial: la caché no lo sirve como completo
+        assert get_cached_analysis('203.0.113.77', 'ip') is None
+
+    def test_control_los_perfiles_del_sistema_no_se_tocan(self, app, db_session):
+        ensure_system_profiles()
+        us = self._dos_usuarios_con_perfil_homonimo(db_session)
+        for u in us:
+            db_session.session.delete(u)
+        db_session.session.commit()
+        assert InvestigationProfile.query.filter_by(is_system=True).count() == len(SYSTEM_PROFILES)
+
+    def test_el_esquema_real_tiene_cascade(self, app, db_session):
+        d = db_session.session.execute(text(
+            "select pg_get_constraintdef(oid) from pg_constraint where conrelid = 'investigation_profiles'::regclass "
+            "and contype = 'f' and conname like '%owner_id%'")).scalar()
+        assert 'ON DELETE CASCADE' in d
+
+    def test_la_siembra_solo_adopta_perfiles_del_sistema(self, app, db_session):
+        ensure_system_profiles()
+        spec = SYSTEM_PROFILES[0]
+        assert InvestigationProfile.query.filter_by(name=spec['name'], is_system=True).count() == 1
+        assert ensure_system_profiles() == {'created': 0, 'updated': 0}

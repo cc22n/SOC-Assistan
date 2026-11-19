@@ -660,3 +660,83 @@ class TestStix:
         assert 'indicator' in [o['type'] for o in objs] and 'vulnerability' not in [o['type'] for o in objs]
         rel = next(o for o in objs if o['type'] == 'relationship')
         assert rel['relationship_type'] == 'indicates'
+
+
+# ============================================================================ REPASO (auditoría 2026-11-19)
+
+class TestCatalogoCaido:
+    """S-2: con el catálogo frío y la fuente caída, cada petición esperaba EN SERIE el timeout (30-60 s) y agotaba los hilos."""
+
+    def test_tras_un_fallo_no_se_reintenta_durante_el_enfriamiento(self):
+        n = {'c': 0}
+
+        def loader():
+            n['c'] += 1
+            raise RuntimeError('HTTP 503')
+
+        cat = _CachedCatalog('t', 3600, loader)
+        for _ in range(5):
+            with pytest.raises(RuntimeError):
+                cat.get()
+        assert n['c'] == 1                                      # una sola descarga fallida, las otras 4 fallan al instante
+
+    def test_pasado_el_enfriamiento_reintenta_y_se_recupera(self):
+        n = {'c': 0}
+
+        def loader():
+            n['c'] += 1
+            if n['c'] == 1:
+                raise RuntimeError('HTTP 503')
+            return {'ok': True}
+
+        cat = _CachedCatalog('t', 3600, loader)
+        with pytest.raises(RuntimeError):
+            cat.get()
+        cat._failed_at -= cve_clients.FAIL_COOLDOWN + 1
+        assert cat.get() == ({'ok': True}, False)
+        assert cat._failed_at == 0.0                            # el éxito limpia el estado de fallo
+
+    def test_con_la_fuente_caida_n_hilos_no_hacen_cola_n_veces_el_timeout(self):
+        """Control del fallo: antes N hilos tardaban ~N x la descarga fallida; ahora ~1 x."""
+        n = {'c': 0}
+
+        def loader():
+            n['c'] += 1
+            time.sleep(0.2)
+            raise RuntimeError('timeout')
+
+        cat = _CachedCatalog('t', 3600, loader)
+        errores = []
+
+        def hilo():
+            try:
+                cat.get()
+            except RuntimeError as e:
+                errores.append(str(e))
+
+        t0 = time.time()
+        ts = [threading.Thread(target=hilo) for _ in range(10)]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        assert n['c'] == 1 and len(errores) == 10 and time.time() - t0 < 1.0     # 10 x 0.2 s en serie = 2 s
+
+    def test_el_mensaje_explica_el_enfriamiento(self):
+        cat = _CachedCatalog('t', 3600, lambda: (_ for _ in ()).throw(RuntimeError('HTTP 503')))
+        with pytest.raises(RuntimeError):
+            cat.get()
+        with pytest.raises(RuntimeError, match='sin reintento'):
+            cat.get()
+
+    def test_si_hay_copia_previa_no_aplica_el_enfriamiento_y_sirve_stale(self):
+        cat = _CachedCatalog('t', 3600, lambda: {'v': 1})
+        cat.get()
+        cat._loaded_at = 0
+        cat._loader = lambda: (_ for _ in ()).throw(RuntimeError('caído'))
+        assert cat.get() == ({'v': 1}, True)
+        assert cat._failed_at == 0.0                            # el enfriamiento es solo para el caso "sin datos"
+
+    def test_el_cliente_kev_devuelve_error_rapido_con_la_fuente_caida(self, app_ctx):
+        with patch.object(cve_clients, 'http_get', return_value=_resp(503)) as g:
+            for _ in range(4):
+                assert 'error' in CISAKEVClient().check_cve('CVE-2021-44228')
+        assert g.call_count == 1

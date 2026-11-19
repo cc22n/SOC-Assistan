@@ -104,7 +104,7 @@ def ensure_system_profiles(commit: bool = True) -> Dict[str, int]:
     created = updated = 0
     for spec in SYSTEM_PROFILES:
         row = InvestigationProfile.query.filter(
-            InvestigationProfile.owner_id.is_(None),
+            InvestigationProfile.owner_id.is_(None), InvestigationProfile.is_system.is_(True),
             db.func.lower(InvestigationProfile.name) == spec['name'].lower()).first()
         if row is None:
             db.session.add(InvestigationProfile(owner_id=None, is_system=True, llm_synthesis=True, **spec))

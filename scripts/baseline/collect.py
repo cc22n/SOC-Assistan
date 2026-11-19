@@ -13,18 +13,21 @@ Uso:  python scripts/baseline/collect.py            (todo el dataset)
 """
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
 from dotenv import load_dotenv
+from scrub import scrub_text      # redacta correos/claves/cookies de terceros antes de guardar
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / '.env')
 
 HERE = Path(__file__).parent
-OUT = ROOT / 'tests' / 'fixtures' / 'baseline' / 'snapshots.json'
+TAG = os.environ.get('BASELINE_TAG', '')      # '' = la línea base original (2026-11-18); '_2026-11-19' = el repaso
+OUT = ROOT / 'tests' / 'fixtures' / 'baseline' / f'snapshots{TAG}.json'
 VT_PAUSE = 16          # s entre IOCs que consultan VirusTotal (free: 4 peticiones/min)
 
 
@@ -38,7 +41,7 @@ def main():
     from app import create_app
     from app.services.llm_orchestrator import LLMOrchestrator
     app = create_app()
-    dataset = json.loads((HERE / 'dataset.json').read_text(encoding='utf-8'))
+    dataset = json.loads((HERE / f'dataset{TAG}.json').read_text(encoding='utf-8'))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     snaps = json.loads(OUT.read_text(encoding='utf-8')) if OUT.exists() else {}
 
@@ -57,7 +60,7 @@ def main():
                 snaps[key]['api_results'].update(res)
                 if args.add_api not in snaps[key]['apis']:
                     snaps[key]['apis'].append(args.add_api)
-                OUT.write_text(json.dumps(snaps, indent=1, ensure_ascii=False, default=str), encoding='utf-8')
+                OUT.write_text(scrub_text(json.dumps(snaps, indent=1, ensure_ascii=False, default=str)), encoding='utf-8')
                 r = res.get(args.add_api, {})
                 print(f"{key[:60]:60s} {'ERROR ' + str(r.get('error')) if 'error' in r else 'found=' + str(r.get('found'))}", flush=True)
             return
@@ -71,7 +74,7 @@ def main():
             snaps[key] = {'ioc': row['value'], 'type': row['type'], 'apis': apis,
                           'collected_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                           'api_results': results}
-            OUT.write_text(json.dumps(snaps, indent=1, ensure_ascii=False, default=str), encoding='utf-8')
+            OUT.write_text(scrub_text(json.dumps(snaps, indent=1, ensure_ascii=False, default=str)), encoding='utf-8')
             ok = sum(1 for r in results.values() if isinstance(r, dict) and 'error' not in r)
             print(f"[{len(snaps):3d}/{len(dataset)}] {key[:70]:70s} {ok}/{len(apis)} ok  {time.time()-t0:4.1f}s", flush=True)
             done += 1

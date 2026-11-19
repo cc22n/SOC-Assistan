@@ -111,3 +111,18 @@ Verificado EN VIVO antes de diseñar (fixtures reales en `tests/fixtures/feeds/`
 - Hallazgo de la primera ejecución real: los CVE de KEV recién añadidos puntuaban 40 (MEDIO) porque KEV no trae CVSS y EPSS
   llega con retraso -> **suelo: KEV = ALTO como mínimo**.
 - Fuera de v1 (a propósito): OTX/RSS/URLhaus, resumen diario con LLM, notificaciones externas, estado leído/descartado por usuario.
+
+## Repaso del 2026-11-19: auditoría independiente de lo añadido (3 agentes, hallazgos verificados uno a uno)
+Se verificó cada hallazgo con código o ejecución antes de actuar; el resumen de cuántos eran reales está en la bitácora.
+- Corregidos y con test (cada uno detecta su mutación): F1 perfiles huérfanos colisionaban al borrar usuarios (REPRODUCIDO; migración
+  b7c9d1e3f5a6 -> CASCADE); F4 relevancia desfasada si el stack cambia durante una ejecución (se reconcilia al final);
+  F5 conexión del lock 'idle in transaction' (AUTOCOMMIT); F6 ejecuciones 'running' fantasma tras un kill -9;
+  F7 alta de stack devolvía 500 aunque ya estaba guardada; R2 reintento cada 5 min sin espera tras un fallo (ahora 30 min);
+  S-2 catálogo caído hacía cola de N x timeout (enfriamiento de 60 s); S-3 `locked_accounts` hacía 1+2 consultas por nombre
+  (prefiltro HAVING >= umbral); S-1 fixtures con correos de personas, claves AIza de terceros, oobCode y cookies (REDACTADOS).
+- NO eran reales / mal leídos por los agentes: 'profile_id y entry_id no están en la matriz de autorización' (están, 17 casos).
+- Aceptados sin cambio (documentado): F3 límites 50/200 son check-then-insert (acotados por rate limit; efecto cosmético);
+  F8 N+1 en el upsert (proceso de fondo); R3 sin `mem_limit` en compose (medido: Exploit-DB ~72 MB de pico por proceso;
+  dimensionar en el VPS); R5 logs de `feeds` en el sistema de archivos del contenedor.
+- Para el VPS (acciones del usuario): definir NVD_API_KEY, ALLOWED_HOSTS, DEEPSEEK/KIMI y POSTGRES_PASSWORD en `.env.docker`,
+  proxy con TLS en el host y probar un restore real de un backup.
