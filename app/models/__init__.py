@@ -5,6 +5,7 @@ Modelos de la aplicación
 from app.models.ioc import User, IOC, IOCAnalysis, Incident, APIUsage
 from app.models.audit import AuditEvent
 from app.models.profile import InvestigationProfile
+from app.models.feed import FeedItem, FeedRun, TechStackEntry
 from app.models.mitre import (
     MITRE_TECHNIQUES_DB,
     MALWARE_TO_TECHNIQUES,
@@ -23,6 +24,9 @@ __all__ = [
     'APIUsage',
     'AuditEvent',
     'InvestigationProfile',
+    'FeedItem',
+    'FeedRun',
+    'TechStackEntry',
     'InvestigationSession',
     'SessionIOC',
     'SessionMessage',

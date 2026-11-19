@@ -36,6 +36,10 @@ services:
     env_file: !override
       - path: $(win "$TMP/verify.env")
         required: true
+  feeds:
+    env_file: !override
+      - path: $(win "$TMP/verify.env")
+        required: true
   db:
     container_name: ${PROJECT}-db
   redis:
@@ -66,6 +70,12 @@ for _ in $(seq 1 40); do
 done
 check "healthcheck" "$STATE" "healthy"
 check "sin reinicios" "$(docker inspect "${PROJECT}-app" --format '{{.RestartCount}}')" "0"
+FEEDS_ID=""; for i in $(seq 1 20); do FEEDS_ID="$("${DC[@]}" ps -q feeds 2>/dev/null)"; [ -n "$FEEDS_ID" ] && break; sleep 2; done
+FEEDS_LOG=""; for i in $(seq 1 30); do FEEDS_LOG="$(docker logs "$FEEDS_ID" 2>&1)"; echo "$FEEDS_LOG" | grep -q "feeds daemon iniciado" && break; sleep 2; done
+echo "$FEEDS_LOG" | grep -q "feeds daemon iniciado" && ok "el servicio feeds arranca y el daemon inicia" || { bad "el servicio feeds no inicia el daemon"; echo "$FEEDS_LOG" | tail -5; }
+check "feeds sin reinicios" "$(docker inspect "$FEEDS_ID" --format '{{.RestartCount}}')" "0"
+FEEDS_OK=""; for i in $(seq 1 40); do docker exec "$FEEDS_ID" flask feeds status 2>/dev/null | grep -q "cisa_kev .*última=ok" && { FEEDS_OK=1; break; }; sleep 3; done
+[ -n "$FEEDS_OK" ] && ok "el daemon ejecuto una fuente real (KEV) y quedo registrada en feed_runs" || bad "el daemon no completo ninguna ejecucion de KEV en 2 min"
 
 LOG="$(docker logs "${PROJECT}-app" 2>&1)"
 echo "$LOG" | grep -q "Running upgrade  -> " && ok "Alembic aplico las migraciones desde una BD vacia" || bad "migraciones no aplicadas"

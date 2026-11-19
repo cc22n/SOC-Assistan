@@ -240,7 +240,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAPIStatus();
     await loadLLMProviders();
     await loadProfiles();
+    prefillFromQuery();
 });
+
+// Desde /feeds: /analyze?ioc=CVE-...&type=cve precarga el formulario (NO lanza el análisis: gasta cuota de APIs)
+function prefillFromQuery() {
+    const q = new URLSearchParams(location.search);
+    const ioc = (q.get('ioc') || '').trim();
+    if (!ioc) return;
+    const type = q.get('type') || 'auto';
+    const sel = document.getElementById('iocType');
+    document.getElementById('iocInput').value = ioc.slice(0, 2048);
+    if (Array.from(sel.options).some(o => o.value === type)) sel.value = type;
+    document.getElementById('iocInput').focus();
+}
 
 // ================================================================
 // PERFILES DE INVESTIGACION (fijan las APIs; sin planificador LLM)

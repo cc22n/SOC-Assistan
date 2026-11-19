@@ -16,10 +16,11 @@ import pytest
 
 from app.models.ioc import IOC, IOCAnalysis, Incident, IncidentIOC, User
 from app.models.profile import InvestigationProfile
+from app.models.feed import TechStackEntry
 from app.models.session import InvestigationSession
 
 OWNER_SCOPED = {'session_id', 'incident_id', 'analysis_id', 'profile_id'}   # el recurso tiene dueño: solo él o un admin
-GLOBAL_PARAMS = {'ioc_id', 'api_name', 'malware_name', 'technique_id'}   # recursos/catálogos globales (RBAC por rol)
+GLOBAL_PARAMS = {'ioc_id', 'api_name', 'malware_name', 'technique_id', 'entry_id'}   # recursos/catálogos globales (RBAC por rol)
 DENIED = {401, 302, 403, 404}
 
 # cuerpos válidos para llegar a la lógica de autorización (un 400 de validación no debe ocultar nada)
@@ -76,7 +77,8 @@ def mundo(app, db_session):
                          created_by=dueno.id)
     perfil = InvestigationProfile(owner_id=dueno.id, name='perfil privado', ioc_type='ip',
                                   apis=['abuseipdb', 'greynoise'])
-    db_session.session.add_all([analisis, sesion, incidente, perfil])
+    entrada_stack = TechStackEntry(vendor='Cisco', product=None, created_by=dueno.id)     # el stack es GLOBAL: protegido por rol
+    db_session.session.add_all([analisis, sesion, incidente, perfil, entrada_stack])
     db_session.session.commit()
     # vínculo incidente<->IOC existente: sin él, el DELETE da un 404 legítimo ("Vínculo no encontrado") que
     # impediría distinguir "no autorizado" de "no existe" y debilitaría la prueba
@@ -84,7 +86,7 @@ def mundo(app, db_session):
     db_session.session.commit()
     return SimpleNamespace_(
         ids={'session_id': sesion.id, 'incident_id': incidente.id, 'analysis_id': analisis.id,
-             'profile_id': perfil.id, 'ioc_id': ioc.id, 'api_name': 'virustotal', 'malware_name': 'Emotet', 'technique_id': 'T1071'},
+             'profile_id': perfil.id, 'entry_id': entrada_stack.id, 'ioc_id': ioc.id, 'api_name': 'virustotal', 'malware_name': 'Emotet', 'technique_id': 'T1071'},
         dueno=dueno,
         viewer=_usuario(db_session, 'mx_viewer', 'viewer'),
         otro_analyst=_usuario(db_session, 'mx_otro', 'analyst'),

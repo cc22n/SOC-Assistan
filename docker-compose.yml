@@ -12,6 +12,8 @@ services:
   # ===========================================
   app:
     build: .
+    # Misma imagen para `app` y `feeds`: una sola construcción.
+    image: soc-agent:latest
     container_name: soc-agent
     restart: unless-stopped
     logging: *default-logging
@@ -39,6 +41,35 @@ services:
         condition: service_healthy
     volumes:
       - app_logs:/app/logs
+    networks:
+      - soc-network
+
+  # ===========================================
+  # Feeds proactivos (WP6): CVEs nuevos de CISA KEV y NVD, casados con el stack declarado.
+  # Proceso APARTE de la app a propósito: dentro de Gunicorn (3 workers) un planificador se ejecutaría 3 veces.
+  # Cada pocos minutos ejecuta las fuentes vencidas (lo vencido sale de la tabla feed_runs: sobrevive a reinicios).
+  # Espera a que `app` esté sana porque es ella quien aplica las migraciones (docker/init_db.py).
+  # ===========================================
+  feeds:
+    image: soc-agent:latest
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["flask", "feeds", "daemon"]
+    env_file:
+      - path: .env.docker
+        required: false
+    environment:
+      - DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:-soc_secure_password}@db:5432/soc_agent
+      - REDIS_URL=redis://redis:6379/0
+      - FLASK_ENV=production
+      - FLASK_APP=wsgi.py
+    depends_on:
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    healthcheck:
+      disable: true            # la imagen trae un HEALTHCHECK HTTP que aquí no aplica (no sirve HTTP)
     networks:
       - soc-network
 

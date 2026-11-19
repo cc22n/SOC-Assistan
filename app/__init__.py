@@ -116,10 +116,11 @@ def create_app(config_name='default'):
     register_blueprints(app)
 
     # Registrar CLI commands
-    from app.cli import mitre_cli, accounts_cli, profiles_cli
+    from app.cli import mitre_cli, accounts_cli, profiles_cli, feeds_cli
     app.cli.add_command(mitre_cli)
     app.cli.add_command(accounts_cli)
     app.cli.add_command(profiles_cli)
+    app.cli.add_command(feeds_cli)
 
     # Filtro Jinja para mostrar fechas en hora local (México) en templates
     # server-side rendered — los timestamps se guardan en UTC naive
@@ -173,6 +174,7 @@ def register_blueprints(app):
     from app.routes.deep_analysis_routes import bp as deep_bp
     from app.routes.admin_routes import bp as admin_api_bp, pages_bp as admin_pages_bp
     from app.routes.profile_routes import bp as profiles_api_bp, pages_bp as profiles_pages_bp
+    from app.routes.feed_routes import bp as feeds_api_bp, pages_bp as feeds_pages_bp
     from app.docs.openapi import docs_bp
 
     app.register_blueprint(main_bp)
@@ -187,6 +189,8 @@ def register_blueprints(app):
     app.register_blueprint(admin_pages_bp)
     app.register_blueprint(profiles_api_bp)
     app.register_blueprint(profiles_pages_bp)
+    app.register_blueprint(feeds_api_bp)
+    app.register_blueprint(feeds_pages_bp)
     app.register_blueprint(docs_bp)
 
     # Eximir únicamente endpoints de documentación pública de CSRF

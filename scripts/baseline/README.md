@@ -93,3 +93,21 @@ Las 4 APIs respondieron 92/92. La etiqueta es la pertenencia a CISA KEV (**sin K
   técnicas); **T1203 (0/3 aciertos) y T1068 (25 %/17 %) se eliminaron** por no tener respaldo.
 - CTID cubre solo el 11 % de KEV y 0 % de 2023+: para CVEs modernos las técnicas casi siempre son heurísticas.
 - Limitación general: KEV y EPSS no son independientes (EPSS se entrena con observaciones de explotación).
+
+## Feeds proactivos (WP6, 2026-11-19) - evidencia previa y medida
+Verificado EN VIVO antes de diseñar (fixtures reales en `tests/fixtures/feeds/`):
+- SOC Agent no tenía planificador y Gunicorn arranca 3 workers -> servicio `feeds` aparte, no Celery ni APScheduler en la app.
+- NVD, CVE recién publicado: **204 de 204 sin configuraciones CPE** (llegan días después), pero el **100 % trae vendor/producto**
+  en `affected[].affectedData[]` de la CNA: de ahí se casa. EPSS no puntúa a los de <1 día (1 de 8 devueltos).
+- Volumen: unos 100 CVE graves/día en NVD (204 en 48 h) y 38 altas en KEV en 30 días. **120 de los 204 (59 %) son de Oracle**
+  (su parche trimestral): sin filtro por stack el feed sería ruido.
+  **CORRECCIÓN**: una versión anterior de este análisis decía '127 de Oracle y 89 de Red Hat'. Era un conteo de pares
+  vendor/producto, no de CVE (un solo CVE lista muchos productos). Lo correcto: Oracle 120 CVE, Red Hat ~1.
+- Casado probado contra el catálogo KEV real (1 786 entradas): 0 falsos positivos de `go`; `log4j`->`Log4j2`; FortiOS y sus
+  variantes se agrupan. Límites DOCUMENTADOS: una entrada solo de producto (`IOS`) casa Cisco IOS y Apple iOS (79 CVE) y `Office`
+  casa `WPS Office`; declarar también el vendor lo evita. No se casa por el texto de la descripción.
+- Ejecución real (sin mocks): 242 CVE en 18 s; con un stack de 3 entradas **11 son relevantes (4.5 %)**; añadir `Oracle` sube a 131
+  (= 11 + 120) y quitarlo vuelve a 11. Segunda ejecución: 0 nuevos (idempotente).
+- Hallazgo de la primera ejecución real: los CVE de KEV recién añadidos puntuaban 40 (MEDIO) porque KEV no trae CVSS y EPSS
+  llega con retraso -> **suelo: KEV = ALTO como mínimo**.
+- Fuera de v1 (a propósito): OTX/RSS/URLhaus, resumen diario con LLM, notificaciones externas, estado leído/descartado por usuario.

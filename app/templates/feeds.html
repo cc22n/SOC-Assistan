@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Feeds - SOC Agent{% endblock %}
+
+{% block content %}
+{% set can_edit = current_user.role in ['senior_analyst', 'admin'] %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="mb-4">
+        <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-rss text-indigo-600 mr-2"></i>Feeds de CVEs</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            CVEs nuevos de CISA KEV y de NVD (CVSS alto o crítico), filtrados por las tecnologías de tu stack. Por defecto solo se
+            muestran los que te afectan.
+        </p>
+    </div>
+
+    <div id="sourceStatus" class="flex flex-wrap gap-2 mb-4 text-xs"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow p-3 mb-3 flex flex-wrap items-center gap-3 text-sm">
+                <label class="flex items-center"><input id="fAll" type="checkbox" data-change="loadItems" class="mr-2">Ver todos (no solo los de mi stack)</label>
+                <select id="fRisk" data-change="loadItems" class="border border-gray-300 rounded px-2 py-1">
+                    <option value="">Cualquier riesgo</option>
+                    <option value="MEDIO">MEDIO o más</option>
+                    <option value="ALTO">ALTO o más</option>
+                    <option value="CRÍTICO">CRÍTICO</option>
+                </select>
+                <select id="fDays" data-change="loadItems" class="border border-gray-300 rounded px-2 py-1">
+                    <option value="7">Últimos 7 días</option>
+                    <option value="30" selected>Últimos 30 días</option>
+                    <option value="90">Últimos 90 días</option>
+                </select>
+                <span id="itemsTotal" class="text-gray-500 ml-auto"></span>
+            </div>
+            <div id="itemsList" class="space-y-3"><div class="text-center text-gray-400 py-8">Cargando…</div></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4 self-start">
+            <h2 class="font-semibold text-gray-700 mb-1">Mi stack</h2>
+            <p class="text-xs text-gray-500 mb-3">
+                Tecnologías que ejecutas. Un vendor solo ("Cisco") casa todos sus productos; un producto solo ("Exchange Server")
+                casa cualquier vendor; ambos, el par. Declarar también el vendor evita confusiones (p. ej. "IOS" es de Cisco y de Apple).
+            </p>
+            <div id="stackList" class="text-sm divide-y divide-gray-100 mb-3"></div>
+            {% if can_edit %}
+            <div class="space-y-2">
+                <input id="stVendor" maxlength="120" placeholder="Vendor (p. ej. Fortinet)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <input id="stProduct" maxlength="120" placeholder="Producto (p. ej. FortiOS)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <div id="stackError" class="text-sm text-red-600 hidden"></div>
+                <button data-action="addStack" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm">
+                    <i class="fas fa-plus mr-1"></i>Añadir al stack
+                </button>
+            </div>
+            {% else %}
+            <p class="text-xs text-gray-400"><i class="fas fa-lock mr-1"></i>Solo un analista senior o un admin puede modificar el stack: afecta a lo que ve toda la organización.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Jinja: una variable `set` en un bloque NO es visible en otro; hay que definirla aquí también #}
+{% set can_edit = current_user.role in ['senior_analyst', 'admin'] %}
+<script nonce="{{ csp_nonce() }}">
+const CAN_EDIT = {{ can_edit|tojson }};
+const RISK_CLASS = { 'CRÍTICO': 'bg-red-100 text-red-700', 'ALTO': 'bg-orange-100 text-orange-700', 'MEDIO': 'bg-yellow-100 text-yellow-700', 'BAJO': 'bg-blue-100 text-blue-700', 'LIMPIO': 'bg-green-100 text-green-700' };
+
+function fmtDate(iso) { return iso ? iso.slice(0, 10) : '—'; }
+
+async function loadStatus() {
+    try {
+        const d = await (await fetch('/api/v2/feeds/status')).json();
+        if (!d.success) return;
+        document.getElementById('sourceStatus').innerHTML = d.sources.map(s => {
+            const lag = s.lag_minutes === null ? 'nunca ha corrido' : (s.lag_minutes < 90 ? `hace ${s.lag_minutes} min` : `hace ${Math.round(s.lag_minutes / 60)} h`);
+            const cls = s.stale ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200';
+            const warn = s.stale ? ' · ¿está corriendo el servicio feeds?' : '';
+            return `<span class="px-3 py-1 rounded-full border ${cls}"><i class="fas fa-circle text-[8px] mr-1"></i>${escapeHtml(s.source)}: ${escapeHtml(lag)}${escapeHtml(warn)}</span>`;
+        }).join('');
+    } catch (e) { /* el estado es informativo */ }
+}
+
+async function loadItems() {
+    const all = document.getElementById('fAll').checked;
+    const risk = document.getElementById('fRisk').value;
+    const days = document.getElementById('fDays').value;
+    const qs = new URLSearchParams({ relevant: all ? '0' : '1', days, limit: '100' });
+    if (risk) qs.set('risk', risk);
+    const box = document.getElementById('itemsList');
+    try {
+        const d = await (await fetch('/api/v2/feeds/items?' + qs)).json();
+        if (!d.success) { box.innerHTML = `<div class="text-center text-red-500 py-8">${escapeHtml(d.error || 'No se pudo cargar')}</div>`; return; }
+        document.getElementById('itemsTotal').textContent = `${d.total} CVE${d.total === 1 ? '' : 's'}`;
+        if (!d.items.length) {
+            box.innerHTML = '<div class="bg-white rounded-lg shadow text-center text-gray-400 py-10">' + (all
+                ? 'Aún no hay CVEs en este periodo.'
+                : 'Ningún CVE nuevo afecta a tu stack en este periodo. Marca «Ver todos» para ver el resto.') + '</div>';
+            return;
+        }
+        box.innerHTML = d.items.map(i => {
+            const chips = (i.affected || []).slice(0, 4).map(a => `<span class="inline-block bg-gray-100 text-gray-700 rounded px-2 py-0.5 text-xs mr-1 mb-1">${escapeHtml([a.vendor, a.product].filter(Boolean).join(' '))}</span>`).join('');
+            const mine = (i.matched_labels || []).length ? `<span class="text-xs text-indigo-600"><i class="fas fa-bullseye mr-1"></i>Afecta a tu stack: ${escapeHtml(i.matched_labels.join(', '))}</span>` : '';
+            const kev = i.in_kev ? `<span class="px-2 py-0.5 rounded bg-red-600 text-white text-xs font-semibold mr-1">KEV</span>` : '';
+            const ransom = i.known_ransomware ? `<span class="px-2 py-0.5 rounded bg-black text-white text-xs mr-1">ransomware</span>` : '';
+            const esc = i.escalated_at ? `<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs mr-1">escalado a KEV</span>` : '';
+            const epss = i.epss === null ? 'EPSS sin puntuar' : `EPSS ${(i.epss * 100).toFixed(1)}%`;
+            const cvss = i.cvss_score === null ? '' : ` · CVSS ${escapeHtml(i.cvss_score)}`;
+            const href = `/analyze?ioc=${encodeURIComponent(i.cve_id)}&type=cve`;
+            return `<div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="mb-1">${kev}${ransom}${esc}<span class="px-2 py-0.5 rounded text-xs font-semibold ${RISK_CLASS[i.risk_level] || ''}">${escapeHtml(i.risk_level)}</span>
+                            <span class="font-mono text-sm font-semibold text-gray-800 ml-1">${escapeHtml(i.cve_id)}</span></div>
+                        <div class="text-sm text-gray-700">${escapeHtml(i.title)}</div>
+                        <div class="text-xs text-gray-500 mt-1">${escapeHtml(epss)}${cvss} · publicado ${escapeHtml(fmtDate(i.published_at))}</div>
+                        <div class="mt-2">${chips}</div>
+                        <div class="mt-1">${mine}</div>
+                    </div>
+                    <a href="${href}" class="shrink-0 px-3 py-1 text-xs text-indigo-600 border border-indigo-200 rounded hover:bg-indigo-50"><i class="fas fa-search mr-1"></i>Analizar</a>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) { box.innerHTML = '<div class="text-center text-red-500 py-8">Error de red</div>'; }
+}
+
+async function loadStack() {
+    try {
+        const d = await (await fetch('/api/v2/feeds/stack')).json();
+        const box = document.getElementById('stackList');
+        if (!d.entries.length) { box.innerHTML = '<div class="py-3 text-gray-400 text-xs">Aún no has declarado ninguna tecnología: sin stack, nada se marca como relevante.</div>'; return; }
+        box.innerHTML = d.entries.map(e => {
+            const del = CAN_EDIT ? `<button data-action="removeStack" data-args='${escapeHtml(JSON.stringify([e.id]))}' class="text-xs text-red-500 hover:underline">Quitar</button>` : '';
+            return `<div class="py-2 flex items-center justify-between"><span><span class="text-gray-800">${escapeHtml(e.vendor || '*')}</span> <span class="text-gray-500">/ ${escapeHtml(e.product || '*')}</span></span>${del}</div>`;
+        }).join('');
+    } catch (e) { /* ignorar */ }
+}
+
+function showStackError(msg) {
+    const el = document.getElementById('stackError');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('hidden', !msg);
+}
+
+async function addStack() {
+    showStackError('');
+    const body = { vendor: document.getElementById('stVendor').value, product: document.getElementById('stProduct').value };
+    try {
+        const r = await fetch('/api/v2/feeds/stack', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (!r.ok) { showStackError(d.error || 'No se pudo añadir'); return; }
+        document.getElementById('stVendor').value = '';
+        document.getElementById('stProduct').value = '';
+        showToast(`Añadido. ${d.relevance.relevant} CVE(s) relevantes en total`, 'success');
+        await Promise.all([loadStack(), loadItems(), loadStatus()]);
+    } catch (e) { showStackError('Error de red'); }
+}
+
+async function removeStack(id) {
+    try {
+        const r = await fetch(`/api/v2/feeds/stack/${id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (!r.ok) { showToast(d.error || 'No se pudo quitar', 'error'); return; }
+        await Promise.all([loadStack(), loadItems(), loadStatus()]);
+    } catch (e) { showToast('Error de red', 'error'); }
+}
+
+loadStatus(); loadStack(); loadItems();
+</script>
+{% endblock %}
