@@ -162,3 +162,89 @@ class TestRutaSinEvidencia:
         assert r.status_code == 200
         assert r.get_json()['api_coverage']['failed'] == ['shodan']
         assert IOCAnalysis.query.count() == antes + 1
+
+
+# ============================================================================ ABUSEIPDB: bandas (señal de IPs)
+
+class TestAbuseIpdbBandas:
+    """Antes `confianza * 0.3`: una IP con confianza 97 sumaba 29, un punto por debajo de MEDIO (30)."""
+
+    @pytest.mark.parametrize('conf,esperado', [
+        (0, 0), (24, 0), (25, 10), (49, 10), (50, 20), (74, 20), (75, 32), (89, 32), (90, 40), (100, 40),
+    ])
+    def test_bandas(self, conf, esperado):
+        assert ORCH._abuseipdb_points({'abuse_confidence_score': conf}) == esperado
+
+    def test_acepta_las_dos_claves_historicas(self):
+        assert ORCH._abuseipdb_points({'abuse_confidence': 90}) == ORCH._abuseipdb_points({'abuse_confidence_score': 90}) == 40
+
+    @pytest.mark.parametrize('res', [{}, {'abuse_confidence_score': None}, {'abuse_confidence_score': 0}])
+    def test_sin_dato_no_puntua(self, res):
+        assert ORCH._abuseipdb_points(res) == 0
+
+    def test_la_lista_blanca_de_abuseipdb_anula_los_puntos(self):
+        assert ORCH._abuseipdb_points({'abuse_confidence_score': 100, 'is_whitelisted': True}) == 0
+
+    def test_un_nodo_tor_no_se_infla(self):
+        """Un nodo de salida Tor es un anonimizador, no necesariamente un atacante: se queda en la fórmula de siempre."""
+        tor = ORCH._abuseipdb_points({'abuse_confidence_score': 100, 'is_tor': True})
+        assert tor == 30 and tor < ORCH._abuseipdb_points({'abuse_confidence_score': 100})
+
+    def test_75_o_mas_garantiza_medio_con_esa_sola_senal(self):
+        for conf in (75, 80, 97, 100):
+            s = ORCH._calculate_enhanced_score({'abuseipdb': {'abuse_confidence_score': conf}}, {})
+            assert ORCH._determine_risk_level(s) == 'MEDIO', conf
+
+    def test_control_la_formula_antigua_dejaba_un_97_en_bajo(self):
+        legacy = int(97 * 0.3)
+        assert legacy == 29 and ORCH._determine_risk_level(legacy) == 'BAJO'
+
+    def test_una_api_con_error_no_puntua(self):
+        assert ORCH._calculate_enhanced_score({'abuseipdb': {'error': 'HTTP 429', 'abuse_confidence_score': 100}}, {}) == 0
+
+
+def _ips(tag):
+    ds = json.loads((ROOT / f'scripts/baseline/dataset{tag}.json').read_text(encoding='utf-8'))
+    sn = json.loads((ROOT / f'tests/fixtures/baseline/snapshots{tag}.json').read_text(encoding='utf-8'))
+    return [(d, sn[f"ip:{d['value']}"]['api_results']) for d in ds if d['type'] == 'ip']
+
+
+def _score_con_formula_antigua(res):
+    nuevo = ORCH._calculate_enhanced_score(res, {})
+    a = res.get('abuseipdb')
+    if a and 'error' not in a:
+        nuevo += int((a.get('abuse_confidence_score') or 0) * 0.3) - ORCH._abuseipdb_points(a)
+    return min(100, nuevo)
+
+
+class TestIpsContraDatosReales:
+    """Etiquetas INDEPENDIENTES de abuse.ch (CINS Army y Emerging Threats), 2026-11-19: recall real, sin circularidad."""
+
+    def _indep(self):
+        return [r for d, r in _ips('_2026-11-19') if d['label_source'] in ('cins_army', 'emerging_threats')]
+
+    def _benignas(self):
+        return [r for tag in ('', '_2026-11-19') for d, r in _ips(tag) if d['label'] == 'benign']
+
+    def test_hay_diez_independientes_y_dieciseis_benignas(self):
+        assert len(self._indep()) == 10 and len(self._benignas()) == 16
+
+    def test_nueve_de_diez_llegan_a_medio(self):
+        n = sum(ORCH._calculate_enhanced_score(r, {}) >= 30 for r in self._indep())
+        assert n >= 9, n
+
+    def test_control_con_la_formula_antigua_eran_siete(self):
+        """Si este control no diera 7, el test anterior no demostraría la mejora."""
+        assert sum(_score_con_formula_antigua(r) >= 30 for r in self._indep()) == 7
+
+    def test_cero_falsos_positivos_en_las_benignas(self):
+        sobre = [s for s in (ORCH._calculate_enhanced_score(r, {}) for r in self._benignas()) if s >= 30]
+        assert sobre == []
+
+    def test_el_cambio_no_altera_la_puntuacion_de_ningun_nodo_tor(self):
+        """La propiedad que SÍ garantiza el tope de Tor: puntúan igual que con la fórmula anterior. (Otras señales pueden
+        llevar un nodo Tor a CRÍTICO: el 2026-11-18, con Criminal IP respondiendo, 5 de 5 lo hicieron. Es una decisión de
+        producto pendiente, no efecto de este cambio.)"""
+        tor = [r for tag in ('', '_2026-11-19') for d, r in _ips(tag) if d['category'] == 'nodo_tor']
+        assert len(tor) == 10
+        assert all(ORCH._calculate_enhanced_score(r, {}) == _score_con_formula_antigua(r) for r in tor)

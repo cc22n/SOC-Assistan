@@ -60,10 +60,6 @@ Composición: malicious=40, benign=34, ambiguous=11
 | url | 40% (4/10) | 0% (0/8) | 100% | 10 / 8 |
 | hash | 90% (9/10) | 0% (0/8) | 100% | 10 / 8 |
 
-### ¿Cuánto del score de un IOC limpio es solo "la API respondió"? (+5 por API sin error)
-
-Benignos: score medio **0.6**, de los cuales **28.2** son puntos de presencia (4800%). Benignos que subirían de nivel solo por estos puntos: 1 de 34.
-
 ### Falsos positivos (benignos con nivel ≥ MEDIO)
 
 - ninguno
@@ -82,7 +78,7 @@ Benignos: score medio **0.6**, de los cuales **28.2** son puntos de presencia (4
 - `171.25.193.25` (nodo_tor) score=80 CRÍTICO
 - `80.67.167.81` (nodo_tor) score=80 CRÍTICO
 - `109.70.100.4` (nodo_tor) score=80 CRÍTICO
-- `71.6.135.131` (escaner_internet) score=55 ALTO
+- `71.6.135.131` (escaner_internet) score=65 ALTO
 - `pastebin.com` (servicio_doble_uso) score=30 MEDIO
 - `ngrok.io` (servicio_doble_uso) score=12 BAJO
 - `duckdns.org` (servicio_doble_uso) score=10 BAJO
@@ -108,3 +104,11 @@ Benignos: score medio **0.6**, de los cuales **28.2** son puntos de presencia (4
 | google_safebrowsing | 41 | 0 | 100% |  |
 | hybrid_analysis | 18 | 0 | 100% |  |
 | malwarebazaar | 18 | 0 | 100% |  |
+
+### Recall de maliciosos por fuente de la etiqueta (ALTO o peor | MEDIO o peor)
+
+| fuente de la etiqueta | tipo | n | ALTO+ | MEDIO+ | independiente de abuse.ch |
+|---|---|---|---|---|---|
+| malwarebazaar | hash | 10 | 90% (9) | 100% (10) | no (circular) |
+| threatfox | ip | 20 | 40% (8) | 80% (16) | no (circular) |
+| urlhaus | url | 10 | 40% (4) | 100% (10) | no (circular) |

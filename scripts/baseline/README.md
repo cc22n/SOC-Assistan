@@ -155,3 +155,19 @@ CINS Army (5 IP) y Emerging Threats (5 IP) como listas negras, y OpenPhish (10 U
 - Pendiente: dominios con etiqueta independiente (ninguna fuente usada aquí; sin la de abuse.ch los dominios de hoy quedan en BAJO).
 
 Regla práctica: una recolección completa por día como máximo (o `--limit`); la repetición ya hecha sirve de referencia.
+
+## Señal de IPs: calibración de AbuseIPDB (2026-11-20)
+Medido OFFLINE sobre las respuestas congeladas de los dos días (sin gastar cuota). Qué discrimina a las IP de atacantes INDEPENDIENTES
+(CINS + Emerging Threats, n=10) de las benignas (n=16):
+- **AbuseIPDB `abuse_confidence`: mediana 97 en independientes frente a 0 en benignas.** La señal fuerte. Pero se puntuaba como
+  `confianza * 0.3`: un 97 sumaba 29, UN punto por debajo de MEDIO (30), y 3 de 10 quedaban en BAJO.
+- OTX `pulse_count` NO discrimina (mediana 50, el tope, en las benignas: DNS públicos, etc.): bien que no se puntúe.
+- GreyNoise `noise` NO discrimina (los escáneres legítimos de Censys/Shodan también lo llevan): no se puntúa.
+- Las IP de ThreatFox (C2 recientes) tienen abuse=0, OTX=0 y GreyNoise=0: aún no están en ninguna base de reputación. Solo las detecta
+  ThreatFox. Es un límite de las fuentes, no del scoring.
+- Cambio: bandas de AbuseIPDB (>=90:40, >=75:32, >=50:20, >=25:10), lista blanca = 0 y nodo Tor sin inflar. >=75 es el umbral de
+  bloqueo que recomienda el proveedor, no un valor ajustado a estos datos.
+- Resultado (19-nov): independientes **7/10 -> 9/10 a MEDIO o peor**, ALTO+ 3 -> 4; todas las IP maliciosas 14/20 -> 16/20; 0/8 benignas.
+  18-nov, dominios, URLs, hashes y los ambiguos (Tor/escáneres) SIN cambios. n=10: indicativo, no concluyente.
+- **Decisión de producto pendiente**: con Criminal IP respondiendo (18-nov) los 5 nodos Tor salen CRÍTICO; con la cuota agotada (19-nov), ALTO.
+  El cambio de AbuseIPDB no los afecta (tope), pero ¿debe un nodo de salida Tor ser CRÍTICO?

@@ -727,7 +727,7 @@ Responde SOLO con el JSON."""
                     if result.get('classification') == 'malicious':
                         score += 25
                 elif api_name == 'abuseipdb':
-                    score += int(result.get('abuse_confidence', result.get('abuse_confidence_score', 0)) * 0.3)
+                    score += self._abuseipdb_points(result)
                 elif api_name == 'threatfox':
                     if result.get('threat_type') or result.get('found'):
                         score += 30
@@ -787,6 +787,25 @@ Responde SOLO con el JSON."""
             pts += min(self.VT_MAX_SUSPICIOUS_POINTS, self.VT_SUSPICIOUS_POINTS * suspicious)
         if isinstance(reputation, (int, float)) and reputation < 0:
             pts += self.VT_NEGATIVE_REPUTATION_POINTS
+        return pts
+
+    # AbuseIPDB: confianza de abuso 0-100. Antes `confianza * 0.3` (máx. 30): una IP con confianza 97 sumaba 29, UN punto
+    # por debajo del umbral MEDIO (30), y los atacantes reales de listas independientes (CINS, Emerging Threats) quedaban en
+    # BAJO. AbuseIPDB recomienda bloquear a partir de 75; bandas: >=90 -> 40, >=75 -> 32 (siempre MEDIO), >=50 -> 20, >=25 -> 10.
+    # Medido sobre 10 IP maliciosas independientes de abuse.ch en dos días: MEDIO o peor 7/10 -> 9/10, 0 falsos positivos en
+    # 16 IP benignas (scripts/baseline/README.md). n pequeño: las bandas siguen la guía del proveedor, no se afinaron a los datos.
+    ABUSE_BANDS = ((90, 40), (75, 32), (50, 20), (25, 10))
+
+    @classmethod
+    def _abuseipdb_points(cls, result: Dict) -> int:
+        if result.get('is_whitelisted'):
+            return 0                                   # la lista blanca de AbuseIPDB: IP conocida como legítima
+        conf = result.get('abuse_confidence', result.get('abuse_confidence_score', 0)) or 0
+        legacy = int(conf * 0.3)
+        pts = next((p for thr, p in cls.ABUSE_BANDS if conf >= thr), 0)
+        if result.get('is_tor'):
+            # un nodo de salida Tor es un anonimizador, no necesariamente un atacante: no se infla por encima de lo de siempre
+            return min(pts, legacy)
         return pts
 
     @staticmethod
