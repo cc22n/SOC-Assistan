@@ -86,6 +86,13 @@ def deep_analyze():
         is_valid, error_msg = validate_ioc(ioc, ioc_type)
         if not is_valid:
             return jsonify({'error': error_msg}), 400
+
+        # Política de salida (WP4): IOC interno -> nada sale a APIs de terceros ni a la búsqueda web
+        from app.utils.egress_policy import audit_denied, evaluate, explain
+        verdict = evaluate(ioc, ioc_type)
+        if not verdict.allowed:
+            audit_denied(verdict, ioc, ioc_type, 'deep', current_user.id)
+            return jsonify({'error': explain(verdict), 'rule': verdict.rule, 'egress_denied': True}), 422
         
         # CRIT-01: la sesión debe existir y ser visible al usuario (dueño o admin).
         # Sin esto se podía correlacionar contra la sesión de otro analista y

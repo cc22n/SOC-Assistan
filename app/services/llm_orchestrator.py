@@ -475,6 +475,8 @@ class LLMOrchestrator:
                       planificador LLM (use_llm_planning se ignora). Solo se omiten las que no tienen cliente.
         llm_synthesis: False = sin LLM en absoluto; el resumen sale de los datos (`_deterministic_synthesis`).
         """
+        from app.utils.egress_policy import enforce
+        enforce(ioc, ioc_type)        # WP4 (E1): un IOC interno o mal formado NO sale a ninguna API; lanza EgressDenied
         from app.utils.security import sanitize_user_context
         user_context = sanitize_user_context(user_context)
 
@@ -943,6 +945,9 @@ Responde SOLO con el JSON."""
                         'llm_provider': llm.provider
                     }
                 logger.info(f"🔍 Deep analysis triggered for {ioc_type}: {ioc_value}")
+                refusal = self._egress_refusal(llm, ioc_value, ioc_type, session, user_id, 'chat_deep')
+                if refusal:
+                    return refusal
                 return self._handle_deep_analysis_request(
                     llm=llm,
                     ioc=ioc_value,
@@ -1226,10 +1231,29 @@ IMPORTANTE:
             logger.warning(f"IOC correlation lookup failed for {ioc_value}: {e}")
             return None
 
+    def _egress_refusal(self, llm, ioc, ioc_type, session, user_id, origin):
+        """
+        WP4 (E5): si el IOC no puede salir a APIs externas, devuelve la respuesta de chat que lo explica (y lo audita); si puede,
+        None. En el chat el IOC lo decide el MODELO: se trata igual que uno tecleado.
+        """
+        from app.utils.egress_policy import audit_denied, evaluate, explain
+        verdict = evaluate(ioc, ioc_type)
+        if verdict.allowed:
+            return None
+        audit_denied(verdict, ioc, ioc_type, origin, user_id)
+        text = explain(verdict)
+        if session:
+            self._save_assistant_message(session, text, False, None, llm.provider)
+        return {'response': text, 'requires_analysis': False, 'egress_denied': True, 'rule': verdict.rule,
+                'session_id': session.id if session else None, 'llm_provider': llm.provider}
+
     def _handle_new_ioc_analysis(self, llm, intent, message, session, session_context, user_id, user_message_id):
         """Maneja análisis de un IOC nuevo"""
         ioc = intent['ioc_value']
         ioc_type = intent.get('ioc_type') or self._detect_ioc_type(ioc)
+        refusal = self._egress_refusal(llm, ioc, ioc_type, session, user_id, 'chat')
+        if refusal:
+            return refusal
 
         # Memoria entre sesiones: buscar historial ANTES de crear el análisis nuevo
         ioc_history = self._get_ioc_history(

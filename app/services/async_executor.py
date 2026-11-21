@@ -292,6 +292,10 @@ def execute_apis_parallel(
         )
         # Todas se ejecutan al mismo tiempo, resultado en ~3s
     """
+    # Defensa en profundidad (WP4): aunque quien llama ya haya validado, un IOC interno NO sale a ninguna API externa. Falla cerrado.
+    from app.utils.egress_policy import enforce
+    enforce(ioc, ioc_type)
+
     start = time.time()
     n_apis = len(selected_apis)
 

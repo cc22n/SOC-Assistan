@@ -85,6 +85,12 @@ def sanitize_llm_prompt(text: str, max_length: int = _MAX_USER_CONTEXT_LEN, fiel
     text = text.replace('>>>', '&gt;&gt;&gt;')
     text = re.sub(r'`{3,}', '```', text)  # limitar backticks consecutivos
 
+    # 3b. WP4: IPs privadas y nombres de host internos no deben llegar a un LLM ni a una búsqueda web
+    from app.utils.egress_policy import mask_text
+    text, masked = mask_text(text)
+    if masked:
+        logger.info(f"Field '{field_name}': {masked} referencia(s) interna(s) enmascarada(s) antes de enviar al LLM")
+
     # 4. Truncar
     if len(text) > max_length:
         logger.debug(f"Field '{field_name}' truncated from {len(original)} to {max_length} chars")

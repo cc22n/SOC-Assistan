@@ -17,6 +17,12 @@ class Config:
     # Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-fallback-' + os.urandom(16).hex())
 
+    # Política de salida (WP4): dominios PROPIOS que deben tratarse como internos y no enviarse a APIs de terceros, separados
+    # por coma (p. ej. "intranet.empresa.com,corp.empresa.com"). Casan por límite de etiqueta: "empresa.com" cubre
+    # "a.empresa.com" pero no "noempresa.com". Los sufijos reservados (.local .lan .internal .corp...) ya están protegidos.
+    EGRESS_INTERNAL_DOMAINS = tuple(d.strip().lower().strip('.') for d in
+                                    os.environ.get('EGRESS_INTERNAL_DOMAINS', '').split(',') if d.strip().strip('.'))
+
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL',
                                              'postgresql://soc_admin:soc_password@localhost:5432/soc_agent')

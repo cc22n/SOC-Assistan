@@ -81,6 +81,13 @@ def analyze_enhanced(data: AnalyzeRequest):
             if not ioc_type:
                 return jsonify({'error': 'No se pudo detectar tipo de IOC'}), 400
 
+        # === POLÍTICA DE SALIDA (WP4): un IOC interno o mal formado no se analiza, ni se cachea, ni toca la BD ===
+        from app.utils.egress_policy import audit_denied, evaluate, explain
+        verdict = evaluate(ioc_value, ioc_type)
+        if not verdict.allowed:
+            audit_denied(verdict, ioc_value, ioc_type, 'analyze', current_user.id)
+            return jsonify({'error': explain(verdict), 'rule': verdict.rule, 'egress_denied': True}), 422
+
         # === PERFIL DE INVESTIGACIÓN (opcional): fija las APIs; sin planificador LLM ===
         profile = None
         if data.profile_id:
