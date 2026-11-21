@@ -106,6 +106,7 @@ def upsert_item(data: Dict[str, Any], entries: List[TechStackEntry], now: dateti
         item.in_kev, item.kev_date_added = True, data.get('kev_date_added')
         if not created:
             escalated, item.escalated_at = True, now
+            item.notified_at = None          # entrar en KEV es la noticia más importante: se vuelve a avisar
     if data.get('known_ransomware'):
         item.known_ransomware = True
     if data.get('cvss_score') is not None:
@@ -258,6 +259,11 @@ def daemon(poll_seconds: int = 300, stop: Callable[[], bool] = lambda: False,
         try:
             for r in run_due():
                 logger.info('feeds: %s', r)
+            # WP7: avisos por Telegram de lo relevante y pendiente (no hace nada sin token y chats configurados)
+            from app.services import feed_notifier
+            avisos = feed_notifier.maybe_notify()
+            if avisos['status'] not in ('disabled', 'idle', 'backoff'):
+                logger.info('feeds: avisos Telegram: %s', avisos)
         except Exception as e:                       # nunca morir: el siguiente ciclo lo reintenta
             logger.error('feeds daemon: ciclo falló: %s', e, exc_info=True)
             db.session.rollback()

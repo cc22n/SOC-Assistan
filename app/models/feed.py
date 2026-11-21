@@ -59,6 +59,7 @@ class FeedItem(db.Model):
     is_relevant = db.Column(db.Boolean, nullable=False, default=False, index=True)
     matched_entries = db.Column(JSONB, nullable=False, default=list)     # ids de TechStackEntry que casaron
     escalated_at = db.Column(db.DateTime, nullable=True)                 # entró en KEV después de conocerse
+    notified_at = db.Column(db.DateTime, nullable=True)                  # avisado por Telegram (NULL = pendiente); ver feed_notifier
     first_seen_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 

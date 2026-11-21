@@ -17,6 +17,16 @@ class Config:
     # Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-fallback-' + os.urandom(16).hex())
 
+    # Telegram (WP7): avisos SALIENTES de los feeds. Sin token no se hace nada. El token es un secreto: viaja en la URL de la API de
+    # Telegram y aparece en el texto de cualquier excepción de red; app/services/telegram_client.py lo redacta siempre.
+    TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN') or None
+    # Lista (separada por comas) de chats permitidos que reciben los avisos. Solo se envía a estos; nunca a un chat arbitrario.
+    TELEGRAM_ALERT_CHAT_IDS = tuple(int(x) for x in os.environ.get('TELEGRAM_ALERT_CHAT_IDS', '').replace(' ', '').split(',')
+                                    if x.lstrip('-').isdigit())
+    TELEGRAM_MIN_RISK = os.environ.get('TELEGRAM_MIN_RISK', 'ALTO').upper()       # ALTO | MEDIO | CRÍTICO
+    TELEGRAM_BACKLOG_DAYS = int(os.environ.get('TELEGRAM_BACKLOG_DAYS', '3'))     # no avisar de CVE más antiguos al activarlo
+    APP_BASE_URL = (os.environ.get('APP_BASE_URL') or '').rstrip('/')             # opcional: enlace "Analizar" en el aviso
+
     # Política de salida (WP4): dominios PROPIOS que deben tratarse como internos y no enviarse a APIs de terceros, separados
     # por coma (p. ej. "intranet.empresa.com,corp.empresa.com"). Casan por límite de etiqueta: "empresa.com" cubre
     # "a.empresa.com" pero no "noempresa.com". Los sufijos reservados (.local .lan .internal .corp...) ya están protegidos.

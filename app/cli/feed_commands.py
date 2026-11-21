@@ -32,6 +32,10 @@ def run(source, lookback_days):
         click.echo(f"{r['source']:12s} {r['status']:8s} traídos={r.get('fetched', 0)} nuevos={r.get('new', 0)} "
                    f"actualizados={r.get('updated', 0)} alertas={r.get('alerts', 0)} escalados={r.get('escalated', 0)}"
                    + (f"  ERROR: {r['error']}" if r.get('error') else ''))
+    from app.services import feed_notifier
+    avisos = feed_notifier.notify_pending()
+    if avisos['status'] != 'disabled':
+        click.echo(f"avisos Telegram: {avisos['status']} ({avisos.get('items', 0)} CVE)")
 
 
 @feeds_cli.command('daemon')

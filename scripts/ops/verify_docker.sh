@@ -76,6 +76,7 @@ echo "$FEEDS_LOG" | grep -q "feeds daemon iniciado" && ok "el servicio feeds arr
 check "feeds sin reinicios" "$(docker inspect "$FEEDS_ID" --format '{{.RestartCount}}')" "0"
 FEEDS_OK=""; for i in $(seq 1 40); do docker exec "$FEEDS_ID" flask feeds status 2>/dev/null | grep -q "cisa_kev .*última=ok" && { FEEDS_OK=1; break; }; sleep 3; done
 [ -n "$FEEDS_OK" ] && ok "el daemon ejecuto una fuente real (KEV) y quedo registrada en feed_runs" || bad "el daemon no completo ninguna ejecucion de KEV en 2 min"
+docker exec "$FEEDS_ID" flask telegram status 2>/dev/null | grep -q "avisos activos    : NO" && ok "Telegram desactivado sin token (el daemon se comporta como antes)" || bad "Telegram no queda desactivado sin token"
 
 LOG="$(docker logs "${PROJECT}-app" 2>&1)"
 echo "$LOG" | grep -q "Running upgrade  -> " && ok "Alembic aplico las migraciones desde una BD vacia" || bad "migraciones no aplicadas"
