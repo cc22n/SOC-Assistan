@@ -80,6 +80,9 @@ def create_app(config_name='default'):
     # Inicializar extensiones
     db.init_app(app)
     migrate.init_app(app, db)
+    # WP1: sellado de la cadena de auditoría al insertar cada AuditEvent (before_flush)
+    from app.services.audit_chain import install_listeners as install_audit_chain
+    install_audit_chain()
     login_manager.init_app(app)
     limiter.init_app(app)
     cache.init_app(app)
@@ -116,12 +119,13 @@ def create_app(config_name='default'):
     register_blueprints(app)
 
     # Registrar CLI commands
-    from app.cli import mitre_cli, accounts_cli, profiles_cli, feeds_cli, telegram_cli
+    from app.cli import mitre_cli, accounts_cli, profiles_cli, feeds_cli, telegram_cli, audit_cli
     app.cli.add_command(mitre_cli)
     app.cli.add_command(accounts_cli)
     app.cli.add_command(profiles_cli)
     app.cli.add_command(feeds_cli)
     app.cli.add_command(telegram_cli)
+    app.cli.add_command(audit_cli)
 
     # Filtro Jinja para mostrar fechas en hora local (México) en templates
     # server-side rendered — los timestamps se guardan en UTC naive

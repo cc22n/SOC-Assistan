@@ -16,6 +16,11 @@ class Config:
 
     # Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-fallback-' + os.urandom(16).hex())
+    # WP1: clave HMAC de la cadena de auditoría. Debe vivir FUERA de la BD y de sus copias de seguridad. Obligatoria en producción.
+    AUDIT_CHAIN_KEY = os.environ.get('AUDIT_CHAIN_KEY') or None
+    # Rotación: claves anteriores (coma) para seguir verificando lo ya sellado. ACCEPT_UNKEYED: la clave se añadió tarde y hay histórico sin clave.
+    AUDIT_CHAIN_PREVIOUS_KEYS = os.environ.get('AUDIT_CHAIN_PREVIOUS_KEYS') or None
+    AUDIT_CHAIN_ACCEPT_UNKEYED = os.environ.get('AUDIT_CHAIN_ACCEPT_UNKEYED') or None
 
     # Telegram (WP7): avisos SALIENTES de los feeds. Sin token no se hace nada. El token es un secreto: viaja en la URL de la API de
     # Telegram y aparece en el texto de cualquier excepción de red; app/services/telegram_client.py lo redacta siempre.
@@ -243,6 +248,14 @@ class ProductionConfig(Config):
         if not secret or len(secret) < 32:
             raise RuntimeError(
                 "Production requires SECRET_KEY env var with at least 32 characters. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+
+        chain_key = os.environ.get('AUDIT_CHAIN_KEY')
+        if not chain_key or len(chain_key) < 32:
+            raise RuntimeError(
+                "Production requires AUDIT_CHAIN_KEY env var with at least 32 characters (clave HMAC de la cadena de auditoria; "
+                "guardala FUERA de la BD y de sus backups). "
                 "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
             )
 

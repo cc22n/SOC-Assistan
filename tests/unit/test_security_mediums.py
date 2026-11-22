@@ -320,6 +320,7 @@ class TestHostEnLaApp:
         from app.config import ProductionConfig
         monkeypatch.setenv('SECRET_KEY', 'x' * 40)
         monkeypatch.setenv('DATABASE_URL', 'postgresql://u:p@h/d')
+        monkeypatch.setenv('AUDIT_CHAIN_KEY', 'k' * 32)
         monkeypatch.delenv('ALLOWED_HOSTS', raising=False)
         with caplog.at_level('WARNING'):
             ProductionConfig.init_app(None)
@@ -329,6 +330,7 @@ class TestHostEnLaApp:
         from app.config import ProductionConfig
         monkeypatch.setenv('SECRET_KEY', 'x' * 40)
         monkeypatch.setenv('DATABASE_URL', 'postgresql://u:p@h/d')
+        monkeypatch.setenv('AUDIT_CHAIN_KEY', 'k' * 32)
         monkeypatch.setenv('ALLOWED_HOSTS', 'soc.example.com')
         with caplog.at_level('WARNING'):
             ProductionConfig.init_app(None)

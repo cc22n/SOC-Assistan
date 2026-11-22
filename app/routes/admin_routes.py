@@ -32,6 +32,27 @@ def list_locked_accounts():
         return safe_error_response(e, "Locked accounts error")
 
 
+@bp.route('/audit/verify', methods=['GET'])
+@login_required
+@require_role('admin')
+@limiter.limit("6 per minute")
+def audit_verify():
+    """
+    Verifica la cadena criptográfica de la auditoría (WP1). Query opcional `anchor=<pos>:<hash>` (el publicado por Telegram) para detectar
+    que se borraron las últimas filas. Responde 200 con `ok` true/false (una cadena rota NO es un error del servidor).
+    """
+    from app.services import audit_chain
+    try:
+        anchor = request.args.get('anchor') or None
+        if anchor:
+            audit_chain.parse_anchor(anchor)
+        return jsonify({'success': True, **audit_chain.verify_chain(anchor)}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return safe_error_response(e, "Audit verify error")
+
+
 @bp.route('/accounts/unlock', methods=['POST'])
 @login_required
 @require_role('admin')

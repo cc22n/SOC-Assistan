@@ -264,6 +264,11 @@ def daemon(poll_seconds: int = 300, stop: Callable[[], bool] = lambda: False,
             avisos = feed_notifier.maybe_notify()
             if avisos['status'] not in ('disabled', 'idle', 'backoff'):
                 logger.info('feeds: avisos Telegram: %s', avisos)
+            # WP1: ancla diaria de la cadena de auditoría (verifica y publica el extremo; sin Telegram no hace nada)
+            from app.services import audit_chain
+            ancla = audit_chain.maybe_anchor()
+            if ancla['status'] not in ('disabled', 'idle', 'backoff'):
+                logger.info('feeds: ancla de auditoría: %s', ancla)
         except Exception as e:                       # nunca morir: el siguiente ciclo lo reintenta
             logger.error('feeds daemon: ciclo falló: %s', e, exc_info=True)
             db.session.rollback()

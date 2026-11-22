@@ -26,7 +26,7 @@ bad()  { FAIL=$((FAIL+1)); printf '  [FALLA] %s\n' "$1"; }
 check() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (esperado=$3, obtenido=$2)"; fi; }
 http() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 
-python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32)); print('FLASK_APP=wsgi.py')" > "$TMP/verify.env"
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32)); print('AUDIT_CHAIN_KEY=' + secrets.token_hex(32)); print('FLASK_APP=wsgi.py')" > "$TMP/verify.env"
 cat > "$TMP/override.yml" <<EOF
 services:
   app:
@@ -126,6 +126,14 @@ M="$(curl -s -b "$J" -c "$J" $BASE/dashboard | meta)"
 check "logout POST sin token -> 400" "$(code -X POST $BASE/auth/logout)" "400"
 check "logout POST con token -> 302" "$(code -X POST -H "X-CSRFToken: $M" $BASE/auth/logout)" "302"
 check "dashboard tras logout -> 302" "$(code $BASE/dashboard)" "302"
+
+echo "== 4b. cadena criptografica de la auditoria (WP1)"
+AV="$(docker exec "${PROJECT}-app" flask audit verify 2>&1)"; AVRC=$?
+{ [ "$AVRC" = "0" ] && echo "$AV" | grep -q "eslabones comprobados"; } && ok "flask audit verify: la cadena de los eventos reales (registro/login/logout) es integra" || bad "flask audit verify fallo (rc=$AVRC): $(echo "$AV" | tail -2)"
+DELOUT="$(docker exec "${PROJECT}-db" psql -U soc_admin -d soc_agent -c "DELETE FROM audit_events" 2>&1)"
+echo "$DELOUT" | grep -q "solo agregar" && ok "el trigger de la BD real bloquea DELETE sobre audit_events" || bad "el trigger no bloqueo el DELETE: $DELOUT"
+NOKEY="$(docker exec "${PROJECT}-app" env -u AUDIT_CHAIN_KEY flask audit status 2>&1)"
+echo "$NOKEY" | grep -q "AUDIT_CHAIN_KEY" && ok "produccion se niega a arrancar sin AUDIT_CHAIN_KEY" || bad "produccion arranco sin AUDIT_CHAIN_KEY"
 
 echo "== 5. concurrencia real de Gunicorn (conexiones colgadas)"
 python - "$BASE" <<'PYEOF'

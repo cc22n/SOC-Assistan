@@ -62,6 +62,13 @@ class AuditEvent(db.Model):
     # Cuándo
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
 
+    # Cadena criptográfica (WP1): los rellena app/services/audit_chain.py al insertar (before_flush). NULL = fila anterior a la cadena.
+    chain_pos = db.Column(db.BigInteger, nullable=True, unique=True)
+    prev_hash = db.Column(db.String(64), nullable=True)
+    entry_hash = db.Column(db.String(64), nullable=True)
+    key_id = db.Column(db.String(16), nullable=True)
+    algo = db.Column(db.String(16), nullable=True)
+
     __table_args__ = (
         db.Index('ix_audit_user_created', 'user_id', 'created_at'),
         db.Index('ix_audit_action_created', 'action', 'created_at'),
