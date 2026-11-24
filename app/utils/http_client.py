@@ -40,11 +40,44 @@ def get_http_session(
     return _shared_session
 
 
+def _sanitized(exc: requests.RequestException) -> requests.RequestException:
+    """
+    La misma excepción con el mensaje SIN secretos (prelaunch-report-4 A2). El texto de una excepción de `requests` lleva la URL completa,
+    con la clave de la API si viaja en la query; los clientes lo devuelven (`{'error': str(e)}`) y lo registran. Se conserva el TIPO
+    (los `except requests.Timeout` siguen funcionando) y `.response`; se descarta `.request` (su `.url` lleva la clave).
+    """
+    from app.utils.secret_redaction import redact_secrets
+    original = str(exc)
+    limpio = redact_secrets(original)
+    if limpio == original:
+        return exc
+    try:
+        nueva = type(exc)(limpio)
+    except Exception:
+        nueva = requests.RequestException(limpio)
+    resp = getattr(exc, 'response', None)
+    if resp is not None:
+        nueva.response = resp
+    return nueva
+
+
 def http_get(url: str, **kwargs) -> requests.Response:
     """Realiza una petición GET utilizando connection pooling persistente."""
-    return get_http_session().get(url, **kwargs)
+    try:
+        return get_http_session().get(url, **kwargs)
+    except requests.RequestException as e:
+        limpia = _sanitized(e)
+        if limpia is e:
+            raise
+        raise limpia from None                  # `from None`: el traceback tampoco arrastra la excepción original con la clave
 
 
 def http_post(url: str, **kwargs) -> requests.Response:
     """Realiza una petición POST utilizando connection pooling persistente."""
-    return get_http_session().post(url, **kwargs)
+    try:
+        return get_http_session().post(url, **kwargs)
+    except requests.RequestException as e:
+        limpia = _sanitized(e)
+        if limpia is e:
+            raise
+        raise limpia from None

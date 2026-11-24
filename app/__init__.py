@@ -40,6 +40,8 @@ class JSONFormatter(logging.Formatter):
 
         if record.exc_info:
             log_entry['exception'] = self.formatException(record.exc_info)
+        elif record.exc_text:                    # traza ya redactada por SecretRedactingFilter (que quita exc_info)
+            log_entry['exception'] = record.exc_text
 
         # Agregar contexto de request si está disponible
         try:
@@ -230,12 +232,34 @@ def register_host_validation(app: Flask) -> None:
     from flask import Response
     from app.utils.hosts import host_allowed
 
+    def _is_local_probe() -> bool:
+        """
+        Sonda del propio contenedor (el HEALTHCHECK del Dockerfile consulta http://127.0.0.1:5000): Host de loopback Y el cliente TCP REAL
+        también en loopback. Sin esto, con ALLOWED_HOSTS=soc.example.com el healthcheck recibía 400, `app` quedaba unhealthy y `feeds` nunca
+        arrancaba (prelaunch-report-4 A1). Se mira el cliente anterior a ProxyFix (`werkzeug.proxy_fix.orig`): un X-Forwarded-For falsificado
+        no puede hacerse pasar por loopback, y las peticiones que llegan por el proxy vienen de la IP de la red de Docker, no de 127.0.0.1.
+        """
+        import ipaddress
+        from app.utils.hosts import split_host
+        # SOLO la ruta del healthcheck: cualquier otra con Host de loopback (p. ej. un nginx en el mismo host reenviando un Host falso)
+        # sigue rigiéndose por ALLOWED_HOSTS.
+        if flask_request.path != '/api/v2/health':
+            return False
+        if split_host(flask_request.host) not in ('127.0.0.1', '::1', 'localhost'):
+            return False
+        env = flask_request.environ
+        peer = (env.get('werkzeug.proxy_fix.orig') or {}).get('REMOTE_ADDR') or env.get('REMOTE_ADDR')
+        try:
+            return ipaddress.ip_address(peer).is_loopback
+        except (ValueError, TypeError):
+            return False
+
     @app.before_request
     def _validate_host_header():
         allowed = app.config.get('ALLOWED_HOSTS')
         if not allowed:
             return None
-        if host_allowed(flask_request.host, allowed):
+        if host_allowed(flask_request.host, allowed) or _is_local_probe():
             return None
         app.logger.warning(
             "Host rechazado por ALLOWED_HOSTS: %r (ip=%s, path=%s)",
@@ -446,6 +470,11 @@ def setup_logging(app: Flask) -> None:
         # Solo agregar si no hay handlers ya (evitar duplicados en testing)
         if not app.logger.handlers:
             app.logger.addHandler(stream_handler)
+
+    # Ningún registro sale con una clave de API (prelaunch-report-4 A2): el texto de las excepciones de requests y los reintentos de
+    # urllib3 llevan la URL completa. Se filtra en los handlers de la app y del logger raíz (los módulos hijos propagan a ellos).
+    from app.utils.secret_redaction import install_log_redaction
+    install_log_redaction(app.logger.handlers, logging.getLogger().handlers)
 
     app.logger.setLevel(log_level)
     if not app.testing:

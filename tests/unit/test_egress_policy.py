@@ -408,15 +408,16 @@ class TestAuditoria:
 # ============================================================================ GUARDAS ESTÁTICAS
 
 class TestGuardasEstaticas:
-    def test_toda_la_salida_http_pasa_por_http_client_salvo_mitre(self):
-        """44 de 45 llamadas pasaban por app/utils/http_client.py; la excepción descarga el catálogo MITRE público. Una nueva
-        llamada directa a `requests` esquivaría el punto único donde conviene vigilar la salida."""
+    def test_toda_la_salida_http_pasa_por_http_client(self):
+        """TODA llamada HTTP pasa por app/utils/http_client.py (la única excepción, la descarga del catálogo MITRE, ya también). Una
+        llamada directa a `requests` esquivaría el punto único donde se vigila la salida y donde las excepciones se redactan de
+        secretos (prelaunch-report-4 A2)."""
         directas = []
         for f in (ROOT / 'app').rglob('*.py'):
             for n, linea in enumerate(f.read_text(encoding='utf-8').splitlines(), 1):
                 if re.search(r'\brequests\.(get|post|put|patch|delete|request)\(', linea) and not linea.strip().startswith('#'):
                     directas.append(f'{f.relative_to(ROOT)}:{n}')
-        assert directas == ['app\\services\\mitre_service.py:182'] or directas == ['app/services/mitre_service.py:182'], directas
+        assert directas == [], directas
 
     def test_los_dos_puntos_de_entrada_llaman_a_enforce(self):
         for archivo, funcion in (('app/services/llm_orchestrator.py', 'def analyze_with_intelligence'),

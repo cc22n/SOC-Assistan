@@ -172,14 +172,14 @@ class MITREService:
         Descarga y parsea el bundle STIX de MITRE ATT&CK Enterprise.
         Actualiza las tablas mitre_techniques y mitre_malware_mappings.
         """
-        import requests
+        from app.utils.http_client import http_get          # punto unico de salida HTTP (errores sin secretos, ver secret_redaction)
 
         logger.info("Starting MITRE ATT&CK update from STIX bundle...")
         log = MITREUpdateLog(source='stix_github')
 
         try:
             # Descargar bundle
-            resp = requests.get(MITRE_STIX_URL, timeout=60)
+            resp = http_get(MITRE_STIX_URL, timeout=60)
             resp.raise_for_status()
             bundle = resp.json()
 

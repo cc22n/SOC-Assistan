@@ -43,6 +43,11 @@ def verify(anchor):
         click.echo(f"sin poder recalcular  : {r['unverifiable']} (sellados con otra clave: solo se comprobó su enlace)")
     if r['anchor']:
         click.echo(f"ancla                 : {r['anchor']}")
+    for kid, h in (r.get('hints') or {}).items():
+        click.echo(f"clave {kid:<9}: eslabones desde {h['first']}, primer tramo contiguo hasta {h['last_contiguous']}. Si la PERDISTE: "
+                   f"{'AUDIT_CHAIN_ACCEPT_UNKEYED' if kid == 'none' else 'AUDIT_CHAIN_LOST_KEY_IDS=' + kid + ':'}"
+                   f"{h['last_contiguous'] if kid != 'none' else '=' + str(h['last_contiguous'])}  "
+                   '(CONFIRMA el tope con tus anclas de Telegram: un tope mayor que lo legitimo reabre el hueco)')
     if r['ok']:
         click.echo('RESULTADO: cadena ÍNTEGRA')
         return

@@ -30,6 +30,7 @@ python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32)); print('
 # POSTGRES_PASSWORD y APP_DB_PASSWORD son obligatorias en docker-compose.yml (sin valor por defecto): se generan al azar
 export POSTGRES_PASSWORD="$(python -c 'import secrets; print(secrets.token_hex(16))')"
 export APP_DB_PASSWORD="$(python -c 'import secrets; print(secrets.token_hex(16))')"
+export REDIS_PASSWORD="$(python -c 'import secrets; print(secrets.token_hex(16))')"
 cat > "$TMP/override.yml" <<EOF
 services:
   app:
@@ -206,7 +207,13 @@ OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$DUMP" --yes 2>&1)"; 
 head -c 200 "$DUMP" > "$TMP/truncado.sql.gz"
 OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$TMP/truncado.sql.gz" --yes 2>&1)"; RC=$?
 { [ "$RC" != "0" ] && ! echo "$OUT" | grep -q "finalizada con"; } && ok "un respaldo truncado se rechaza antes de tocar la BD" || bad "restore acepto un respaldo truncado"
+T0=$(date +%s)
 "${DC[@]}" stop app feeds >/dev/null 2>&1
+T1=$(date +%s)
+# M6: con `init: true` y stop_grace_period el daemon termina con SIGTERM (143) o limpio (0); antes era PID 1 sin manejador y moria con SIGKILL (137)
+FEEDS_EXIT="$(docker inspect "$FEEDS_ID" --format '{{.State.ExitCode}}' 2>/dev/null)"
+APP_EXIT="$(docker inspect "${PROJECT}-app" --format '{{.State.ExitCode}}' 2>/dev/null)"
+{ [ "$FEEDS_EXIT" != "137" ] && [ "$APP_EXIT" != "137" ]; } && ok "docker stop no mata app ni feeds con SIGKILL (exit app=$APP_EXIT feeds=$FEEDS_EXIT, $((T1-T0)) s)" || bad "app/feeds terminan con SIGKILL (137): app=$APP_EXIT feeds=$FEEDS_EXIT"
 # dump con un error A MITAD: debe deshacerlo todo y NO decir 'exito' (antes dejaba la BD a medias y lo decia)
 python - "$TMP/malo.sql.gz" <<'PYEOF'
 import gzip, sys
@@ -220,12 +227,43 @@ OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$DUMP" --yes 2>&1)"; 
 { [ "$RC" = "0" ] && echo "$OUT" | grep -q "finalizada con"; } && ok "restore real del respaldo: finaliza con exito" || { bad "restore real fallo (rc=$RC)"; echo "$OUT" | tail -5; }
 check "tras el restore, mismos usuarios" "$(CNT users)" "$USR0"
 check "tras el restore, misma auditoria" "$(CNT audit_events)" "$AUD0"
+
+# A5: restaurar en un VPS o volumen NUEVO, donde el rol soc_app aun no existe. Un respaldo ANTIGUO (con GRANT ... TO soc_app) abortaba entero
+# ("role soc_app does not exist", exit 3, nada restaurado). Se simula: dump con privilegios, se borra el rol, se restaura.
+check "el respaldo nuevo no lleva GRANT (pg_dump --no-acl)" "$(gzip -dc "$DUMP" | grep -c '^GRANT')" "0"
+docker exec -i "$DBC" pg_dump -U soc_admin -d soc_agent --clean --if-exists 2>/dev/null | gzip > "$TMP/antiguo_con_grants.sql.gz"
+check "el respaldo antiguo SI lleva GRANT a soc_app (la simulacion es valida)" "$([ "$(gzip -dc "$TMP/antiguo_con_grants.sql.gz" | grep -c '^GRANT .* TO soc_app')" -gt 0 ] && echo si || echo no)" "si"
+PSQLA "DROP OWNED BY soc_app" >/dev/null; PSQLA "DROP ROLE soc_app" >/dev/null
+check "servidor nuevo simulado: el rol soc_app no existe" "$(PSQLA "SELECT count(*) FROM pg_roles WHERE rolname='soc_app'")" "0"
+OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$TMP/antiguo_con_grants.sql.gz" --yes 2>&1)"; RC=$?
+{ [ "$RC" = "0" ] && echo "$OUT" | grep -q "finalizada con"; } && ok "restore de un respaldo antiguo en un volumen NUEVO (sin el rol soc_app) funciona" || { bad "restore en volumen NUEVO fallo (rc=$RC)"; echo "$OUT" | tail -4; }
+check "...con los mismos usuarios" "$(CNT users)" "$USR0"
 "${DC[@]}" up -d app feeds >/dev/null 2>&1
 STATE=""; for _ in $(seq 1 40); do STATE="$(docker inspect "${PROJECT}-app" --format '{{.State.Health.Status}}' 2>/dev/null)"; [ "$STATE" = "healthy" ] && break; sleep 3; done
 check "la app vuelve a estar sana tras el restore" "$STATE" "healthy"
 AV="$(docker exec "${PROJECT}-app" flask audit verify 2>&1)"; AVRC=$?
 { [ "$AVRC" = "0" ] && echo "$AV" | grep -q "eslabones comprobados"; } && ok "flask audit verify tras el restore: la cadena sigue integra (el trigger y la cadena sobreviven a pg_dump --clean)" || bad "la cadena no verifica tras el restore: $(echo "$AV" | tail -2)"
 check "soc_app sigue sin ser superusuario tras el restore" "$(PSQLA "SELECT rolsuper FROM pg_roles WHERE rolname='soc_app'")" "f"
+check "init_db recreo el rol soc_app al arrancar app (volumen nuevo)" "$(PSQLA "SELECT count(*) FROM pg_roles WHERE rolname='soc_app'")" "1"
+check "...y soc_app puede leer los datos restaurados" "$(SOCAPP "SELECT count(*) FROM users")" "$USR0"
+
+echo "== 8. despliegue: ALLOWED_HOSTS con un dominio real, Redis y entorno del proceso web"
+# A1: con un dominio real en ALLOWED_HOSTS el HEALTHCHECK (127.0.0.1) recibia 400: app unhealthy y feeds sin arrancar. Se recrea `app` con
+# ALLOWED_HOSTS=soc.verify.test (sin 127.0.0.1) y se exige que llegue a healthy.
+ALLOWED_HOSTS=soc.verify.test "${DC[@]}" up -d app feeds >/dev/null 2>&1
+STATE=""; for _ in $(seq 1 50); do STATE="$(docker inspect "${PROJECT}-app" --format '{{.State.Health.Status}}' 2>/dev/null)"; [ "$STATE" = "healthy" ] && break; sleep 3; done
+check "app llega a healthy con ALLOWED_HOSTS=soc.verify.test (sin 127.0.0.1): la sonda local se acepta" "$STATE" "healthy"
+check "el dominio real responde" "$(http -H 'Host: soc.verify.test' $BASE/api/v2/health)" "200"
+check "...y un cliente externo con Host 127.0.0.1 (via el puerto publicado) se rechaza" "$(http $BASE/api/v2/health)" "400"
+check "feeds sigue en marcha tras recrear app" "$(docker inspect "$("${DC[@]}" ps -q feeds)" --format '{{.State.Running}}')" "true"
+# M3: Redis exige contraseña
+RPING="$(docker exec "${PROJECT}-redis" redis-cli ping 2>&1)"
+echo "$RPING" | grep -q "NOAUTH" && ok "Redis rechaza al cliente sin contraseña (NOAUTH)" || bad "Redis responde sin contraseña: $RPING"
+check "Redis acepta la contraseña" "$(docker exec "${PROJECT}-redis" redis-cli --no-auth-warning -a "$REDIS_PASSWORD" ping 2>&1)" "PONG"
+# M1: el proceso web no conserva las credenciales del administrador
+WEBENV="$(docker exec "${PROJECT}-app" sh -c 'tr "\0" "\n" < /proc/1/environ' 2>/dev/null)"
+echo "$WEBENV" | grep -q "^MIGRATION_DATABASE_URL=" && bad "el proceso web (PID 1) conserva MIGRATION_DATABASE_URL" || ok "MIGRATION_DATABASE_URL no esta en el entorno del proceso web (gunicorn, PID 1)"
+echo "$WEBENV" | grep -q "^DATABASE_URL=.*soc_app" && ok "...y su DATABASE_URL usa soc_app" || bad "DATABASE_URL del proceso web no usa soc_app"
 
 echo
 echo "RESULTADO: $PASS correctas, $FAIL fallidas"

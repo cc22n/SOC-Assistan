@@ -90,10 +90,36 @@ def previous_keys() -> Dict[str, bytes]:
     return {key_id(k.strip().encode('utf-8')): k.strip().encode('utf-8') for k in raw.split(',') if k.strip()}
 
 
-def lost_key_ids() -> set:
-    """key_id de claves PERDIDAS que el operador declara (AUDIT_CHAIN_LOST_KEY_IDS, coma): sus filas ya no se pueden recalcular."""
+def lost_key_ids() -> Dict[str, int]:
+    """
+    Claves PERDIDAS que el operador declara: AUDIT_CHAIN_LOST_KEY_IDS=<key_id>:<última_posición>[,...] -> {key_id: tope}.
+    El TOPE es obligatorio (prelaunch-report-4 M2): una fila de esa clave por ENCIMA del tope es rotura. Sin tope, quien tuviera INSERT
+    sobre `audit_events` (una inyección SQL) podría añadir filas falsas con ese key_id público, que la verificación aceptaría como
+    "sin poder recalcular". Una entrada sin tope válido se IGNORA (y se avisa): las filas siguen siendo rotura.
+    """
     raw = current_app.config.get('AUDIT_CHAIN_LOST_KEY_IDS') or ''
-    return {k.strip().lower() for k in raw.split(',') if k.strip()}
+    out: Dict[str, int] = {}
+    for item in raw.split(','):
+        item = item.strip().lower()
+        if not item:
+            continue
+        kid, _, cap = item.partition(':')
+        if kid and cap.strip().isdigit() and int(cap) >= 1:
+            out[kid] = int(cap)
+        else:
+            logger.warning("AUDIT_CHAIN_LOST_KEY_IDS: entrada %r ignorada: el formato es <key_id>:<ultima_posicion>", item)
+    return out
+
+
+def accept_unkeyed_cap() -> Optional[int]:
+    """AUDIT_CHAIN_ACCEPT_UNKEYED=<última_posición>: hasta ahí se acepta histórico sellado SIN clave (la clave se añadió tarde). Con tope
+    por la misma razón que las claves perdidas (SHA-256 sin clave es forjable en cualquier posición). 'true' ya no vale."""
+    raw = str(current_app.config.get('AUDIT_CHAIN_ACCEPT_UNKEYED') or '').strip()
+    if raw.isdigit() and int(raw) >= 1:
+        return int(raw)
+    if raw:
+        logger.warning("AUDIT_CHAIN_ACCEPT_UNKEYED=%r ignorado: debe ser la ultima posicion sin clave (un numero)", raw)
+    return None
 
 
 def key_id(key: Optional[bytes]) -> str:
@@ -225,15 +251,26 @@ def verify_chain(anchor: Optional[str] = None, batch: int = 2000) -> Dict[str, A
     `ok` exige: cadena continua desde 1, hashes válidos, ninguna fila sin sellar, y (si se da) el ancla presente en su posición.
     Con clave configurada, una fila sellada SIN clave (`key_id='none'`) o con una clave que no conocemos es una ROTURA (un atacante
     podría insertar una fila "firmada" con otra clave y quedaría sin comprobar). Excepciones declaradas por el operador: claves
-    anteriores de una rotación (AUDIT_CHAIN_PREVIOUS_KEYS) y, si la clave se añadió tarde, AUDIT_CHAIN_ACCEPT_UNKEYED=true para el
-    histórico sin clave. Sin ninguna clave configurada (desarrollo) lo que no se puede recalcular solo se cuenta en `unverifiable`.
+    anteriores de una rotación (AUDIT_CHAIN_PREVIOUS_KEYS) y, CON TOPE de posición, claves perdidas (AUDIT_CHAIN_LOST_KEY_IDS=id:pos) y
+    el histórico sin clave (AUDIT_CHAIN_ACCEPT_UNKEYED=pos). Sin ninguna clave configurada (desarrollo) lo que no se puede recalcular
+    solo se cuenta en `unverifiable`. `hints` = por cada clave desconocida (o 'none'), la primera posición y el final de su primer tramo
+    CONTIGUO: ayuda a fijar el tope, que el operador DEBE confirmar con sus anclas (un tope mayor que lo legítimo reabre el hueco).
     """
     key = get_key()
     kid = key_id(key)
     keys = {kid: key} if key else {}
     keys.update(previous_keys())
     lost = lost_key_ids()
-    accept_unkeyed = str(current_app.config.get('AUDIT_CHAIN_ACCEPT_UNKEYED') or '').lower() in ('1', 'true', 'yes')
+    unkeyed_cap = accept_unkeyed_cap()
+    runs: Dict[str, Dict[str, Any]] = {}
+
+    def track(k, pos):
+        run = runs.setdefault(k, {'first': pos, 'last': pos, 'open': True})
+        if run['last'] != pos:
+            if run['open'] and pos == run['last'] + 1:
+                run['last'] = pos
+            else:
+                run['open'] = False
     broken = None
     checked = unverifiable = 0
     exp_pos, prev_hash, last_pos = 1, GENESIS, 0
@@ -267,18 +304,29 @@ def verify_chain(anchor: Optional[str] = None, batch: int = 2000) -> Dict[str, A
                 rotura(r.chain_pos, r.id, f'algoritmo desconocido: {r.algo}')
                 row_key, verificable = None, False
             elif r.key_id == 'none':
-                row_key, verificable = None, bool(not key or accept_unkeyed)
-                if key and not accept_unkeyed:
-                    rotura(r.chain_pos, r.id, 'fila sellada SIN clave en una cadena con clave (forjable; si es histórico previo a la clave: AUDIT_CHAIN_ACCEPT_UNKEYED=true)')
+                dentro = unkeyed_cap is not None and r.chain_pos <= unkeyed_cap
+                row_key, verificable = None, bool(not key or dentro)
+                if key:
+                    track('none', r.chain_pos)
+                if key and not dentro:
+                    rotura(r.chain_pos, r.id, 'fila sellada SIN clave en una cadena con clave (forjable). Si es histórico previo a la clave: '
+                                              'AUDIT_CHAIN_ACCEPT_UNKEYED=<ultima posicion sin clave> (ver `flask audit verify`)')
             elif r.key_id in keys:
                 row_key, verificable = keys[r.key_id], True
             elif r.key_id in lost:
                 row_key, verificable = None, False
-                unverifiable += 1                       # clave perdida DECLARADA: solo se comprueba el enlace y la posición
+                track(r.key_id, r.chain_pos)
+                if r.chain_pos <= lost[r.key_id]:
+                    unverifiable += 1                   # clave perdida DECLARADA y dentro de su tope: solo se comprueba el enlace y la posición
+                else:
+                    rotura(r.chain_pos, r.id, f'fila con la clave declarada perdida ({r.key_id}) POR ENCIMA de su tope ({lost[r.key_id]}): '
+                                              'ya no se pueden sellar filas con esa clave (¿inserción posterior?)')
             else:
                 row_key, verificable = None, False
                 if key:
-                    rotura(r.chain_pos, r.id, f'sellada con una clave desconocida ({r.key_id}): ¿rotación? declárala en AUDIT_CHAIN_PREVIOUS_KEYS (o, si se PERDIÓ, en AUDIT_CHAIN_LOST_KEY_IDS)')
+                    track(r.key_id, r.chain_pos)
+                    rotura(r.chain_pos, r.id, f'sellada con una clave desconocida ({r.key_id}): ¿rotación? declárala en AUDIT_CHAIN_PREVIOUS_KEYS '
+                                              '(o, si se PERDIÓ, AUDIT_CHAIN_LOST_KEY_IDS=<key_id>:<ultima posicion>; ver `flask audit verify`)')
                 else:
                     unverifiable += 1                   # sin clave configurada no se puede juzgar
             if verificable and not hmac.compare_digest(compute_hash(row_key, r.chain_pos, r.prev_hash, _fields_from_row(r)), r.entry_hash or ''):
@@ -300,7 +348,8 @@ def verify_chain(anchor: Optional[str] = None, batch: int = 2000) -> Dict[str, A
         else:
             anchor_res = 'ok'
     return {'ok': broken is None, 'checked': checked, 'broken': broken, 'unverifiable': unverifiable, 'unsealed': unsealed,
-            'tail': tail(), 'key_id': kid, 'anchor': anchor_res}
+            'tail': tail(), 'key_id': kid, 'anchor': anchor_res,
+            'hints': {k: {'first': v['first'], 'last_contiguous': v['last']} for k, v in runs.items()}}
 
 
 def seal_legacy() -> int:

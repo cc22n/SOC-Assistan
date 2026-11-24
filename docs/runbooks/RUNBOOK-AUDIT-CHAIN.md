@@ -35,13 +35,23 @@ testigo que detecta que alguien borró las ÚLTIMAS filas (la cadena sola no lo 
 Síntoma: la app funciona, pero `flask audit verify` dice `CADENA ROTA - sellada con una clave desconocida (<key_id>)`. No es una intrusión
 por sí mismo: las filas antiguas ya no se pueden recalcular.
 
-1. **Descarta una intrusión primero.** Si tienes anclas de Telegram anteriores, compara: `flask audit verify --anchor POS:HASH` con el
-   ancla más reciente que recibiste debe dar `ancla: ok` aunque falte la clave (comprueba posición y enlace).
-2. Anota el `key_id` perdido (sale en el mensaje de rotura; el de la clave actual sale en `flask audit status`).
-3. Pon una **clave nueva** en `AUDIT_CHAIN_KEY` y declara la perdida en `AUDIT_CHAIN_LOST_KEY_IDS=<key_id>`. Reinicia `app` y `feeds`.
-4. `verify` pasa a "ÍNTEGRA" con `sin poder recalcular: N`. Esas N filas solo tienen comprobados enlace y posición, **no su contenido**:
-   a partir de aquí lo anterior a la pérdida es evidencia más débil. Apunta en la bitácora la fecha, el `key_id` y el último ancla válido.
+**Lo que se pierde (honestidad):** las filas selladas con la clave perdida dejan de tener su CONTENIDO protegido; solo se siguen
+comprobando su posición y su enlace. Alguien con permisos de dueño sobre la tabla podría editarlas sin que se note, y el ancla de Telegram
+no lo ve (solo fija el hash del extremo). Por eso:
+
+1. **Descarta una intrusión comparando con un respaldo ANTERIOR al incidente**, no solo con el ancla. `flask audit verify --anchor POS:HASH`
+   con un ancla recibida antes de la pérdida comprueba posición y enlace, **no** que el contenido siga igual.
+2. Ejecuta `flask audit verify`: para cada clave desconocida muestra desde qué eslabón aparece y hasta dónde llega su **primer tramo
+   contiguo**. Esa cifra es una SUGERENCIA, no una prueba: confirma el tope con tus anclas (el último eslabón legítimo con esa clave).
+3. Pon una **clave nueva** en `AUDIT_CHAIN_KEY` y declara la perdida **CON TOPE**: `AUDIT_CHAIN_LOST_KEY_IDS=<key_id>:<última_posición>`.
+   Reinicia `app` y `feeds`. **El tope es obligatorio**: una entrada sin él se ignora, y una fila con esa clave por ENCIMA del tope sigue siendo
+   rotura. Sin tope, quien pudiera insertar en `audit_events` (una inyección SQL) añadiría filas falsas con ese `key_id` (es público) y
+   la cadena seguiría "íntegra". No declares un tope mayor que lo legítimo: reabre ese hueco.
+4. `verify` pasa a "ÍNTEGRA" con `sin poder recalcular: N`. Anota en la bitácora la fecha, el `key_id`, el tope y el último ancla válido.
 5. Lo nuevo (sellado con la clave nueva) queda protegido íntegramente.
+
+El mismo criterio vale para el histórico sin clave (`AUDIT_CHAIN_ACCEPT_UNKEYED=<última posición sin clave>`): hay que dar la posición;
+`true` ya no se acepta, porque SHA-256 sin clave es forjable en cualquier posición.
 
 ## Restaurar un respaldo
 

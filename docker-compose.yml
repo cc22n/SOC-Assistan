@@ -37,7 +37,7 @@ services:
       - MIGRATION_DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env o en el entorno}@db:5432/soc_agent
       - APP_DB_USER=${APP_DB_USER:-soc_app}
       - APP_DB_PASSWORD=${APP_DB_PASSWORD:?define APP_DB_PASSWORD (>=16 caracteres) en .env o en el entorno}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?define REDIS_PASSWORD (hexadecimal, sin caracteres especiales) en .env o en el entorno}@redis:6379/0
       - FLASK_ENV=production
       # Hosts aceptados en la cabecera Host (separados por coma; ".dominio.com" incluye subdominios).
       # Detrás de un proxy con dominio propio, defínelo en .env.docker o en el entorno del host.
@@ -49,6 +49,11 @@ services:
         condition: service_healthy
     volumes:
       - app_logs:/app/logs
+    # SIN `init: true` a propósito: con él el PID 1 sería tini, que conserva el entorno ORIGINAL del contenedor (con MIGRATION_DATABASE_URL,
+    # las credenciales del administrador) y cualquier proceso del mismo usuario lo lee en /proc/1/environ: anularía el
+    # `env -u MIGRATION_DATABASE_URL` del Dockerfile (lo destapó verify_docker.sh). Gunicorn como PID 1 maneja SIGTERM (graceful_timeout 30 s).
+    # stop_grace_period > graceful_timeout: no se cortan las peticiones en vuelo al parar (prelaunch-report-4 M6).
+    stop_grace_period: 40s
     networks:
       - soc-network
 
@@ -69,7 +74,7 @@ services:
     environment:
       # El daemon NO recibe el administrador: solo el rol sin privilegios.
       - DATABASE_URL=postgresql://${APP_DB_USER:-soc_app}:${APP_DB_PASSWORD:?define APP_DB_PASSWORD (>=16 caracteres) en .env o en el entorno}@db:5432/soc_agent
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?define REDIS_PASSWORD (hexadecimal, sin caracteres especiales) en .env o en el entorno}@redis:6379/0
       - FLASK_ENV=production
       - FLASK_APP=wsgi.py
     depends_on:
@@ -79,6 +84,9 @@ services:
         condition: service_healthy
     healthcheck:
       disable: true            # la imagen trae un HEALTHCHECK HTTP que aquí no aplica (no sirve HTTP)
+    # Sin init el daemon era PID 1 sin manejador de SIGTERM: `docker stop` esperaba 10 s y terminaba con SIGKILL (exit 137).
+    init: true
+    stop_grace_period: 30s
     networks:
       - soc-network
 
@@ -115,10 +123,15 @@ services:
     container_name: soc-redis
     restart: unless-stopped
     logging: *default-logging
+    # Contraseña obligatoria (prelaunch-report-4 M3): la caché (Flask-Caching) usa pickle, y quien alcanzara Redis y escribiera una entrada
+    # obtendría ejecución de código en la app. `sh -c` + variable: la contraseña no queda escrita en la línea de comandos del compose.
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?define REDIS_PASSWORD (hexadecimal, sin caracteres especiales) en .env o en el entorno}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5

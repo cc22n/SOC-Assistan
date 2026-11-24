@@ -335,13 +335,13 @@ class TestRotacion:
         _log(3)
         app.config.update(AUDIT_CHAIN_KEY=KEY)
         assert 'SIN clave' in _roto(_ok(), 1)['reason']
-        app.config['AUDIT_CHAIN_ACCEPT_UNKEYED'] = 'true'
+        app.config['AUDIT_CHAIN_ACCEPT_UNKEYED'] = '3'            # tope: la última posición sin clave
         assert _ok()['ok']
 
     def test_aceptar_historico_sin_clave_no_exime_de_comprobar_su_contenido(self, app):
         app.config['AUDIT_CHAIN_KEY'] = None
         _log(3)
-        app.config.update(AUDIT_CHAIN_KEY=KEY, AUDIT_CHAIN_ACCEPT_UNKEYED='true')
+        app.config.update(AUDIT_CHAIN_KEY=KEY, AUDIT_CHAIN_ACCEPT_UNKEYED='3')
         _sql("UPDATE audit_events SET action='editada' WHERE chain_pos = 2")
         _roto(_ok(), 2)
 
@@ -352,7 +352,7 @@ class TestRotacion:
         app.config['AUDIT_CHAIN_KEY'] = 'n' * 40
         b = _roto(_ok(), 1)                                                            # CONTROL: sin declarar, es rotura
         assert 'AUDIT_CHAIN_LOST_KEY_IDS' in b['reason']                               # y el mensaje dice cómo resolverlo
-        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = perdida
+        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = f'{perdida}:3'                      # con TOPE: la última posición legítima
         r = _ok()
         assert r['ok'] and r['unverifiable'] == 3                                      # honesto: 3 filas solo con enlace, no recalculadas
         _log(2, prefix='nueva')                                                        # lo nuevo se sella con la clave nueva...
@@ -363,23 +363,90 @@ class TestRotacion:
     def test_clave_perdida_declarada_sigue_detectando_huecos_y_enlaces(self, app):
         """Declarar una clave perdida NO desactiva el resto de comprobaciones (borrados, reordenación, filas sin sellar)."""
         _log(5)
-        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=ac.key_id(KEY.encode()))
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=ac.key_id(KEY.encode()) + ':5')
         assert _ok()['ok']
         _sql('DELETE FROM audit_events WHERE chain_pos = 3')
         assert 'falta' in _roto(_ok(), 3)['reason']
 
     def test_limite_documentado_el_contenido_de_filas_de_clave_perdida_no_se_puede_comprobar(self, app):
         _log(3)
-        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=ac.key_id(KEY.encode()))
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=ac.key_id(KEY.encode()) + ':3')
         _sql("UPDATE audit_events SET action='editada' WHERE chain_pos = 2")
         assert _ok()['ok'] is True                       # por eso el runbook pide anotar la pérdida y apoyarse en las anclas
 
     def test_declarar_otra_clave_como_perdida_no_acepta_la_forjada(self, app):
         _log(2)
-        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = 'deadbeef'
+        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = 'deadbeef:5'
         assert _ok()['ok']                               # la real sigue verificándose (no se confunde con la declarada)
         _sql("UPDATE audit_events SET action='x' WHERE chain_pos = 1")
         _roto(_ok(), 1)
+
+    def _forjar_con_clave_perdida(self, kid, pos_extra=1):
+        """Lo que haría una inyección SQL con INSERT: una fila enlazada con el key_id (público) de la clave perdida y un hash cualquiera."""
+        t = ac.tail()
+        falsa = dict(username='x', action='falsa', resource_type=None, resource_id=None, details=None, ip_address=None, user_agent=None,
+                     request_id=None, success=True, created_at=utcnow())
+        pos = t['pos'] + pos_extra
+        h = ac.compute_hash(b'cualquiera', pos, t['hash'], falsa)
+        _sql("INSERT INTO audit_events (username, action, success, created_at, chain_pos, prev_hash, entry_hash, key_id, algo) "
+             "VALUES ('x', 'falsa', true, :c, :p, :ph, :h, :k, 'v1')", c=falsa['created_at'], p=pos, ph=t['hash'], h=h, k=kid)
+
+    def test_clave_perdida_sin_tope_se_ignora(self, app):
+        """M2: sin tope, el key_id (público) serviría para colar filas. Una entrada sin ':<posición>' no declara nada."""
+        _log(3)
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40)
+        for malo in (ac.key_id(KEY.encode()), ac.key_id(KEY.encode()) + ':', ac.key_id(KEY.encode()) + ':abc', ac.key_id(KEY.encode()) + ':0'):
+            app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = malo
+            assert ac.lost_key_ids() == {} and not _ok()['ok'], malo
+
+    def test_fila_forjada_con_la_clave_perdida_por_encima_del_tope_es_rotura(self, app):
+        """EL ATAQUE de M2 (que antes pasaba): tras declarar la clave perdida, INSERT de una fila con ese key_id al final de la cadena."""
+        _log(3)
+        perdida = ac.key_id(KEY.encode())
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=f'{perdida}:3')
+        assert _ok()['ok']                                                    # CONTROL: lo legítimo sigue verificando
+        self._forjar_con_clave_perdida(perdida)
+        b = _roto(_ok(), 4)
+        assert 'POR ENCIMA de su tope' in b['reason']
+
+    def test_el_tope_exacto_se_acepta_y_el_siguiente_no(self, app):
+        _log(4)
+        perdida = ac.key_id(KEY.encode())
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=f'{perdida}:3')
+        _roto(_ok(), 4)                                                       # la 4 (legítima, pero por encima de lo declarado) NO pasa
+        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = f'{perdida}:4'
+        assert _ok()['ok']
+
+    def test_historico_sin_clave_solo_hasta_su_tope_y_true_ya_no_vale(self, app):
+        app.config['AUDIT_CHAIN_KEY'] = None
+        _log(3)
+        app.config.update(AUDIT_CHAIN_KEY=KEY, AUDIT_CHAIN_ACCEPT_UNKEYED='3')
+        assert _ok()['ok']
+        t = ac.tail()                                                         # forjar una fila "sin clave" por encima del tope
+        falsa = dict(username='x', action='falsa', resource_type=None, resource_id=None, details=None, ip_address=None, user_agent=None,
+                     request_id=None, success=True, created_at=utcnow())
+        _sql("INSERT INTO audit_events (username, action, success, created_at, chain_pos, prev_hash, entry_hash, key_id, algo) "
+             "VALUES ('x', 'falsa', true, :c, 4, :ph, :h, 'none', 'v1')", c=falsa['created_at'], ph=t['hash'], h=ac.compute_hash(None, 4, t['hash'], falsa))
+        _roto(_ok(), 4)
+        for no_valido in ('true', '1.5', '', '0', 'yes'):
+            app.config['AUDIT_CHAIN_ACCEPT_UNKEYED'] = no_valido
+            assert ac.accept_unkeyed_cap() is None, no_valido
+
+    def test_las_pistas_sugieren_el_tope_del_primer_tramo_contiguo(self, app):
+        _log(3)
+        perdida = ac.key_id(KEY.encode())
+        app.config['AUDIT_CHAIN_KEY'] = 'n' * 40
+        _log(2, prefix='nueva')                                              # 4 y 5 con la clave nueva
+        r = _ok()
+        assert r['hints'][perdida] == {'first': 1, 'last_contiguous': 3}
+        self._forjar_con_clave_perdida(perdida)                              # una fila suelta con la clave perdida DESPUÉS: no amplía el tramo
+        assert _ok()['hints'][perdida] == {'first': 1, 'last_contiguous': 3}
+
+    def test_la_linea_de_comandos_muestra_el_formato_del_tope(self, app):
+        _log(3)
+        app.config['AUDIT_CHAIN_KEY'] = 'n' * 40
+        out = app.test_cli_runner().invoke(args=['audit', 'verify']).output
+        assert f"AUDIT_CHAIN_LOST_KEY_IDS={ac.key_id(KEY.encode())}:3" in out and 'CONFIRMA el tope' in out
 
     def test_sin_clave_configurada_lo_sellado_con_clave_cuenta_como_no_verificable(self, app):
         _log(3)

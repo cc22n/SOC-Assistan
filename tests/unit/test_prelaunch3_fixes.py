@@ -269,21 +269,23 @@ def entorno_restore(tmp_path):
     fake = tmp_path / 'bin'
     fake.mkdir()
     psql = fake / 'psql'
-    psql.write_text('#!/usr/bin/env bash\ncat > /dev/null\necho "$@" > "$FAKE_PSQL_ARGS"\nexit "${FAKE_PSQL_RC:-0}"\n', encoding='utf-8', newline='\n')
+    psql.write_text('#!/usr/bin/env bash\ncat > "$FAKE_PSQL_STDIN"\necho "$@" > "$FAKE_PSQL_ARGS"\nexit "${FAKE_PSQL_RC:-0}"\n', encoding='utf-8', newline='\n')
     psql.chmod(psql.stat().st_mode | stat.S_IEXEC)
     args = tmp_path / 'psql_args.txt'
+    stdin = tmp_path / 'psql_stdin.sql'
 
     def ejecutar(dump: Path, rc: int = 0):
-        env = {**os.environ, 'PATH': f'{fake}{os.pathsep}{os.environ["PATH"]}', 'FAKE_PSQL_ARGS': args.as_posix(), 'FAKE_PSQL_RC': str(rc),
+        env = {**os.environ, 'PATH': f'{fake}{os.pathsep}{os.environ["PATH"]}', 'FAKE_PSQL_ARGS': args.as_posix(), 'FAKE_PSQL_STDIN': stdin.as_posix(), 'FAKE_PSQL_RC': str(rc),
                'DB_CONTAINER': 'no-existe-este-contenedor'}
         # rutas con barras normales: en Windows, Git Bash se come las barras invertidas de `C:\Users\...`
         r = subprocess.run([_bash(), 'scripts/ops/restore_db.sh', Path(dump).as_posix(), '--yes'], env=env, capture_output=True,
                            text=True, encoding='utf-8', errors='replace', timeout=60, cwd=ROOT)
         return r, (args.read_text(encoding='utf-8') if args.exists() else None)
+    ejecutar.stdin = stdin
     return ejecutar
 
 
-def _dump(path: Path, contenido='-- PostgreSQL database dump\nSELECT 1;\n'):
+def _dump(path: Path, contenido='-- PostgreSQL database dump\nSELECT 1;\n-- PostgreSQL database dump complete\n'):
     with gzip.open(path, 'wt', encoding='utf-8') as f:
         f.write(contenido)
     return path
@@ -303,7 +305,8 @@ class TestRestoreScript:
     def test_un_volcado_real_grande_se_acepta(self, entorno_restore, tmp_path):
         """Regresión (la destapó verify_docker.sh): con pipefail, `gzip | head | grep` daba SIGPIPE en volcados de más de 4 KB y el restore
         rechazaba respaldos LEGÍTIMOS. Los volcados de prueba eran pequeños y no lo veían."""
-        grande = '-- PostgreSQL database dump\n' + ''.join(f"INSERT INTO t VALUES ({n}, '{'x' * 60}');\n" for n in range(5000))
+        grande = ('-- PostgreSQL database dump\n' + ''.join(f"INSERT INTO t VALUES ({n}, '{'x' * 60}');\n" for n in range(5000))
+                  + '-- PostgreSQL database dump complete\n')
         assert len(grande) > 100_000
         r, args = entorno_restore(_dump(tmp_path / 'grande.sql.gz', grande))
         assert r.returncode == 0 and 'finalizada con éxito' in r.stdout and args is not None

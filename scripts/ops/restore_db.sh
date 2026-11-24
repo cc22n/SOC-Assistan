@@ -38,6 +38,24 @@ if ! printf '%s' "${CABECERA}" | grep -q "PostgreSQL database dump"; then
     echo "Error: '${BACKUP_FILE}' no parece un volcado de pg_dump. No se ha tocado la base de datos."
     exit 1
 fi
+# Un dump CORTADO A MITAD puede ser un gzip valido con cabecera correcta (prelaunch-report-4 A4: se restauro, dijo "exito" y dejo la BD sin
+# triggers ni claves). pg_dump termina SIEMPRE con esta marca; si falta, el respaldo esta incompleto.
+COLA="$(gzip -dc "${BACKUP_FILE}" 2>/dev/null | tail -c 4096 || true)"
+if ! printf '%s' "${COLA}" | grep -q "PostgreSQL database dump complete"; then
+    echo "Error: '${BACKUP_FILE}' esta INCOMPLETO (falta la marca final de pg_dump). No se ha tocado la base de datos."
+    exit 1
+fi
+
+# Quita GRANT/REVOKE/ALTER DEFAULT PRIVILEGES (prelaunch-report-4 A5): un respaldo antiguo los trae y fallan en un VPS o volumen NUEVO
+# donde el rol soc_app aun no existe ("role does not exist", exit 3, nada restaurado). Los privilegios los repone `docker/init_db.py` al
+# arrancar `app`. Solo FUERA de los bloques COPY: una fila de datos puede empezar por "GRANT " y NO debe tocarse.
+quitar_privilegios() {
+    awk 'BEGIN { copia = 0 }
+         copia { if ($0 == "\\.") copia = 0; print; next }
+         /^COPY .* FROM stdin;$/ { copia = 1; print; next }
+         /^(GRANT|REVOKE|ALTER DEFAULT PRIVILEGES) / { next }
+         { print }'
+}
 
 echo "================================================================="
 echo "ADVERTENCIA: Esta operación sobrescribirá la base de datos '${DB_NAME}'"
@@ -66,11 +84,12 @@ echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Iniciando restauración de '${DB_NAME}'
 
 if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER}$"; then
     echo "Restaurando a través del contenedor Docker '${DB_CONTAINER}'..."
-    gzip -dc "${BACKUP_FILE}" | docker exec -i "${DB_CONTAINER}" psql "${PSQL_FLAGS[@]}" -U "${DB_USER}" -d "${DB_NAME}"
+    gzip -dc "${BACKUP_FILE}" | quitar_privilegios | docker exec -i "${DB_CONTAINER}" psql "${PSQL_FLAGS[@]}" -U "${DB_USER}" -d "${DB_NAME}"
 else
     echo "Restaurando mediante conexión directa psql..."
-    gzip -dc "${BACKUP_FILE}" | psql "${PSQL_FLAGS[@]}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}"
+    gzip -dc "${BACKUP_FILE}" | quitar_privilegios | psql "${PSQL_FLAGS[@]}" -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}"
 fi
 
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Restauración finalizada con éxito."
-echo "Siguiente paso: arranca los servicios (docker compose up -d) y ejecuta: flask audit verify  (con la AUDIT_CHAIN_KEY del momento del respaldo)."
+echo "Siguiente paso: arranca los servicios (docker compose up -d): al arrancar 'app' se crea el rol soc_app y se le conceden sus privilegios."
+echo "Despues ejecuta: flask audit verify  (con la AUDIT_CHAIN_KEY del momento del respaldo)."
