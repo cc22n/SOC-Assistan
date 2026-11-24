@@ -90,6 +90,12 @@ def previous_keys() -> Dict[str, bytes]:
     return {key_id(k.strip().encode('utf-8')): k.strip().encode('utf-8') for k in raw.split(',') if k.strip()}
 
 
+def lost_key_ids() -> set:
+    """key_id de claves PERDIDAS que el operador declara (AUDIT_CHAIN_LOST_KEY_IDS, coma): sus filas ya no se pueden recalcular."""
+    raw = current_app.config.get('AUDIT_CHAIN_LOST_KEY_IDS') or ''
+    return {k.strip().lower() for k in raw.split(',') if k.strip()}
+
+
 def key_id(key: Optional[bytes]) -> str:
     """Huella pública de la clave (no la revela): permite detectar que cambió. 'none' = sin clave (SHA-256 simple)."""
     return hashlib.sha256(key).hexdigest()[:8] if key else 'none'
@@ -226,6 +232,7 @@ def verify_chain(anchor: Optional[str] = None, batch: int = 2000) -> Dict[str, A
     kid = key_id(key)
     keys = {kid: key} if key else {}
     keys.update(previous_keys())
+    lost = lost_key_ids()
     accept_unkeyed = str(current_app.config.get('AUDIT_CHAIN_ACCEPT_UNKEYED') or '').lower() in ('1', 'true', 'yes')
     broken = None
     checked = unverifiable = 0
@@ -265,10 +272,13 @@ def verify_chain(anchor: Optional[str] = None, batch: int = 2000) -> Dict[str, A
                     rotura(r.chain_pos, r.id, 'fila sellada SIN clave en una cadena con clave (forjable; si es histórico previo a la clave: AUDIT_CHAIN_ACCEPT_UNKEYED=true)')
             elif r.key_id in keys:
                 row_key, verificable = keys[r.key_id], True
+            elif r.key_id in lost:
+                row_key, verificable = None, False
+                unverifiable += 1                       # clave perdida DECLARADA: solo se comprueba el enlace y la posición
             else:
                 row_key, verificable = None, False
                 if key:
-                    rotura(r.chain_pos, r.id, f'sellada con una clave desconocida ({r.key_id}): ¿rotación? declárala en AUDIT_CHAIN_PREVIOUS_KEYS')
+                    rotura(r.chain_pos, r.id, f'sellada con una clave desconocida ({r.key_id}): ¿rotación? declárala en AUDIT_CHAIN_PREVIOUS_KEYS (o, si se PERDIÓ, en AUDIT_CHAIN_LOST_KEY_IDS)')
                 else:
                     unverifiable += 1                   # sin clave configurada no se puede juzgar
             if verificable and not hmac.compare_digest(compute_hash(row_key, r.chain_pos, r.prev_hash, _fields_from_row(r)), r.entry_hash or ''):

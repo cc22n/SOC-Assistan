@@ -11,6 +11,11 @@ import os
 import sys
 import time
 
+# La app corre con un rol SIN privilegios (APP_DB_USER, `DATABASE_URL`); las migraciones y el alta de ese rol exigen el administrador
+# (`MIGRATION_DATABASE_URL`). Debe fijarse ANTES de importar `app` (la configuración lee DATABASE_URL al importarse).
+if os.environ.get('MIGRATION_DATABASE_URL'):
+    os.environ['DATABASE_URL'] = os.environ['MIGRATION_DATABASE_URL']
+
 from flask_migrate import upgrade
 from sqlalchemy import text
 
@@ -38,3 +43,13 @@ with app.app_context():
 
     from app.services.profile_service import ensure_system_profiles
     print(f'[init_db] Perfiles del sistema: {ensure_system_profiles()}', flush=True)
+
+    # Rol de la aplicación sin privilegios (idempotente: crea, sincroniza contraseña y repasa los privilegios en cada arranque)
+    if os.environ.get('APP_DB_PASSWORD'):
+        from app.utils.db_roles import ensure_app_role
+        info = ensure_app_role(db.engine, os.environ.get('APP_DB_USER', 'soc_app'), os.environ['APP_DB_PASSWORD'])
+        print(f"[init_db] Rol de la app '{info['role']}' {'creado' if info['created'] else 'actualizado'} (administrador: {info['admin']}).",
+              flush=True)
+    else:
+        print('[init_db] AVISO: APP_DB_PASSWORD no definido: la app usa el mismo rol que las migraciones (superusuario en la imagen oficial). '
+              'El trigger de auditoría no la protege de una inyección SQL.', flush=True)

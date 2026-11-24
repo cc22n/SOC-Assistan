@@ -25,10 +25,18 @@ services:
     env_file:
       - path: .env.docker
         required: false
-    # En produccion, sobreescribe POSTGRES_PASSWORD via .env.docker o una
-    # variable de entorno del host — no dejes el default de desarrollo.
+    # POSTGRES_PASSWORD y APP_DB_PASSWORD son OBLIGATORIAS (sin valor por defecto: el valor por defecto anterior era público).
+    # OJO: Compose interpola ${VAR} desde el entorno del host o desde `.env` (junto a este archivo), NO desde `env_file: .env.docker`
+    # (ese archivo solo llega al contenedor). Define las dos en `.env` o ejecuta `docker compose --env-file .env.docker ...`.
+    #
+    # Dos roles de BD (WP1, prelaunch-report-3): la app y el daemon usan APP_DB_USER (sin privilegios, no dueño de las tablas:
+    # no puede apagar el trigger de auditoría ni borrar filas de audit_events). Solo `app` conoce al administrador
+    # (MIGRATION_DATABASE_URL), y únicamente para que docker/init_db.py aplique migraciones y cree/actualice el rol sin privilegios.
     environment:
-      - DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:-soc_secure_password}@db:5432/soc_agent
+      - DATABASE_URL=postgresql://${APP_DB_USER:-soc_app}:${APP_DB_PASSWORD:?define APP_DB_PASSWORD (>=16 caracteres) en .env o en el entorno}@db:5432/soc_agent
+      - MIGRATION_DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env o en el entorno}@db:5432/soc_agent
+      - APP_DB_USER=${APP_DB_USER:-soc_app}
+      - APP_DB_PASSWORD=${APP_DB_PASSWORD:?define APP_DB_PASSWORD (>=16 caracteres) en .env o en el entorno}
       - REDIS_URL=redis://redis:6379/0
       - FLASK_ENV=production
       # Hosts aceptados en la cabecera Host (separados por coma; ".dominio.com" incluye subdominios).
@@ -59,7 +67,8 @@ services:
       - path: .env.docker
         required: false
     environment:
-      - DATABASE_URL=postgresql://soc_admin:${POSTGRES_PASSWORD:-soc_secure_password}@db:5432/soc_agent
+      # El daemon NO recibe el administrador: solo el rol sin privilegios.
+      - DATABASE_URL=postgresql://${APP_DB_USER:-soc_app}:${APP_DB_PASSWORD:?define APP_DB_PASSWORD (>=16 caracteres) en .env o en el entorno}@db:5432/soc_agent
       - REDIS_URL=redis://redis:6379/0
       - FLASK_ENV=production
       - FLASK_APP=wsgi.py
@@ -84,7 +93,7 @@ services:
     environment:
       POSTGRES_DB: soc_agent
       POSTGRES_USER: soc_admin
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soc_secure_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env o en el entorno}
     # Publicar solo para debug local (psql desde el host). En produccion, no exponer.
     # ports:
     #   - "5433:5432"

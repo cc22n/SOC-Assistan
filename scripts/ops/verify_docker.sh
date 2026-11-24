@@ -27,6 +27,9 @@ check() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (esperado=$3, obtenido=
 http() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 
 python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32)); print('AUDIT_CHAIN_KEY=' + secrets.token_hex(32)); print('FLASK_APP=wsgi.py')" > "$TMP/verify.env"
+# POSTGRES_PASSWORD y APP_DB_PASSWORD son obligatorias en docker-compose.yml (sin valor por defecto): se generan al azar
+export POSTGRES_PASSWORD="$(python -c 'import secrets; print(secrets.token_hex(16))')"
+export APP_DB_PASSWORD="$(python -c 'import secrets; print(secrets.token_hex(16))')"
 cat > "$TMP/override.yml" <<EOF
 services:
   app:
@@ -135,6 +138,21 @@ echo "$DELOUT" | grep -q "solo agregar" && ok "el trigger de la BD real bloquea 
 NOKEY="$(docker exec "${PROJECT}-app" env -u AUDIT_CHAIN_KEY flask audit status 2>&1)"
 echo "$NOKEY" | grep -q "AUDIT_CHAIN_KEY" && ok "produccion se niega a arrancar sin AUDIT_CHAIN_KEY" || bad "produccion arranco sin AUDIT_CHAIN_KEY"
 
+echo "== 4c. roles de BD: la app NO es superusuario (prelaunch-report-3)"
+PSQLA() { docker exec -i "${PROJECT}-db" psql -U soc_admin -d soc_agent -Atc "$1" 2>&1; }
+SOCAPP() { docker exec -i -e PGPASSWORD="$APP_DB_PASSWORD" "${PROJECT}-db" psql -U soc_app -d soc_agent -h 127.0.0.1 -Atc "$1" 2>&1; }
+check "soc_app no es superusuario" "$(PSQLA "SELECT rolsuper FROM pg_roles WHERE rolname='soc_app'")" "f"
+check "app y daemon se conectan como soc_app" "$(PSQLA "SELECT count(*)>0 FROM pg_stat_activity WHERE datname='soc_agent' AND usename='soc_app'")" "t"
+check "ninguna conexion de la app usa al administrador" "$(PSQLA "SELECT count(*) FROM pg_stat_activity WHERE datname='soc_agent' AND usename='soc_admin' AND application_name=''")" "0"
+check "control: soc_app SI puede leer la auditoria" "$(SOCAPP "SELECT count(*)>0 FROM audit_events")" "t"
+SOCAPP "ALTER TABLE audit_events DISABLE TRIGGER trg_audit_events_guard" | grep -qiE "must be owner|debe ser" && ok "soc_app NO puede apagar el trigger de auditoria (exige ser dueño)" || bad "soc_app pudo (o falló raro) apagando el trigger"
+SOCAPP "DELETE FROM audit_events" | grep -qi "permission denied" && ok "soc_app no tiene privilegio DELETE sobre audit_events" || bad "soc_app puede borrar auditoria"
+SOCAPP "DROP TABLE users CASCADE" | grep -qiE "must be owner|debe ser" && ok "soc_app no puede hacer DDL" || bad "soc_app pudo hacer DDL"
+SOCAPP "SELECT count(*) FROM alembic_version" | grep -qi "permission denied" && ok "soc_app no accede a alembic_version" || bad "soc_app accede a alembic_version"
+: > "$TMP/empty.env"
+CFG="$(env -u POSTGRES_PASSWORD -u APP_DB_PASSWORD docker compose --env-file "$(win "$TMP/empty.env")" -f docker-compose.yml config 2>&1)"; CFGRC=$?
+{ [ "$CFGRC" != "0" ] && echo "$CFG" | grep -qE "POSTGRES_PASSWORD|APP_DB_PASSWORD"; } && ok "compose se niega a arrancar sin POSTGRES_PASSWORD/APP_DB_PASSWORD (ya no hay contraseña pública por defecto)" || bad "compose arranco sin contraseñas"
+
 echo "== 5. concurrencia real de Gunicorn (conexiones colgadas)"
 python - "$BASE" <<'PYEOF'
 import socket, sys, time, urllib.request
@@ -175,6 +193,39 @@ for c in app db redis; do
   [ "$LC" = "json-file map[max-file:5 max-size:50m]" ] && ok "rotacion de logs en $c" || bad "sin rotacion de logs en $c ($LC)"
 done
 docker inspect "${PROJECT}-app" --format '{{.HostConfig.PortBindings}}' | grep -q "127.0.0.1" && ok "puerto publicado solo en 127.0.0.1" || bad "puerto expuesto en todas las interfaces"
+
+echo "== 7. backup y restore REALES (scripts/ops/backup_db.sh y restore_db.sh)"
+BK="$TMP/backups"; mkdir -p "$BK"; DBC="${PROJECT}-db"
+CNT() { PSQLA "SELECT count(*) FROM $1"; }
+AUD0="$(CNT audit_events)"; USR0="$(CNT users)"
+BACKUP_DIR="$BK" DB_CONTAINER="$DBC" bash scripts/ops/backup_db.sh >"$TMP/backup.log" 2>&1; BKRC=$?
+DUMP="$(ls "$BK"/soc_agent_*.sql.gz 2>/dev/null | head -1)"
+{ [ "$BKRC" = "0" ] && [ -s "$DUMP" ] && gzip -t "$DUMP"; } && ok "backup_db.sh genera un gzip integro ($(du -h "$DUMP" | cut -f1))" || { bad "backup_db.sh fallo"; tail -3 "$TMP/backup.log"; }
+OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$DUMP" --yes 2>&1)"; RC=$?
+{ [ "$RC" != "0" ] && echo "$OUT" | grep -q "conexion"; } && ok "restore se niega con app/feeds conectados (los DROP se bloquearian)" || bad "restore no detecto conexiones activas (rc=$RC)"
+head -c 200 "$DUMP" > "$TMP/truncado.sql.gz"
+OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$TMP/truncado.sql.gz" --yes 2>&1)"; RC=$?
+{ [ "$RC" != "0" ] && ! echo "$OUT" | grep -q "finalizada con"; } && ok "un respaldo truncado se rechaza antes de tocar la BD" || bad "restore acepto un respaldo truncado"
+"${DC[@]}" stop app feeds >/dev/null 2>&1
+# dump con un error A MITAD: debe deshacerlo todo y NO decir 'exito' (antes dejaba la BD a medias y lo decia)
+python - "$TMP/malo.sql.gz" <<'PYEOF'
+import gzip, sys
+with gzip.open(sys.argv[1], 'wt') as f:
+    f.write('--\n-- PostgreSQL database dump\n--\nTRUNCATE users CASCADE;\nSELECT * FROM tabla_que_no_existe;\n')
+PYEOF
+OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$TMP/malo.sql.gz" --yes 2>&1)"; RC=$?
+{ [ "$RC" != "0" ] && ! echo "$OUT" | grep -q "finalizada con"; } && ok "un error a mitad del restore devuelve error y NO imprime exito" || bad "restore con error imprimio exito (rc=$RC)"
+check "...y la BD queda intacta (transaccion deshecha: users sigue igual)" "$(CNT users)" "$USR0"
+OUT="$(DB_CONTAINER="$DBC" bash scripts/ops/restore_db.sh "$DUMP" --yes 2>&1)"; RC=$?
+{ [ "$RC" = "0" ] && echo "$OUT" | grep -q "finalizada con"; } && ok "restore real del respaldo: finaliza con exito" || { bad "restore real fallo (rc=$RC)"; echo "$OUT" | tail -5; }
+check "tras el restore, mismos usuarios" "$(CNT users)" "$USR0"
+check "tras el restore, misma auditoria" "$(CNT audit_events)" "$AUD0"
+"${DC[@]}" up -d app feeds >/dev/null 2>&1
+STATE=""; for _ in $(seq 1 40); do STATE="$(docker inspect "${PROJECT}-app" --format '{{.State.Health.Status}}' 2>/dev/null)"; [ "$STATE" = "healthy" ] && break; sleep 3; done
+check "la app vuelve a estar sana tras el restore" "$STATE" "healthy"
+AV="$(docker exec "${PROJECT}-app" flask audit verify 2>&1)"; AVRC=$?
+{ [ "$AVRC" = "0" ] && echo "$AV" | grep -q "eslabones comprobados"; } && ok "flask audit verify tras el restore: la cadena sigue integra (el trigger y la cadena sobreviven a pg_dump --clean)" || bad "la cadena no verifica tras el restore: $(echo "$AV" | tail -2)"
+check "soc_app sigue sin ser superusuario tras el restore" "$(PSQLA "SELECT rolsuper FROM pg_roles WHERE rolname='soc_app'")" "f"
 
 echo
 echo "RESULTADO: $PASS correctas, $FAIL fallidas"

@@ -34,18 +34,23 @@ crontab -e
    ```bash
    ls -lh /var/backups/soc-agent/
    ```
-2. **Detener temporalmente el servicio web (para evitar escrituras concurrentes):**
+2. **Parar TODO lo que usa la BD (app y daemon de feeds).** Con conexiones abiertas los `DROP` se bloquean y el script se niega a continuar:
    ```bash
-   docker stop soc-agent
+   docker compose stop app feeds
    ```
 3. **Ejecutar la restauración:**
    ```bash
    ./scripts/ops/restore_db.sh /var/backups/soc-agent/soc_agent_YYYYMMDD_HHMMSS.sql.gz
    ```
+   El script valida antes que el archivo es un gzip íntegro de `pg_dump` y restaura con `ON_ERROR_STOP` y `--single-transaction`: si algo falla
+   a mitad, **se deshace todo**, devuelve error y NO imprime "éxito" (antes dejaba la BD a medias y lo decía). Probado de punta a punta
+   en `scripts/ops/verify_docker.sh` (sección 7).
 4. **Reiniciar la aplicación:**
    ```bash
-   docker start soc-agent
+   docker compose up -d app feeds
    ```
+   Al arrancar, `docker/init_db.py` repasa los privilegios del rol `soc_app` (el dump no tiene por qué conservarlos igual).
+   Después, verifica la cadena de auditoría: `docker exec soc-agent flask audit verify` (ver `RUNBOOK-AUDIT-CHAIN.md`).
 5. **Verificar el estado del servicio:**
    ```bash
    curl -I http://127.0.0.1:5000/api/v2/health

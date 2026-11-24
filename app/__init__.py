@@ -153,12 +153,9 @@ def create_app(config_name='default'):
         try:
             import sentry_sdk
             from sentry_sdk.integrations.flask import FlaskIntegration
-            sentry_sdk.init(
-                dsn=sentry_dsn,
-                integrations=[FlaskIntegration()],
-                traces_sample_rate=0.05,
-                send_default_pii=False,
-            )
+            from app.utils.sentry_scrub import sentry_init_kwargs
+            # before_breadcrumb/before_send quitan el token de Telegram y las claves en la URL (prelaunch-report-3, hallazgo 3)
+            sentry_sdk.init(**sentry_init_kwargs(sentry_dsn, FlaskIntegration()))
             app.logger.info("Sentry initialized")
         except Exception as e:
             app.logger.warning(f"Sentry initialization failed: {e}")

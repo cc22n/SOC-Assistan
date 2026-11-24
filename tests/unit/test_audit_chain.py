@@ -34,8 +34,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def cadena(app, db_session):
     """Clave de prueba + trigger instalado y activo (la BD de test puede haberse creado con create_all, sin migración)."""
     antes = {k: app.config.get(k) for k in ('AUDIT_CHAIN_KEY', 'AUDIT_CHAIN_PREVIOUS_KEYS', 'AUDIT_CHAIN_ACCEPT_UNKEYED',
-                                              'TELEGRAM_BOT_TOKEN', 'TELEGRAM_ALERT_CHAT_IDS')}
-    app.config.update(AUDIT_CHAIN_KEY=KEY, AUDIT_CHAIN_PREVIOUS_KEYS=None, AUDIT_CHAIN_ACCEPT_UNKEYED=None,
+                                              'AUDIT_CHAIN_LOST_KEY_IDS', 'TELEGRAM_BOT_TOKEN', 'TELEGRAM_ALERT_CHAT_IDS')}
+    app.config.update(AUDIT_CHAIN_KEY=KEY, AUDIT_CHAIN_PREVIOUS_KEYS=None, AUDIT_CHAIN_ACCEPT_UNKEYED=None, AUDIT_CHAIN_LOST_KEY_IDS=None,
                       TELEGRAM_BOT_TOKEN=None, TELEGRAM_ALERT_CHAT_IDS=())
     ac.reset_backoff()
     db.session.execute(text(ac.GUARD_FUNCTION_SQL))
@@ -344,6 +344,42 @@ class TestRotacion:
         app.config.update(AUDIT_CHAIN_KEY=KEY, AUDIT_CHAIN_ACCEPT_UNKEYED='true')
         _sql("UPDATE audit_events SET action='editada' WHERE chain_pos = 2")
         _roto(_ok(), 2)
+
+    def test_clave_perdida_declarada_permite_seguir_sin_aceptar_cualquier_cosa(self, app):
+        """Procedimiento de RUNBOOK-AUDIT-CHAIN.md: se pierde la clave, se pone una nueva y se declara el key_id perdido."""
+        _log(3)
+        perdida = ac.key_id(KEY.encode())
+        app.config['AUDIT_CHAIN_KEY'] = 'n' * 40
+        b = _roto(_ok(), 1)                                                            # CONTROL: sin declarar, es rotura
+        assert 'AUDIT_CHAIN_LOST_KEY_IDS' in b['reason']                               # y el mensaje dice cómo resolverlo
+        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = perdida
+        r = _ok()
+        assert r['ok'] and r['unverifiable'] == 3                                      # honesto: 3 filas solo con enlace, no recalculadas
+        _log(2, prefix='nueva')                                                        # lo nuevo se sella con la clave nueva...
+        assert _ok()['ok'] and _ok()['checked'] == 5
+        _sql("UPDATE audit_events SET action='editada' WHERE chain_pos = 5")           # ...y SÍ se protege su contenido
+        _roto(_ok(), 5)
+
+    def test_clave_perdida_declarada_sigue_detectando_huecos_y_enlaces(self, app):
+        """Declarar una clave perdida NO desactiva el resto de comprobaciones (borrados, reordenación, filas sin sellar)."""
+        _log(5)
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=ac.key_id(KEY.encode()))
+        assert _ok()['ok']
+        _sql('DELETE FROM audit_events WHERE chain_pos = 3')
+        assert 'falta' in _roto(_ok(), 3)['reason']
+
+    def test_limite_documentado_el_contenido_de_filas_de_clave_perdida_no_se_puede_comprobar(self, app):
+        _log(3)
+        app.config.update(AUDIT_CHAIN_KEY='n' * 40, AUDIT_CHAIN_LOST_KEY_IDS=ac.key_id(KEY.encode()))
+        _sql("UPDATE audit_events SET action='editada' WHERE chain_pos = 2")
+        assert _ok()['ok'] is True                       # por eso el runbook pide anotar la pérdida y apoyarse en las anclas
+
+    def test_declarar_otra_clave_como_perdida_no_acepta_la_forjada(self, app):
+        _log(2)
+        app.config['AUDIT_CHAIN_LOST_KEY_IDS'] = 'deadbeef'
+        assert _ok()['ok']                               # la real sigue verificándose (no se confunde con la declarada)
+        _sql("UPDATE audit_events SET action='x' WHERE chain_pos = 1")
+        _roto(_ok(), 1)
 
     def test_sin_clave_configurada_lo_sellado_con_clave_cuenta_como_no_verificable(self, app):
         _log(3)

@@ -21,6 +21,8 @@ class Config:
     # Rotación: claves anteriores (coma) para seguir verificando lo ya sellado. ACCEPT_UNKEYED: la clave se añadió tarde y hay histórico sin clave.
     AUDIT_CHAIN_PREVIOUS_KEYS = os.environ.get('AUDIT_CHAIN_PREVIOUS_KEYS') or None
     AUDIT_CHAIN_ACCEPT_UNKEYED = os.environ.get('AUDIT_CHAIN_ACCEPT_UNKEYED') or None
+    # key_id (8 hex; sale en `flask audit status` y en el mensaje de rotura) de claves PERDIDAS: sus filas dejan de recalcularse (solo enlace).
+    AUDIT_CHAIN_LOST_KEY_IDS = os.environ.get('AUDIT_CHAIN_LOST_KEY_IDS') or None
 
     # Telegram (WP7): avisos SALIENTES de los feeds. Sin token no se hace nada. El token es un secreto: viaja en la URL de la API de
     # Telegram y aparece en el texto de cualquier excepción de red; app/services/telegram_client.py lo redacta siempre.
